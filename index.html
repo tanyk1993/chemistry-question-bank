@@ -80,6 +80,8 @@
   .lo{font-family:"IBM Plex Mono";font-size:.75rem;padding:.18rem .4rem;border-radius:5px;
     background:var(--paper);border:1px solid var(--line);color:var(--ink);cursor:help}
   .stem{font-size:.98rem}
+  .source{font-family:"IBM Plex Mono";font-size:.72rem;letter-spacing:.02em;
+    color:var(--muted);margin:-.2rem 0 .1rem}
   /* formatted display layer */
   .stem .el{font-family:"Times New Roman",Georgia,serif;font-style:italic}
   .stem .opts{list-style:none;margin:.5rem 0 0;padding:0;display:flex;flex-direction:column;gap:.35rem}
@@ -233,6 +235,7 @@
     const { data, error } = await sb
       .from('questions')
       .select(`id, question_number, content_text, content_html, options, answer_key, status,
+               papers ( school, year, level, paper_number ),
                question_topics ( topics ( code, name, ordinal ) ),
                question_los ( learning_objectives ( section_code, text ) )`)
       .eq('status','approved')
@@ -244,6 +247,7 @@
     }
     ALL = (data||[]).map(q => ({
       ...q,
+      paper: q.papers || null,
       topics: (q.question_topics||[]).map(x=>x.topics).filter(Boolean),
       los: (q.question_los||[]).map(x=>x.learning_objectives).filter(Boolean)
     }));
@@ -313,6 +317,16 @@
       head.appendChild(los);
     }
     el.appendChild(head);
+
+    if(q.paper){
+      const bits=[q.paper.school, q.paper.year, q.paper.level,
+                  q.paper.paper_number ? 'P'+q.paper.paper_number : null].filter(Boolean);
+      if(bits.length){
+        const src=document.createElement('div'); src.className='source';
+        src.textContent=bits.join(' · ');
+        el.appendChild(src);
+      }
+    }
 
     const stem=document.createElement('div'); stem.className='stem';
     if(q.content_html){ stem.innerHTML=q.content_html; }   // formatted display layer

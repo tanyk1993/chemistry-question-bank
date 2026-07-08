@@ -80,6 +80,20 @@
   .lo{font-family:"IBM Plex Mono";font-size:.75rem;padding:.18rem .4rem;border-radius:5px;
     background:var(--paper);border:1px solid var(--line);color:var(--ink);cursor:help}
   .stem{font-size:.98rem}
+  /* formatted display layer */
+  .stem .el{font-family:"Times New Roman",Georgia,serif;font-style:italic}
+  .stem .opts{list-style:none;margin:.5rem 0 0;padding:0;display:flex;flex-direction:column;gap:.3rem}
+  .stem .opt{display:flex;gap:.5rem;padding:.35rem .5rem;background:var(--paper);border-radius:7px;align-items:baseline}
+  .stem .opt b{font-family:"IBM Plex Mono";color:var(--muted);flex:none}
+  .stem ol.stmts{margin:.5rem 0;padding-left:1.6rem}
+  .stem ol.stmts li{margin:.15rem 0}
+  .stem .fig{display:block;font-size:.82rem;color:#8a97a3;background:#eef2f5;
+    border:1px dashed #c4ced6;border-radius:7px;padding:.4rem .6rem;margin:.5rem 0}
+  .stem .muted{color:var(--muted);font-size:.88rem;margin-top:.3rem}
+  table.qt{border-collapse:collapse;margin:.6rem 0;font-size:.9rem;width:100%}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:.35rem .55rem;text-align:left;vertical-align:top}
+  table.qt th{background:var(--paper);font-weight:600}
+  .stem math{font-size:1.05em;vertical-align:middle}
   .opts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.3rem}
   .opts li{display:flex;gap:.55rem;padding:.4rem .55rem;border:1px solid transparent;
     border-radius:7px;background:var(--paper);font-size:.92rem}
@@ -213,7 +227,7 @@
     results.innerHTML = '<div class="loading">Loading questions…</div>';
     const { data, error } = await sb
       .from('questions')
-      .select(`id, question_number, content_text, options, answer_key, status,
+      .select(`id, question_number, content_text, content_html, options, answer_key, status,
                question_topics ( topics ( code, name, ordinal ) ),
                question_los ( learning_objectives ( section_code, text ) )`)
       .eq('status','approved')
@@ -296,10 +310,12 @@
     el.appendChild(head);
 
     const stem=document.createElement('div'); stem.className='stem';
-    stem.textContent=q.content_text||''; el.appendChild(stem);
+    if(q.content_html){ stem.innerHTML=q.content_html; }   // formatted display layer
+    else stem.textContent=q.content_text||'';
+    el.appendChild(stem);
 
     const opts=q.options||{};
-    if(Object.keys(opts).length){
+    if(!q.content_html && Object.keys(opts).length){
       const ul=document.createElement('ul'); ul.className='opts';
       ['A','B','C','D','E'].forEach(k=>{
         if(opts[k]==null) return;
@@ -319,7 +335,7 @@
         const on = tag.style.display!=='inline';
         tag.style.display = on?'inline':'none';
         btn.textContent = on?'Hide answer':'Show answer';
-        el.querySelectorAll('.opts li').forEach(li=>
+        if(!q.content_html) el.querySelectorAll('.opts li').forEach(li=>
           li.classList.toggle('correct', on && li.dataset.k===q.answer_key));
       });
       foot.appendChild(btn); foot.appendChild(tag); el.appendChild(foot);

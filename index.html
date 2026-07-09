@@ -82,6 +82,13 @@
   .stem{font-size:.98rem}
   .source{font-family:"IBM Plex Mono";font-size:.72rem;letter-spacing:.02em;
     color:var(--muted);margin:-.2rem 0 .1rem}
+  .stem .figimg{margin:.6rem 0;text-align:center}
+  .stem .figimg img{max-width:100%;border:1px solid var(--line);border-radius:8px;background:#fff;padding:6px}
+  .stem .optgrid{display:flex;flex-direction:column;gap:.5rem;margin:.5rem 0}
+  .stem .optrow{display:flex;gap:.6rem;align-items:center;background:var(--paper);
+    border-radius:8px;padding:.5rem .6rem}
+  .stem .optrow b{font-family:"IBM Plex Mono";color:var(--muted);flex:none}
+  .stem .optrow img{max-width:100%;border:1px solid var(--line);border-radius:6px;background:#fff;padding:4px}
   /* formatted display layer */
   .stem .el{font-family:"Times New Roman",Georgia,serif;font-style:italic}
   .stem .opts{list-style:none;margin:.5rem 0 0;padding:0;display:flex;flex-direction:column;gap:.35rem}
@@ -236,6 +243,7 @@
       .from('questions')
       .select(`id, question_number, content_text, content_html, options, answer_key, status,
                papers ( school, year, level, paper_number ),
+               question_assets ( storage_path, slot, ordinal ),
                question_topics ( topics ( code, name, ordinal ) ),
                question_los ( learning_objectives ( section_code, text ) )`)
       .eq('status','approved')
@@ -245,9 +253,13 @@
         'Check your connection and that you\'re signed in, then reload.</div>';
       console.error(error); return;
     }
+    const assetUrl = p => sb.storage.from('question-assets').getPublicUrl(p).data.publicUrl;
     ALL = (data||[]).map(q => ({
       ...q,
       paper: q.papers || null,
+      assets: (q.question_assets||[])
+        .slice().sort((a,b)=>(a.ordinal||0)-(b.ordinal||0))
+        .map(a => ({ ...a, url: assetUrl(a.storage_path) })),
       topics: (q.question_topics||[]).map(x=>x.topics).filter(Boolean),
       los: (q.question_los||[]).map(x=>x.learning_objectives).filter(Boolean)
     }));
@@ -331,6 +343,38 @@
     const stem=document.createElement('div'); stem.className='stem';
     if(q.content_html){ stem.innerHTML=q.content_html; }   // formatted display layer
     else stem.textContent=q.content_text||'';
+
+    // place linked figures: stem images fill the "image pending" slots; option images become a grid
+    if(q.assets && q.assets.length){
+      const isOpt = s => /^[A-E]$/.test(s||'');
+      const stemImgs = q.assets.filter(a => !isOpt(a.slot));
+      const optImgs  = q.assets.filter(a =>  isOpt(a.slot))
+                                .sort((a,b)=> (a.slot>b.slot?1:-1));
+      const figImg = a => {
+        const w=document.createElement('div'); w.className='figimg';
+        const im=document.createElement('img'); im.src=a.url; im.loading='lazy'; im.alt='';
+        w.appendChild(im); return w;
+      };
+      const optGrid = () => {
+        const g=document.createElement('div'); g.className='optgrid';
+        optImgs.forEach(a=>{
+          const row=document.createElement('div'); row.className='optrow';
+          const b=document.createElement('b'); b.textContent=a.slot;
+          const im=document.createElement('img'); im.src=a.url; im.loading='lazy'; im.alt='';
+          row.appendChild(b); row.appendChild(im); g.appendChild(row);
+        });
+        return g;
+      };
+      const figs=[...stem.querySelectorAll('.fig')];
+      let si=0, gridPlaced=false;
+      figs.forEach(f=>{
+        if(si < stemImgs.length){ f.replaceWith(figImg(stemImgs[si++])); }
+        else if(optImgs.length && !gridPlaced){ f.replaceWith(optGrid()); gridPlaced=true; }
+        else f.remove();
+      });
+      while(si < stemImgs.length) stem.appendChild(figImg(stemImgs[si++]));  // extra stem figs
+      if(optImgs.length && !gridPlaced) stem.appendChild(optGrid());          // options had no slot
+    }
     el.appendChild(stem);
 
     const opts=q.options||{};

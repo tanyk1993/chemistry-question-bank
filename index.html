@@ -81,7 +81,9 @@
     background:var(--paper);border:1px solid var(--line);color:var(--ink);cursor:help}
   .stem{font-size:.98rem}
   .source{font-family:"IBM Plex Mono";font-size:.72rem;letter-spacing:.02em;
-    color:var(--muted);margin:-.2rem 0 .1rem}
+    color:var(--muted);margin:-.1rem 0 .25rem;line-height:1.35}
+  .source>div{font-weight:600;color:var(--ink)}
+  .source .source-sub{font-weight:400;color:var(--muted)}
   .stem .figimg{margin:.6rem 0;text-align:center}
   .stem .figimg img{max-width:100%;border:1px solid var(--line);border-radius:8px;background:#fff;padding:6px}
   .stem .optgrid{display:flex;flex-direction:column;gap:.5rem;margin:.5rem 0}
@@ -283,6 +285,13 @@
   function render(){
     const kw = $('#kw').value.trim().toLowerCase();
     const tc = $('#topic').value;
+    const box = $('#results');
+    if(!kw && !tc){                       // blank default: nothing until the user picks/searches
+      $('#count').innerHTML = `<b>${ALL.length}</b> question${ALL.length===1?'':'s'} in the bank`;
+      box.innerHTML = '<div class="empty"><b>Pick a topic or type a search to begin.</b><br>'+
+        'Filter by topic on the left, or search for a reagent, formula, or term.</div>';
+      return;
+    }
     const shown = ALL.filter(q=>{
       if(tc && !q.topics.some(t=>t.code===tc)) return false;
       if(!kw) return true;
@@ -295,7 +304,6 @@
       return hay.includes(kw);
     });
     $('#count').innerHTML = `<b>${shown.length}</b> of ${ALL.length} question${ALL.length===1?'':'s'}`;
-    const box = $('#results');
     if(!shown.length){
       box.innerHTML = '<div class="empty"><b>No questions match.</b><br>'+
         'Try a broader keyword or a different topic.</div>';
@@ -311,7 +319,6 @@
     const el = document.createElement('article'); el.className='qcard';
 
     const head = document.createElement('div'); head.className='qhead';
-    head.innerHTML = `<span class="qno">Q${q.question_number??''}</span>`;
     q.topics.forEach(t=>{
       const organic = String(t.code).startsWith('11');
       head.insertAdjacentHTML('beforeend',
@@ -331,11 +338,14 @@
     el.appendChild(head);
 
     if(q.paper){
-      const bits=[q.paper.school, q.paper.year, q.paper.level,
-                  q.paper.paper_number ? 'P'+q.paper.paper_number : null].filter(Boolean);
-      if(bits.length){
+      const p=q.paper;
+      const l1=[p.school, p.year].filter(Boolean).join(' ');
+      const l2=[p.level, p.paper_number?'P'+p.paper_number:null,
+                q.question_number?'Q'+q.question_number:null].filter(Boolean).join(' ');
+      if(l1||l2){
         const src=document.createElement('div'); src.className='source';
-        src.textContent=bits.join(' · ');
+        if(l1){ const a=document.createElement('div'); a.textContent=l1; src.appendChild(a); }
+        if(l2){ const b=document.createElement('div'); b.className='source-sub'; b.textContent=l2; src.appendChild(b); }
         el.appendChild(src);
       }
     }

@@ -1,0 +1,208 @@
+Learning Objectives (H1) 
+
+1 Atomic Structure
+1(a) identify and describe protons, neutrons and electrons in terms of their relative charges and relative masses
+1(b) deduce the behaviour of beams of protons, neutrons and electrons in an electric field
+1(c) describe the distribution of mass and charges within an atom
+1(d) deduce the numbers of protons, neutrons and electrons present in both atoms and ions given proton and nucleon numbers (and charge)
+1(e)(i) describe the contribution of protons and neutrons to atomic nuclei in terms of proton number and nucleon number
+1(e)(ii) distinguish between isotopes on the basis of different numbers of neutrons present
+1(f) describe the number and relative energies of the s, p and d orbitals for the principal quantum numbers 1, 2 and 3 and also the 4s and 4p orbitals
+1(g) describe the shapes of s, p and d orbitals (see also Section 13)
+[knowledge of wave functions is not required]
+1(h) state the electronic configuration of atoms and ions given the proton number (and charge)
+1(i) explain the factors influencing the ionisation energies of elements (see the Data Booklet) (see also Section 5)
+1(j) deduce the electronic configurations of elements from successive ionisation energy data
+1(k) interpret successive ionisation energy data of an element in terms of the position of that element within the Periodic Table
+
+2 Chemical Bonding 
+2(a) show understanding that all chemical bonds are electrostatic in nature and describe:
+2(a)(i) ionic bond as the electrostatic attraction between oppositely charged ions
+2(a) (ii) covalent bond as the electrostatic attraction between a shared pair of electrons and positively charged nuclei
+2(a)(iii) metallic bond as the electrostatic attraction between a lattice of positive ions and delocalised electrons
+2(b) describe, including the use of ‘dot-and-cross’ diagrams,
+2(b)(i) ionic bonding as in sodium chloride and magnesium oxide
+2(b)(ii) covalent bonding as in hydrogen; oxygen; nitrogen; chlorine; hydrogen chloride; carbon dioxide; methane; ethene
+2(b)(iii) co-ordinate (dative covalent) bonding, as in formation of the ammonium ion and in the Al2Cl6 molecule
+2(c) describe covalent bonding in terms of orbital overlap (limited to s and p orbitals only), giving σ and π bonds
+(see also Section 11.1)
+2(d) explain the shapes of, and bond angles in, molecules such as BF3 (trigonal planar); CO2 (linear); CH4 (tetrahedral); NH3 (trigonal pyramidal); H2O (bent); SF6 (octahedral) by using the Valence Shell Electron Pair Repulsion theory
+2(e) predict the shapes of, and bond angles in, molecules analogous to those specified in (d)
+2(f) explain and deduce bond polarity using the concept of electronegativity
+[quantitative treatment of electronegativity is not required]
+2(g) deduce the polarity of a molecule using bond polarity and its molecular shape (analogous to those specified in (d))
+2(h) describe the following forces of attraction (electrostatic in nature):
+2(h)(i) intermolecular forces, based on permanent and induced dipoles, as in CHCl3(l); Br2(l) and the liquid noble gases
+2(h)(ii) hydrogen bonding, using ammonia and water as examples of molecules containing –NH and –OH groups
+2(i) outline the importance of hydrogen bonding to the physical properties of substances, including ice and water
+2(j) explain the terms bond energy and bond length for covalent bonds
+2(k) compare the reactivities of covalent bonds in terms of bond energy, bond length and bond polarity
+2(l) describe, in simple terms, the lattice structure of a crystalline solid which is:
+2(l)(i) ionic, as in sodium chloride and magnesium oxide
+2(l)(ii) simple molecular, as in iodine
+2(l)(iii) giant molecular, as in graphite and diamond
+2(l)(iv) hydrogen-bonded, as in ice
+2(l)(v) metallic, as in copper
+[the concept of the ‘unit cell’ is not required]
+2(m) describe, interpret and/or predict the effect of different types of structure and bonding on the physical properties of substances
+2(n) suggest the type of structure and bonding present in a substance from given information
+
+3 Theories of Acids and Bases
+3(a) show understanding of, and apply the Arrhenius theory of acids and bases
+3(b) show understanding of, and apply the Brønsted-Lowry theory of acids and bases, including the concept of conjugate acids and conjugate bases
+3(c) explain qualitatively the differences in behaviour between strong and weak acids and bases in terms of the extent of dissociation
+3(d) explain the terms pH; Ka; Kb; Kw
+[the relationship Kw = KaKb is not required]
+3(e) calculate [H+(aq)] and pH values for strong acids and strong bases
+3(f) explain the choice of suitable indicators for acid-base titrations, given appropriate data, in terms of the strengths of the acids and bases
+
+4 The Periodic Table
+Trends and variations in atomic and physical properties
+For elements in the third period (sodium to chlorine), and in Group 2 (magnesium to barium) and Group 17
+(chlorine to iodine), candidates should be able to:
+4(a) recognise variation in the electronic configurations across a Period and down a Group
+4(b) describe and explain qualitatively the general trends and variations in atomic radius, ionic radius, first ionisation energy and electronegativity:
+4(b)(i) across a Period in terms of shielding and nuclear charge
+4(b)(ii) down a Group in terms of increasing number of electron shells, shielding and nuclear charge
+4(c) interpret the variation in melting point and in electrical conductivity across a Period in terms of structure and bonding in the elements (metallic, giant molecular, or simple molecular)
+4(d) describe and explain the trend in volatility of the Group 17 elements in terms of instantaneous dipole-induced dipole attraction
+
+Trends and variations in chemical properties
+For elements across the third period (sodium to chlorine) candidates should be able to:
+4(e)(i) state and explain the variation in the highest oxidation number of the elements in oxides (for Na2O; MgO; Al2O3; SiO2; P4O10; SO3) and chlorides (for NaCl; MgCl2; AlCl3; SiCl4; PCl5)
+4(e)(ii) state and explain the variation in bonding in oxides and chlorides in terms of electronegativity (with the exception of AlCl3)
+4(e)(iii) describe the reactions of the oxides with water (for Na2O; MgO; Al2O3; SiO2; P4O10; SO3)
+4(e)(iv) describe and explain the acid/base behaviour of oxides (for Na2O; MgO; Al2O3; SiO2; P4O10; SO3) and hydroxides (for NaOH; Mg(OH)2; Al(OH)3), including, where relevant, amphoteric behaviour in reaction
+with sodium hydroxide (only) and acids
+4(e)(v) describe and explain the reactions of the chlorides with water (for NaCl; MgCl2; AlCl3; SiCl4; PCl5)
+4(e)(vi) suggest the types of structure and bonding present in the oxides and chlorides from observations of their chemical and physical properties
+For elements in Group 1 (lithium to caesium) and Group 17 (chlorine to iodine), candidates should be able to:
+4(f) describe and explain the relative reactivity of elements of:
+4(f)(i) Group 1 as reducing agents in terms of ease of loss of electrons
+4(f)(ii) Group 17 as oxidising agents in terms of ease of gain of electrons
+4(g) describe and explain the trend in thermal stability of Group 17 hydrides in terms of bond energies
+In addition, candidates should be able to:
+4(h) predict the characteristic properties of an element in a given Group by using knowledge of chemical periodicity
+4(i) deduce the nature, possible position in the Periodic Table, and identity of unknown elements from given information of physical and chemical properties
+
+5 Mole Concept and Stoichiometry
+5(a) define the terms relative atomic, isotopic, molecular and formula mass
+5(b) define the term mole in terms of the Avogadro constant
+5(c) calculate the relative atomic mass of an element given the relative abundances of its isotopes
+5(d) define the terms empirical and molecular formula
+5(e) calculate empirical and molecular formulae using combustion data or composition by mass
+5(f) write and/or construct balanced equations
+5(g) describe and explain redox processes in terms of electron transfer and/or of changes in oxidation number (oxidation state) as exemplified by Fe3+/Fe2+ and MnO4- /Mn2+
+5(h) construct redox equations using the relevant half-equations
+5(h)(i) perform calculations, including use of the mole concept, involving:
+5(h)(i) reacting masses (from formulae and equations)
+5(h)(ii) volumes of gases (e.g. in the burning of hydrocarbons)
+5(h)(iii) volumes and concentrations of solutions
+[when performing calculations, candidates’ answers should reflect the number of significant figures given orasked for in the question]
+5(j) deduce stoichiometric relationships from calculations such as those in (i)
+
+6 Energetics
+6(a) explain that most chemical reactions are accompanied by energy changes, principally in the form of heat usually associated with the breaking and forming of chemical bonds; the reaction can be exothermic (∆H negative) or endothermic (∆H positive)
+6(b) construct and interpret an energy profile diagram, in terms of the enthalpy change of the reaction and of the activation energy (see also Section 7)
+6(c) explain and use the terms:
+6(c)(i) enthalpy change of reaction and standard conditions, with particular reference to: formation; combustion; neutralisation
+6(c)(ii) bond energy (∆H positive, i.e. bond breaking) (see also Section 2)
+6(c)(iii) lattice energy (∆H negative, i.e. gaseous ions to solid lattice)
+6(d) calculate enthalpy changes from appropriate experimental results, including the use of the relationship:
+heat change = mc∆T
+6(e) explain, in qualitative terms, the effect of ionic charge and of ionic radius on the numerical magnitude of a lattice energy
+6(f) apply Hess’ Law to carry out calculations involving given simple energy cycles and relevant energy terms (restricted to enthalpy changes of formation, combustion and neutralisation), with particular reference to:
+6(f)(i) determining enthalpy changes that cannot be found by direct experiment, e.g. an enthalpy change of
+formation from enthalpy changes of combustion
+6(f)(ii) average bond energies
+[construction of energy cycles is not required]
+
+7 Kinetics
+7(a) explain and use the terms: rate of reaction; rate equation; order of reaction; rate constant; half-life of a reaction; activation energy; catalysis
+7(b) construct and use rate equations of the form rate = k[A]m[B]n (limited to simple cases of single-step
+reactions for which m and n are 0, 1 or 2), including:
+7(b)(i) deducing the order of a reaction by the initial rates method
+7(b)(ii) justifying, for zero- and first-order reactions, the order of reaction from concentration-time graphs
+7(b)(iii) calculating an initial rate using concentration data
+[integrated forms of rate equations are not required]
+7(c) show understanding that the half-life of a first-order reaction is independent of concentration
+7(d) explain qualitatively, in terms of frequency of collisions, the effect of concentration changes on the rate of a reaction
+7(e) show understanding, including reference to the Boltzmann distribution, of what is meant by the term activation energy
+7(f) explain qualitatively, in terms of both the Boltzmann distribution and of collision frequency, the effect of temperature change on a rate constant (and hence, on the rate) of a reaction
+7(g) (i) explain that, in the presence of a catalyst, a reaction follows a different pathway, i.e. one of lower activation energy, giving a larger rate constant
+7(g)(ii) interpret this catalytic effect in terms of the Boltzmann distribution
+7(h) outline the mode of action of heterogeneous catalysis, as exemplified by the catalytic removal of oxides of nitrogen in the exhaust gases from car engines
+7(i) describe enzymes as protein molecules that act as biological catalysts with high specificity (in the reactions that they catalyse and in their choice of substrates as exemplified by the lock-and-key model), temperature sensitivity and pH sensitivity
+[Knowledge of the levels of structure of proteins is not required. Details of the denaturation process will be discussed in 9 (m).]
+
+8 Chemical Equilibria
+8(a) explain, in terms of rates of the forward and reverse reactions, what is meant by a reversible reaction and dynamic equilibrium
+8(b) state Le Chatelier’s Principle and apply it to deduce qualitatively (from appropriate information) the effects of changes in concentration, pressure or temperature, on a system at equilibrium
+8(c) deduce whether changes in concentration, pressure or temperature or the presence of a catalyst affect the value of the equilibrium constant for a reaction
+8(d) deduce expressions for equilibrium constants in terms of concentrations, Kc
+8(e) calculate the values of equilibrium constants in terms of concentrations from appropriate data
+8(f) calculate the quantities present at equilibrium, given appropriate data (such calculations will not require the solving of quadratic equations)
+8(g) describe and explain the conditions used in the Haber process, as an example of the importance of an understanding of chemical equilibrium in the chemical industry
+
+9 Polymers and Organic Chemistry
+9(a) interpret, and use the nomenclature, general formulae and structural formulae (including displayed
+formulae) of the following classes of compounds:
+9(a)(i) hydrocarbons (alkanes, alkenes and benzene)
+9(a)(ii) halogenoalkanes
+9(a)(iii) alcohols (including primary, secondary and tertiary)
+9(a)(iv) aldehydes and ketones
+9(a)(v) carboxylic acids
+9(a)(vi) esters
+9(a)(vii) amines
+9(a)(viii) amides
+9(a)(ix) amino acids
+9(b) interpret, and use the following terminology associated with organic reactions:
+9(b)(i) functional group
+9(b)(ii) addition, substitution, elimination
+9(b)(iii) condensation, hydrolysis
+9(b)(iv) oxidation and reduction
+[in equations for organic redox reactions, the symbols [O] and [H] are acceptable]
+9(c) describe constitutional (structural) isomerism
+9(d) describe cis-trans isomerism in alkenes, and explain its origin in terms of restricted rotation due to the presence of π bonds
+[use of E, Z nomenclature is not required]
+9(e) deduce the possible isomers for an organic molecule of known molecular formula
+9(f) (i) describe the shapes of the ethane, ethene and benzene molecules
+9(f) (ii) explain the shapes of, and bond angles, in the ethane, ethene and benzene molecules in relation to σ and π carbon-carbon bonds
+[knowledge of hybridisation is not required]
+9(f)(iii) predict the shapes of, and bond angles in, molecules analogous to those specified in (f)(ii)
+9(g) describe the chemistry of the following classes of compounds:
+9(g)(i) alkanes (exemplified by ethane) as being generally unreactive except in terms of combustion and substitution by chlorine in the presence of ultraviolet light at room temperature
+9(g)(ii) alkenes (exemplified by ethene) in terms of combustion and addition reactions with bromine (in CCl4) and hydrogen (using Ni catalyst)
+9(g)(iii) halogenoalkanes (exemplified by bromoethane) in terms of substitution reaction to alcohols (using NaOH(aq), heat) and elimination reactions to alkenes (using NaOH in ethanol and heat)
+9(g)(iv) alcohols (exemplified by ethanol) in terms of combustion, oxidation to carboxylic acids (using acidified K2Cr2O7 or acidified KMnO4 and heat) and elimination to alkenes (using concentrated H3PO4 catalyst and heat)
+9(g)(v) aldehydes (exemplified by ethanal) and ketones (exemplified by propanone) in terms of their reduction to primary and secondary alcohols respectively (using LiAlH4, or using H2(g), Ni catalyst) and oxidation of aldehydes to carboxylic acids (using acidified K2Cr2O7 or acidified KMnO4 and heat)
+9(g)(vi) carboxylic acids (exemplified by ethanoic acid) in terms of:
+- reaction with alkalis and carbonates to form salts,
+- condensation with alcohols to form esters (in the presence of concentrated H2SO4 catalyst), andwith amines (exemplified by ethylamine) to form amides (in the presence of dicyclohexylcarbodiimide, DCC)
+[knowledge of structure of DCC is not required]
+9(g)(vii) esters (exemplified by ethyl ethanoate) and amides (exemplified by ethanamide) in terms of hydrolysis with aqueous acid (or aqueous alkali) and heat
+[detailed conditions involving specific temperature and pressure values are not required]
+9(g)(viii) amines (exemplified by ethylamine) with aqueous acid to form salts
+9(h) recognise polymers as macromolecules built up from monomers, with average relative molecular mass of at least 1000 or at least 100 repeat units
+9(i) classify and explain the difference between addition and condensation polymers
+9(j) describe proteins as examples of condensation polymers made up of α-amino acids as monomers, forming peptide (amide) bonds
+9(k) describe the hydrolysis of proteins using aqueous acid (or aqueous alkali) and heat
+9(l) describe the specific bonds or interactions that stabilise the three-dimensional structure of a protein: hydrogen bonding, intermolecular forces and ionic linkages
+[knowledge of the specific levels of structure of proteins, including a-helix and β-pleated sheet, is not required.]
+9(m) explain denaturation of proteins by extremes of temperature and pH changes, in terms of disruption of the bonds or interactions that hold the three-dimensional structure of the proteins (see also LO 7(i))
+9(n) apply knowledge of the loss and formation of three-dimensional structure to interpret real-world phenomena such as heating of egg whites and addition of vinegar to milk
+[candidates are not required to identify the proteins in the substances.]
+9(o) classify and explain the difference between thermoplastic (linear, as exemplified by poly(ethene)) and thermosetting (cross-linked, as exemplified by poly(diallyl phthalate)) polymers with reference to structure,bonding and the following properties:
+9(o)(i) softening behaviour, including capacity to be recycled
+9(o)(ii) rigidity
+9(o)(iii) strength
+9(p) describe and explain the types of structure and bonding in relation to the properties and uses as exemplified by the following:
+9(p)(i) low density poly(ethene) (LDPE) in plastic bag and high density poly(ethene) (HDPE) in plastic bottles in relation to LDPE being softer and more flexible, and HDPE being harder and stiffer
+9(p)(ii) polyester and polyamide as fabric in relation to polyester (exemplified by poly(ethylene terephthalate)
+(PET)) as a fabric that is slightly less prone to creasing than polyamide (exemplified by nylon 6,6)
+9(p)(iii) poly(vinyl alcohol) (PVA) as a water-soluble polymer in eye drops and poly(vinyl chloride) (PVC) as a water-resistant polymer used in raincoats
+9(p)(iv) poly(propene) (PP) container instead of one made from poly(ethylene terephthalate) (PET) to storestrongly alkaline cleaning solutions due to hydrolysis of PET
+9(q) predict physical properties of polymer from its structure
+9(r) recognise that poly(alkenes) are chemically inert and can therefore be difficult to biodegrade (see also9(g)(i))
+9(s) recognise that polyesters and polyamides are generally biodegradable by hydrolysis (see also 9(g)(vii))
+9(t) recognise that materials are a finite resource and the importance of recycling plastics, considering the economic, environmental and social factors.

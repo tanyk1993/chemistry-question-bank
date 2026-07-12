@@ -1,0 +1,415 @@
+Learning Objectives (H2) 
+
+1 Atomic Structure
+1(a) identify and describe protons, neutrons and electrons in terms of their relative charges and relative masses
+1(b) deduce the behaviour of beams of protons, neutrons and electrons in an electric field
+1(c) describe the distribution of mass and charges within an atom
+1(d) deduce the numbers of protons, neutrons and electrons present in both atoms and ions given proton and nucleon numbers (and charge)
+1(e)(i) describe the contribution of protons and neutrons to atomic nuclei in terms of proton number and nucleon number
+1(e)(ii) distinguish between isotopes on the basis of different numbers of neutrons present
+1(f) describe the number and relative energies of the s, p and d orbitals for the principal quantum numbers 1, 2 and 3 and also the 4s and 4p orbitals
+1(g) describe the shapes of s, p and d orbitals (see also Section 13)
+[knowledge of wave functions is not required]
+1(h) state the electronic configuration of atoms and ions given the proton number (and charge)
+1(i) explain the factors influencing the ionisation energies of elements (see the Data Booklet) (see also Section 5)
+1(j) deduce the electronic configurations of elements from successive ionisation energy data
+1(k) interpret successive ionisation energy data of an element in terms of the position of that element within the Periodic Table
+
+2 Chemical Bonding 
+2(a) show understanding that all chemical bonds are electrostatic in nature and describe:
+2(a)(i) ionic bond as the electrostatic attraction between oppositely charged ions
+2(a) (ii) covalent bond as the electrostatic attraction between a shared pair of electrons and positively charged nuclei
+2(a)(iii) metallic bond as the electrostatic attraction between a lattice of positive ions and delocalised electrons
+2(b) describe, including the use of ‘dot-and-cross’ diagrams,
+2(b)(i) ionic bonding as in sodium chloride and magnesium oxide
+2(b)(ii) covalent bonding as in hydrogen; oxygen; nitrogen; chlorine; hydrogen chloride; carbon dioxide; methane; ethene
+2(b)(iii) co-ordinate (dative covalent) bonding, as in formation of the ammonium ion and in the Al2Cl6 molecule
+2(c) describe covalent bonding in terms of orbital overlap (limited to s and p orbitals only), giving σ and π bonds
+(see also Section 11.1)
+2(d) explain the shapes of, and bond angles in, molecules such as BF3 (trigonal planar); CO2 (linear); CH4 (tetrahedral); NH3 (trigonal pyramidal); H2O (bent); SF6 (octahedral) by using the Valence Shell Electron Pair Repulsion theory
+2(e) predict the shapes of, and bond angles in, molecules analogous to those specified in (d)
+2(f) explain and deduce bond polarity using the concept of electronegativity
+[quantitative treatment of electronegativity is not required]
+2(g) deduce the polarity of a molecule using bond polarity and its molecular shape (analogous to those specified in (d))
+2(h) describe the following forces of attraction (electrostatic in nature):
+2(h)(i) intermolecular forces, based on permanent and induced dipoles, as in CHCl3(l); Br2(l) and the liquid noble gases
+2(h)(ii) hydrogen bonding, using ammonia and water as examples of molecules containing –NH and –OH groups
+2(i) outline the importance of hydrogen bonding to the physical properties of substances, including ice and water
+2(j) explain the terms bond energy and bond length for covalent bonds
+2(k) compare the reactivities of covalent bonds in terms of bond energy, bond length and bond polarity
+2(l) describe, in simple terms, the lattice structure of a crystalline solid which is:
+2(l)(i) ionic, as in sodium chloride and magnesium oxide
+2(l)(ii) simple molecular, as in iodine
+2(l)(iii) giant molecular, as in graphite and diamond
+2(l)(iv) hydrogen-bonded, as in ice
+2(l)(v) metallic, as in copper
+[the concept of the ‘unit cell’ is not required]
+2(m) describe, interpret and/or predict the effect of different types of structure and bonding on the physical properties of substances
+2(n) suggest the type of structure and bonding present in a substance from given information
+
+3 The Gaseous State
+3(a) state the basic assumptions of the kinetic theory as applied to an ideal gas
+3(b) explain qualitatively in terms of intermolecular forces and molecular size:
+3(b)(i) the conditions necessary for a gas to approach ideal behaviour
+3(b)(ii) the limitations of ideality at very high pressures and very low temperatures
+3(c) state and use the general gas equation pV = nRT in calculations, including the determination of Mr
+3(d) use Dalton’s Law to determine the partial pressures of gases in a mixture (see also Section 9)
+
+4 Theories of Acids and Bases
+4(a) show understanding of, and apply the Arrhenius theory of acids and bases
+4(b) show understanding of, and apply the Brønsted-Lowry theory of acids and bases, including the concept of conjugate acids and conjugate bases
+4(c) show understanding of, and apply the Lewis theory of acids and bases (including non-aqueous system e.g. reaction between BF3 and NH3)
+
+5 The Periodic Table
+Trends and variations in atomic and physical properties
+For elements in the third period (sodium to chlorine), and in Group 2 (magnesium to barium) and Group 17
+(chlorine to iodine), candidates should be able to:
+5(a) recognise variation in the electronic configurations across a Period and down a Group
+5(b) describe and explain qualitatively the general trends and variations in atomic radius, ionic radius, first ionisation energy and electronegativity:
+5(b)(i) across a Period in terms of shielding and nuclear charge
+5(b)(ii) down a Group in terms of increasing number of electron shells, shielding and nuclear charge
+5(c) interpret the variation in melting point and in electrical conductivity across a Period in terms of structure and bonding in the elements (metallic, giant molecular, or simple molecular)
+5(d) describe and explain the trend in volatility of the Group 17 elements in terms of instantaneous dipole-induced dipole attraction
+
+Trends and variations in chemical properties
+For elements across the third period (sodium to chlorine) candidates should be able to:
+5(e)(i) state and explain the variation in the highest oxidation number of the elements in oxides (for Na2O; MgO; Al2O3; SiO2; P4O10; SO3) and chlorides (for NaCl; MgCl2; AlCl3; SiCl4; PCl5)
+5(e)(ii) state and explain the variation in bonding in oxides and chlorides in terms of electronegativity (with the exception of AlCl3)
+5(e)(iii) describe the reactions of the oxides with water (for Na2O; MgO; Al2O3; SiO2; P4O10; SO3)
+5(e)(iv) describe and explain the acid/base behaviour of oxides (for Na2O; MgO; Al2O3; SiO2; P4O10; SO3) and hydroxides (for NaOH; Mg(OH)2; Al(OH)3), including, where relevant, amphoteric behaviour in reaction
+with sodium hydroxide (only) and acids
+5(e)(v) describe and explain the reactions of the chlorides with water (for NaCl; MgCl2; AlCl3; SiCl4; PCl5)
+5(e)(vi) suggest the types of structure and bonding present in the oxides and chlorides from observations of their chemical and physical properties
+
+For elements in Group 2 (magnesium to barium) and Group 17 (chlorine to iodine) candidates should be able to:
+5(f) describe and deduce from E⦵ values the relative reactivity of elements of:
+5(f)(i) Group 2 as reducing agents
+5(f)(ii) Group 17 as oxidising agents
+5(g) describe and explain the trend in thermal stability of:
+5(g)(i) Group 2 carbonates in terms of the charge density of the cation and the polarisability of the large anion
+5(g)(ii) Group 17 hydrides in terms of bond energies
+
+In addition, candidates should be able to:
+5(h) predict the characteristic properties of an element in a given Group by using knowledge of chemical periodicity
+5(i) deduce the nature, possible position in the Periodic Table, and identity of unknown elements from given information of physical and chemical properties
+
+6 The Mole Concept and Stoichiometry
+6(a) define the terms relative atomic, isotopic, molecular and formula mass
+6(b) define the term mole in terms of the Avogadro constant
+6(c) calculate the relative atomic mass of an element given the relative abundances of its isotopes
+6(d) define the terms empirical and molecular formula
+6(e) calculate empirical and molecular formulae using combustion data or composition by mass
+6(f) write and/or construct balanced equations
+6(g) perform calculations, including use of the mole concept, involving:
+6(g)(i) reacting masses (from formulae and equations)
+6(g)(ii) volumes of gases (e.g. in the burning of hydrocarbons)
+6(g)(iii) volumes and concentrations of solutions
+[when performing calculations, candidates’ answers should reflect the number of significant figures given or
+asked for in the question]
+6(h) deduce stoichiometric relationships from calculations such as those in (g)
+
+7 Chemical Energetics 
+7(a) explain that most chemical reactions are accompanied by energy changes, principally in the form of heat usually associated with the breaking and forming of chemical bonds; the reaction can be exothermic (∆H negative) or endothermic (∆H positive)
+7(b) construct and interpret an energy profile diagram, in terms of the enthalpy change of the reaction and of the activation energy (see also Section 8)
+7(c) explain and use the terms:
+7(c)(i) enthalpy change of reaction and standard conditions, with particular reference to: formation;combustion; hydration; solution; neutralisation; atomisation
+7(c)(ii) bond energy (∆H positive, i.e. bond breaking) (see also Section 2)
+7(c)(iii) lattice energy (∆H negative, i.e. gaseous ions to solid lattice)
+7(d) calculate enthalpy changes from appropriate experimental results, including the use of the relationship: heat change = mc∆T
+7(e) explain, in qualitative terms, the effect of ionic charge and of ionic radius on the numerical magnitude of a lattice energy
+7(f) apply Hess’ Law to construct simple energy cycles, e.g. Born-Haber cycle, and carry out calculations involving such cycles and relevant energy terms (including ionisation energy and electron affinity), with
+particular reference to:
+7(f)(i) determining enthalpy changes that cannot be found by direct experiment, e.g. an enthalpy change of formation from enthalpy changes of combustion
+7(f)(ii) the formation of a simple ionic solid and of its aqueous solution
+7(f)(iii) average bond energies
+7(g) explain and use the term entropy
+7(h) discuss the effects on the entropy of a chemical system by the following:
+7(h)(i) change in temperature
+7(h)(ii) change in phase
+7(h)(iii) change in the number of particles (especially for gaseous systems)
+[quantitative treatment is not required]
+7(i) predict whether the entropy change for a given process or reaction is positive or negative
+7(j) state and use the equation involving standard Gibbs free energy change of reaction, ∆G⦵ :∆G⦵= ∆H⦵− T∆S⦵
+[the calculation of standard entropy change, ∆S⦵, for a reaction using standard entropies, S⦵, is not required]
+(k) state whether a reaction or process will be spontaneous by using the sign of ∆G⦵
+(l) understand the limitations in the use of ∆G⦵ to predict the spontaneity of a reaction
+(m) predict the effect of temperature change on the spontaneity of a reaction, given standard enthalpy and entropy changes
+
+8 Reaction Kinetics 
+8(a) explain and use the terms: rate of reaction; rate equation; order of reaction; rate constant; half-life of a reaction; rate-determining step; activation energy; catalysis
+8(b) construct and use rate equations of the form rate = k[A]m[B]n (limited to simple cases of single-step reactions and of multi-step processes with a rate-determining step, for which m and n are 0, 1 or 2),
+including:
+8(b)(i) deducing the order of a reaction by the initial rates method
+8(b)(ii) justifying, for zero- and first-order reactions, the order of reaction from concentration-time graphs
+8(b)(iii) verifying that a suggested reaction mechanism is consistent with the observed kinetics
+8(b)(iv) predicting the order that would result from a given reaction mechanism
+8(b)(v) calculating an initial rate using concentration data
+[integrated forms of rate equations are not required]
+8(c)(i) show understanding that the half-life of a first-order reaction is independent of concentration
+6(c)(ii) use the half-life of a first-order reaction in calculations
+8(d) calculate a rate constant using the initial rates method
+8(e) devise a suitable experimental technique for studying the rate of a reaction, from given information
+8(f) explain qualitatively, in terms of frequency of collisions, the effect of concentration changes on the rate of a reaction
+8(g) show understanding, including reference to the Boltzmann distribution, of what is meant by the term activation energy
+8(h) explain qualitatively, in terms both of the Boltzmann distribution and of collision frequency, the effect of temperature change on a rate constant (and hence, on the rate) of a reaction
+8(i) (i) explain that, in the presence of a catalyst, a reaction has a different mechanism, i.e. one of lower activation energy, giving a larger rate constant
+8(i)(ii) interpret this catalytic effect on a rate constant in terms of the Boltzmann distribution
+8(j) outline the different modes of action of homogeneous and heterogeneous catalysis, including:
+8(j)(i) the Haber process
+8(j)(ii) the catalytic removal of oxides of nitrogen in the exhaust gases from car engines (see also Section 11.4)
+8(j)(iii) the catalytic role of atmospheric oxides of nitrogen in the oxidation of atmospheric sulfur dioxide
+8(j)(iv) catalytic role of Fe2+ in the I–/S2O82– reaction
+8(k) describe enzymes as protein molecules that act as biological catalysts with high specificity (in the reactions that they catalyse and in their choice of substrates as exemplified by the lock-and-key model), temperature sensitivity and pH sensitivity
+[knowledge of the levels of structure of proteins and the details of the denaturation process are notrequired]
+
+9 Chemical Equilibria
+9(a) explain, in terms of rates of the forward and reverse reactions, what is meant by a reversible reaction and dynamic equilibrium
+9(b) state Le Chatelier’s Principle and apply it to deduce qualitatively (from appropriate information) the effects of changes in concentration, pressure or temperature, on a system at equilibrium
+9(c) deduce whether changes in concentration, pressure or temperature or the presence of a catalyst affect the value of the equilibrium constant for a reaction
+9(d) deduce expressions for equilibrium constants in terms of concentrations, Kc, and partial pressures, Kp
+[treatment of the relationship between Kp and Kc is not required]
+9(e) calculate the values of equilibrium constants in terms of concentrations or partial pressures from appropriate data
+9(f) calculate the quantities present at equilibrium, given appropriate data (such calculations will not require the solving of quadratic equations)
+9(g) describe and explain the conditions used in the Haber process, as an example of the importance of an understanding of chemical equilibrium in the chemical industry
+
+10.1 Acid-Base Equilibria
+10.1(a) explain qualitatively the differences in behaviour between strong and weak acids and bases in terms of the extent of dissociation
+10.1(b) explain the terms pH; Ka; pKa; Kb; pKb; Kw and apply them in calculations, including the relationship Kw = KaKb
+10.1(c) calculate [H+(aq)] and pH values for strong acids, weak monobasic (monoprotic) acids, strong bases, and weak monoacidic bases
+[calculations involving weak acids/bases will not require solving of quadratic equations]
+10.1(d) describe the changes in pH during acid-base titrations and explain these changes in terms of the strengths of the acids and bases
+10.1(e) explain the choice of suitable indicators for acid-base titrations, given appropriate data
+10.1(f) (i) explain how buffer solutions control pH
+10.1(ii) describe and explain the uses of buffer solutions, including the role of CO32–/HCO3– in maintaining pH in oceans, and how the rapid increase in atmospheric carbon dioxide gas contributed to ocean acidification
+10.1(g) calculate the pH of buffer solutions, given appropriate data
+
+10.2 Solubility Equilibria
+10.2(a) show understanding of, and apply, the concept of solubility product, Ksp
+10.2(b) calculate Ksp from concentrations and vice versa
+10.2(c) discuss the effects on the solubility of ionic salts by the following:
+10.2(c)(i) common ion effect
+10.2(C)(ii) formation of complex ion, as exemplified by the reactions of halide ions with aqueous silver ions followed by aqueous ammonia (see also Section 13)
+
+11.1 Introduction to Organic Chemistry
+11.1(a) interpret, and use the nomenclature, general formulae and displayed formulae of the following classes of
+compound:
+11.1(a)(i) hydrocarbons (alkanes, alkenes and arenes)
+11.1(a)(ii) halogen derivatives (halogenoalkanes and halogenoarenes)
+11.1(a)(iii) hydroxyl compounds (alcohols and phenols)
+11.1(a)(iv) carbonyl compounds (aldehydes and ketones)
+11.1(a)(v) carboxylic acids and derivatives (acyl chlorides and esters)
+11.1(a)(vi) nitrogen compounds (amines, amides, amino acids and nitriles)
+11.1(b) describe sp3 hybridisation, as in ethane molecule, sp2 hybridisation, as in ethene and benzene molecules, and sp hybridisation, as in ethyne molecule
+11.1(c) explain the shapes of, and bond angles in, the ethane, ethene, benzene, and ethyne molecules in relation to σ and π carbon-carbon bonds
+11.1(d) predict the shapes of, and bond angles in, molecules analogous to those specified in (c)
+
+11.2 Isomerism
+11.2(a) describe constitutional (structural) isomerism
+11.2(b) describe cis-trans isomerism in alkenes, and explain its origin in terms of restricted rotation due to the presence of π bonds
+[use of E, Z nomenclature is not required]
+11.2(c) explain what is meant by a chiral centre
+11.2(d) deduce whether a given molecule is chiral based on the presence or absence of chiral centres and/or a plane of symmetry
+11.2(e) recognise that an optically active sample rotates plane-polarised light and contains chiral molecules
+11.2(f) recognise that enantiomers have identical physical properties except in the direction in which they rotate plane-polarised light
+[usage of the term diastereomers is not required]
+11.2(g) recognise that enantiomers have identical chemical properties except in their interactions with another chiral molecule
+11.2(h) recognise that different stereoisomers exhibit different biological properties, for example in drug action
+11.2(i) deduce the possible isomers for an organic molecule of known molecular formula
+11.2(j) identify chiral centres and/or cis-trans isomerism in a molecule of given structural formula
+
+11.3 Organic Reactions and Mechanisms
+11.3(a) interpret and use the following terminology associated with organic reactions:
+11.3(a)(i) functional group
+11.3(a)(ii) degree of substitution: primary, secondary, tertiary, quaternary
+11.3(a)(iii) homolytic and heterolytic fission
+11.3(a)(iv) carbocation
+11.3(a)(v) free radical
+11.3(a)(vi) electrophile (Lewis acid), nucleophile (Lewis base)
+11.3(a)(vii) addition, substitution, elimination, condensation, hydrolysis
+11.3(a)(viii) oxidation and reduction
+[in equations for organic redox reactions, the symbols [O] and [H] are acceptable]
+11.3(b) interpret and use the following terminology associated with organic reactivities:
+11.3(b) (i) delocalisation
+11.3(b) (ii) electronic effect (electron-donating and electron-withdrawing effect)
+11.3(b) (iii) steric effect (steric hindrance)
+11.3 (c) explain the general unreactivity of alkanes, including towards polar reagents
+11.3(d) explain the general reactivity of alkenes towards electrophilic reagents/electrophiles
+11.3(e) explain, in terms of delocalisation of π electrons, the difference between benzene and alkene:
+11.3(e)(i) reactivity towards electrophiles
+11.3(e)(ii) preference of benzene to undergo substitution rather than addition reaction
+11.3(f) interpret the different reactivities of halogenoalkanes, with particular reference to hydrolysis, and to the relative strengths of the carbon-halogen bonds
+11.3(g) explain the unreactivity of chlorobenzene compared to halogenoalkanes towards nucleophilic substitution,
+in terms of the delocalisation of the lone pair of electrons on the halogen and steric hindrance
+11.3(h) explain the reactivity of carbonyl compounds towards nucleophilic reagents, such as hydrogen cyanide
+11.3(i) apply (a) and (b) to the understanding of mechanisms in terms of organic structure and bonding
+11.3(j) recognise that the mechanisms of polar reactions involve the flow of electrons from electron-rich to electron-poor sites
+11.3(k) describe the mechanism of free-radical substitution with particular reference to the initiation, propagation
+and termination reactions, exemplified by reaction of ethane with chlorine
+11.3(l) describe the mechanism of electrophilic addition in alkenes, using bromine (Br2 (in CCl4)) with ethene as an
+example
+11.3(m) (i) describe the mechanism of electrophilic substitution in arenes, using the mono-bromination of benzene as an example
+11.3(m)(ii) describe the effect of the delocalisation of electrons in arenes in such reactions
+11.3(n) describe and explain the mechanisms of nucleophilic substitutions in halogenoalkanes:
+11.3(n)(i) SN1, in terms of stability of the carbocation intermediates
+11.3(n)(ii) SN2, in terms of steric hindrance in the halogenoalkanes
+11.3(o) describe the mechanism of the nucleophilic addition reactions of hydrogen cyanide with aldehydes and
+ketones
+In each of the sections below, 11.4 to 11.10, candidates will be expected to be able to predict the reaction
+products of a given compound in reactions that are chemically similar to those specified.
+
+11.4 Hydrocarbons
+11.4(a) describe the chemistry of alkanes as exemplified by the following reactions of ethane:
+11.4(a)(i) combustion
+11.4(a)(ii) free-radical substitution by chlorine and by bromine in the presence of ultraviolet light at room temperature (see also 11.3(c), 11.3(k))
+11.4(b) describe the chemistry of alkenes as exemplified, where relevant, by the following reactions of ethene:
+11.4(b)(i) electrophilic addition of steam (H2O(g) with H3PO4 catalyst), hydrogen halides (HX(g)) and halogens (X2(aq) or X2 (in CCl4)) (see also 11.3(d), 11.3(l))
+11.4(b)(ii) reduction via catalytic hydrogenation, using H2(g) and Ni catalyst (catalytic addition of hydrogen; see also 8(j))
+11.4(b)(iii) oxidation by cold, alkaline solution of manganate(VII) ions to form the diol
+11.4(b)(iv) oxidation by hot, acidified solution of manganate(VII) ions leading to the rupture of the carbon-to-carbon double bond in order to determine the position of alkene linkages in larger molecules
+11.4(c) apply Markovnikov’s rule to the addition of hydrogen halides to unsymmetrical alkenes, and explain the composition of products in terms of the stability of carbocation intermediates
+11.4(d) describe the chemistry of the benzene ring as exemplified by the following reactions of benzene and methylbenzene (see also Section 4, 11.3(e) and 11.3(m)(i)):
+11.4(d)(i) electrophilic substitution reactions with chlorine using AlCl3 as catalyst and with bromine using AlBr3 as catalyst (recognise the use of Lewis acid as catalysts)
+11.4(d)(ii) nitration with a mixture of concentrated nitric acid and concentrated sulfuric acid, with the reaction mixture maintained at 30°C for methylbenzene and 50°C for benzene (recognise concentrated sulfuric acid as a Brønsted-Lowry acid catalyst)
+11.4(d)(iii) Friedel-Crafts alkylation with halogenoalkanes using AlCl3 or AlBr3 as catalyst (recognise the use of Lewis acid as catalysts)
+11.4(e) describe the chemistry of the alkyl side-chain of benzene ring as exemplified by the following reactions ofmethylbenzene:
+11.4(e)(i) free-radical substitution by chlorine and by bromine in the presence of ultraviolet light at room temperature
+11.4(e)(ii) complete oxidation to give benzoic acid using hot alkaline KMnO4 and then dilute acid, or using hot acidified KMnO4
+11.4(f) predict whether halogenation will occur in the side-chain or aromatic nucleus in arenes depending on reaction conditions
+11.4(g) apply the knowledge of positions of substitution in the electrophilic substitution reactions of mono-substituted arenes
+11.4(h) recognise the environmental consequences of:
+11.4(h)(i) carbon monoxide, oxides of nitrogen and unburnt hydrocarbons arising from the internal combustion engine and of their catalytic removal
+11.4(h)(ii) gases that contribute to the enhanced greenhouse effect
+
+11.5 Halogen Derivatives
+11.5(a) recall the chemistry of halogenoalkanes as exemplified by:
+11.5(a)(i) the following nucleophilic substitution reactions of bromoethane:
+• hydrolysis using NaOH(aq) and heat
+• formation of nitriles using KCN in ethanol and heat
+• formation of primary amines by reaction with ammonia in ethanol heated under pressure
+11.5(a)(ii) the elimination of hydrogen bromide from 2-bromopropane using NaOH in ethanol and heat
+11.5(b) explain the stereochemical outcome in nucleophilic substitution involving optically active substrates (seealso 11.3(n)):
+11.5(b) (i) inversion of configuration in SN2 mechanism
+11.5(b) (ii) racemisation in SN1 mechanism
+11.5(c) suggest characteristic reactions to differentiate between:
+11.5(c)(i) different halogenoalkanes (see also 11.3(f))
+11.5(c)(ii) halogenoalkanes and halogenoarenes (see also 11.3(g))
+e.g. hydrolysis, followed by testing of the halide ions
+11.5(d) explain the uses of fluoroalkanes and fluorohalogenoalkanes in terms of their relative chemical inertness
+11.5(e) recognise the effect of chlorofluoroalkanes (CFCs) on the ozone layer, and that their proposed replacements, hydrofluoroalkanes (HFCs) and hydrochlorofluoroalkanes (HCFCs), have significant environmental impact too
+[the mechanistic details of how CFCs and HCFCs deplete the ozone layer are not required]
+
+11.6 Hydroxy Compounds
+11.6(a) recall the chemistry of alcohols, exemplified by ethanol:
+11.6(a)(i) combustion
+11.6(a)(ii) nucleophilic substitution to give halogenoalkanes using hydrogen halides, HX or PCl5
+11.6(a)(iii) reaction with sodium
+11.6(a)(iv) oxidation to:
+• carbonyl compounds using acidified K2Cr2O7, heat with distillation
+• carboxylic acids using primary alcohols, acidified KMnO4 and heat (under reflux)
+• carboxylic acids using primary alcohols, acidified K2Cr2O7 and heat (under reflux)
+11.6(a)(v) dehydration to alkenes using concentrated H3PO4 catalyst and heat
+11.6(b) suggest characteristic distinguishing reactions for the different classes of alcohols (primary, secondary and tertiary alcohols), e.g. mild oxidation
+11.6(c) deduce the presence of a CH3CH(OH)– group in an alcohol from its reaction with warm alkaline aqueous iodine to form tri-iodomethane
+11.6(d) recall the chemistry of phenol, as exemplified by the following reactions:
+11.6(d)(i) with bases
+11.6(d)(ii) with sodium
+11.6(d)(iii) nitration of the benzene ring (using dilute HNO3) to form a mixture of 2-nitrophenol and 4-nitrophenol,and bromination of the benzene ring (using aqueous Br2) to form 2,4,6-tribromophenol
+11.6(e) explain the relative acidities of water, phenol and ethanol in aqueous medium (interpret as Brønsted-Lowryacids)
+
+11.7 Carbonyl Compounds
+Candidates should be able to:
+(a) describe the formation of aldehydes and ketones from, and their reduction to, primary and secondary alcohols respectively (using LiAlH4, or using H2(g), Ni catalyst)
+(b) describe the reactions of hydrogen cyanide (using KCN catalyst) with aldehydes and ketones (see also 11.3(o))
+(c) describe the use of 2,4-dinitrophenylhydrazine (2,4-DNPH) to detect the presence of carbonyl compounds
+(d) deduce the nature (aldehyde or ketone) of an unknown carbonyl compound from the results of simple tests (i.e. warming in Fehling’s and Tollens’ reagents; ease of oxidation)
+(e) deduce the presence of a CH3CO– group in a carbonyl compound from its reaction with warm alkaline aqueous iodine to give tri-iodomethane
+
+11.8 Carboxylic Acids and Derivatives
+(a) describe the formation of carboxylic acids from:
+• primary alcohols using acidified KMnO4 or acidified K2Cr2O7, and heat (under reflux)
+• aldehydes using acidified KMnO4 or acidified K2Cr2O7, and heat (under reflux)
+• nitriles by heating with dilute acid (or dilute alkali followed by acidification)
+(b) describe the reactions of carboxylic acids in the formation of:
+(i) salts via reaction with metals, alkalis or carbonates
+(ii) esters via condensation with alcohols (using concentrated H2SO4 catalyst and heat), using ethyl
+ethanoate as an example
+(iii) acyl chlorides via reaction with PCl5 using ethanoyl chloride as an example
+(iv) primary alcohols via reduction with LiAlH4, using ethanol as an example
+(c) explain the acidity of carboxylic acids and of chlorine-substituted ethanoic acids in terms of their structures
+(d) describe the hydrolysis of acyl chlorides with water
+(e) describe the condensation reactions of acyl chlorides with alcohols, phenols and primary amines
+(f) explain the relative ease of hydrolysis of acyl chlorides, alkyl chlorides and aryl chlorides
+(g) describe the formation of esters from the condensation reaction of acyl chlorides, using phenyl benzoate as
+an example
+(h) describe the acid and base hydrolysis of esters using aqueous acid (or aqueous alkali) and heat
+
+11.9 Nitrogen Compounds
+11.9(a) describe the formation of amines as exemplified by:
+• ethylamine through reduction of amide using LiAlH4 and nitrile using LiAlH4 or H2(g), Ni catalyst (see also Section 11.5)
+• phenylamine through the reduction of nitrobenzene using Sn and concentrated HCl with heating, followed by NaOH(aq)
+11.9(b) describe the reaction of amines in the formation of salts
+11.9(c) describe and explain the basicity of primary, secondary and tertiary amines in the gaseous phase (interpret as Lewis bases)
+11.9(d) explain the relative basicities of ammonia, ethylamine and phenylamine in aqueous medium, in terms of their structures
+11.9(e) describe the reaction of phenylamine with aqueous bromine
+11.9(f) describe the formation of amides from the condensation reaction between RNH2 and R'COCl
+11.9(g) explain why amide is neutral in terms of delocalisation of the lone pair of electrons on nitrogen
+11.9(h) describe the chemistry of amides, exemplified by the following reactions:
+11.9(h)(i) hydrolysis using aqueous acid (or aqueous alkali) and heat
+11.9(h)(ii) reduction to amines with LiAlH4
+11.9(i) describe the acid/base properties of amino acids
+
+11.10 Polymers
+11.10(a) recognise polymers as macromolecules built up from monomers, with average relative molecular mass of at least 1000 or at least 100 repeat units
+11.10(b) classify and explain the difference between addition polymers (as exemplified by poly(alkenes)) and condensation polymers (as exemplified by polyesters and polyamides)
+11.10(c) describe proteins as an example of condensation polymers made up of α-amino acids as monomers, forming peptide (amide) bonds
+11.10(d) describe the hydrolysis of proteins using aqueous acid (or aqueous alkali) and heat
+11.10(e) recognise that poly(alkenes) are chemically inert and can therefore be difficult to biodegrade (see also 11.3(c))
+11.10(f) recognise that polyesters and polyamides are generally biodegradable by hydrolysis (see also 11.8(h) and 11.9(h)(i))
+11.10(g) recognise that materials are a finite resource and the importance of recycling plastics, considering the economic, environmental and social factors
+
+12 Electrochemistry
+12(a) describe and explain redox processes in terms of electron transfer and/or of changes in oxidation number (oxidation state)
+12(b) define the terms:
+12(b)(i) standard electrode (redox) potential
+12(b)(ii) standard cell potential
+12(c) describe the standard hydrogen electrode
+12(d) describe methods used to measure the standard electrode potentials of:
+12(d)(i) metals or non-metals in contact with their ions in aqueous solution
+12(d)(ii) ions of the same element in different oxidation states
+12(e) calculate a standard cell potential by combining two standard electrode potentials
+12(f) use standard cell potentials to:
+12(f)(i) explain/deduce the direction of electron flow from a simple cell
+12(f)(ii) predict the spontaneity of a reaction
+12(g) understand the limitations in the use of standard cell potentials to predict the spontaneity of a reaction
+12(h) construct redox equations using the relevant half-equations (see also Section 13)
+12(i) state and apply the relationship ∆G⦵= −nFE⦵ to electrochemical cells, including the calculation of E⦵for combined half reactions
+12(j) predict qualitatively how the value of an electrode potential varies with the concentration of the aqueous ion
+12(k) state the possible advantages of developing other types of cell, e.g. the H2/O2 fuel cell and improved batteries (as in electric vehicles) in terms of smaller size, lower mass and higher voltage
+12(l) state the relationship, F = Le, between the Faraday constant, the Avogadro constant and the charge on the electron
+12(m) predict the identity of the substance liberated during electrolysis from the state of electrolyte (molten or aqueous), position in the redox series (electrode potential) and concentration
+12(n) calculate:
+12(n)(i) the quantity of charge passed during electrolysis
+12(n)(ii) the mass and/or volume of substance liberated during electrolysis
+12(o) explain, in terms of the electrode reactions, the industrial processes of:
+12(o)(i) the anodising of aluminium
+12(o)(ii) the electrolytic purification of copper
+[technical details are not required]
+
+13 Transition Elements
+13(a) explain that a transition element is a d block element whose atom has an incomplete d subshell, or which
+can give rise to cations with an incomplete d subshell
+13(b) state the electronic configuration of a first row transition element and its ions (see also 1(h))
+13(c) explain why atomic radii and first ionisation energies of the transition elements are relatively invariant
+13(d) contrast, qualitatively, the melting point and density of the transition elements with those of calcium as a typical s block element
+13(e) describe the tendency of transition elements to have variable oxidation states
+13(f) predict from a given electronic configuration, the likely oxidation states of a transition element
+13(g) describe and explain the use of Fe3+/Fe2+, MnO4–/Mn2+ and Cr2O72–/Cr3+ as examples of redox systems (see also Section 12)
+13(h) predict, using E⦵ values, the likelihood of redox reactions (see also 12(f)(ii))
+13(i) define the terms ligand and complex as exemplified by the complexes of copper(II) ions with water, ammonia and chloride ions as ligands
+(includes the transition metal complexes found in the Qualitative Analysis Notes)
+13(j) explain qualitatively that ligand exchange may occur, as exemplified by the formation of the complexes in
+13(i), including the colour changes involved, and CO/O2 exchange in haemoglobin
+13(k) describe, using the shape and orientation of the d orbitals, the splitting of degenerate d orbitals into two energy levels in octahedral complexes
+13(l) explain, in terms of d orbital splitting and d-d transition, why transition element complexes are usually coloured
+[knowledge of the relative order of ligand field strength is not required]
+13(m) explain how some transition elements and/or their compounds can act as catalysts (see also 8(j))

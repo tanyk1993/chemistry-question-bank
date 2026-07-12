@@ -83,6 +83,8 @@
   .source{font-family:"IBM Plex Mono";font-size:.72rem;letter-spacing:.02em;
     color:var(--muted);margin:-.1rem 0 .25rem;line-height:1.35}
   .source>div{font-weight:600;color:var(--ink)}
+  .source>a{font-weight:600;color:var(--teal);text-decoration:none;border-bottom:1px dotted var(--teal);cursor:pointer}
+  .source>a:hover{border-bottom-style:solid}
   .source .source-sub{font-weight:400;color:var(--muted)}
   .stem .figimg{margin:.6rem 0;text-align:center}
   .stem .figimg img{max-width:100%;border:1px solid var(--line);border-radius:8px;background:#fff;padding:6px}
@@ -244,7 +246,7 @@
     const { data, error } = await sb
       .from('questions')
       .select(`id, question_number, content_text, content_html, options, answer_key, status,
-               papers ( school, year, level, paper_number ),
+               papers ( school, year, level, paper_number, source_path ),
                question_assets ( storage_path, slot, ordinal ),
                question_topics ( topics ( code, name, ordinal ) ),
                question_los ( learning_objectives ( section_code, text ) )`)
@@ -344,7 +346,30 @@
                 q.question_number?'Q'+q.question_number:null].filter(Boolean).join(' ');
       if(l1||l2){
         const src=document.createElement('div'); src.className='source';
-        if(l1){ const a=document.createElement('div'); a.textContent=l1; src.appendChild(a); }
+        if(l1){
+          let a;
+          if(p.source_path){                       // original paper on file -> link to it
+            a=document.createElement('a');
+            a.textContent=l1; a.href='#'; a.title='Open the original paper';
+            a.addEventListener('click', async e=>{
+              e.preventDefault();
+              a.style.opacity='.5';
+              try{
+                const { data, error } = await sb.storage
+                  .from('source-papers')
+                  .createSignedUrl(p.source_path, 60);   // private bucket: 60s signed link
+                if(error || !data?.signedUrl) throw error || new Error('no url');
+                window.open(data.signedUrl, '_blank', 'noopener');
+              }catch(err){
+                console.error('source paper:', err);
+                a.title = "Couldn't open the paper — it may not have been uploaded yet.";
+              }finally{ a.style.opacity=''; }
+            });
+          } else {                                  // no file stored -> plain text, as before
+            a=document.createElement('div'); a.textContent=l1;
+          }
+          src.appendChild(a);
+        }
         if(l2){ const b=document.createElement('div'); b.className='source-sub'; b.textContent=l2; src.appendChild(b); }
         el.appendChild(src);
       }

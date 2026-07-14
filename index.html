@@ -12,6 +12,9 @@
     --paper:#f3f6f8; --card:#ffffff; --ink:#14202e; --muted:#5b6b7a;
     --line:#dde3e9; --teal:#0e7490; --teal-soft:#e2f1f4;
     --green:#137a52; --green-soft:#e2f2ea; --amber:#b45309;
+    --h1:#7c3aed; --h1-soft:#f0e9fe;      /* H1-only */
+    --h2:#0e7490; --h2-soft:#e2f1f4;      /* H2-only */
+    --both:#137a52; --both-soft:#e2f2ea;  /* shared by both syllabuses */
     --focus:#0e7490;
   }
   *{box-sizing:border-box}
@@ -71,23 +74,30 @@
   .cell{display:inline-flex;flex-direction:column;justify-content:space-between;
     width:auto;min-width:3.1rem;padding:.28rem .45rem;border-radius:7px;
     border:1.5px solid var(--teal);background:var(--teal-soft);line-height:1.1}
-  .cell.organic{border-color:var(--green);background:var(--green-soft)}
+  .cell.h1{border-color:var(--h1);background:var(--h1-soft)}
+  .cell.h2{border-color:var(--h2);background:var(--h2-soft)}
+  .cell.shared{border-color:var(--both);background:var(--both-soft)}
   .cell .c-code{font-family:"IBM Plex Mono";font-weight:600;font-size:.95rem;color:var(--teal)}
-  .cell.organic .c-code{color:var(--green)}
+  .cell.h1 .c-code{color:var(--h1)}
+  .cell.h2 .c-code{color:var(--h2)}
+  .cell.shared .c-code{color:var(--both)}
   .cell .c-name{font-size:.6rem;text-transform:uppercase;letter-spacing:.03em;
     color:var(--muted);max-width:8rem}
   .los{display:flex;flex-wrap:wrap;gap:.35rem;margin-left:auto;align-items:flex-start}
   .lo{font-family:"IBM Plex Mono";font-size:.75rem;padding:.18rem .4rem;border-radius:5px;
     background:var(--paper);border:1px solid var(--line);color:var(--ink);cursor:help}
+  .lo.h1{background:var(--h1-soft);color:var(--h1)}
+  .lo.h2{background:var(--h2-soft);color:var(--h2)}
   .stem{font-size:.98rem}
   .source{font-family:"IBM Plex Mono";font-size:.72rem;letter-spacing:.02em;
     color:var(--muted);margin:-.1rem 0 .25rem;line-height:1.35}
   .source>div{font-weight:600;color:var(--ink)}
-  .source>a{font-weight:600;color:var(--teal);text-decoration:none;border-bottom:1px dotted var(--teal);cursor:pointer}
-  .source>a:hover{border-bottom-style:solid}
   .source .source-sub{font-weight:400;color:var(--muted)}
+  .source>a{font-weight:600;color:var(--teal);text-decoration:none;cursor:pointer;
+    border-bottom:1px dotted var(--teal)}
+  .source>a:hover{border-bottom-style:solid}
   .stem .figimg{margin:.6rem 0;text-align:center}
-  .stem .figimg img{max-width:100%;border:1px solid var(--line);border-radius:8px;background:#fff;padding:6px}
+  .stem .figimg img{max-width:min(100%,34em);border:1px solid var(--line);border-radius:8px;background:#fff;padding:6px}
   .stem .optgrid{display:flex;flex-direction:column;gap:.5rem;margin:.5rem 0}
   .stem .optrow{display:flex;gap:.6rem;align-items:center;background:var(--paper);
     border-radius:8px;padding:.5rem .6rem}
@@ -97,6 +107,11 @@
   .stem .el{font-family:"Times New Roman",Georgia,serif;font-style:italic}
   .stem .opts{list-style:none;margin:.5rem 0 0;padding:0;display:flex;flex-direction:column;gap:.35rem}
   .stem .opt{padding:.4rem .6rem;background:var(--paper);border-radius:7px;line-height:1.6}
+  /* the card-level rule `.opts li{display:flex}` turns every child - including each
+     <sub>/<sup> - into a separate flex item with a gap, which shatters "W<sub>2</sub>Y<sub>3</sub>"
+     into "W 2 Y 3". Inside .stem the options are prose, so restore normal inline flow. */
+  .stem .opts li{display:block;gap:0;border:0}
+  .stem sub,.stem sup{line-height:0}
   .stem .opt b{font-family:"IBM Plex Mono";color:var(--muted);margin-right:.5rem}
   .stem ol.stmts{margin:.5rem 0;padding-left:1.6rem}
   .stem ol.stmts li{margin:.15rem 0}
@@ -248,8 +263,8 @@
       .select(`id, question_number, content_text, content_html, options, answer_key, status,
                papers ( school, year, level, paper_number, source_path ),
                question_assets ( storage_path, slot, ordinal ),
-               question_topics ( topics ( code, name, ordinal ) ),
-               question_los ( learning_objectives ( section_code, text ) )`)
+               question_topics ( topics ( code, name, ordinal, syllabus ) ),
+               question_los ( learning_objectives ( section_code, text, syllabus ) )`)
       .eq('status','approved')
       .order('question_number');
     if(error){
@@ -269,15 +284,36 @@
     }));
     buildTopicFilter(); render();
   }
+  // A topic's code is only unique WITHIN a syllabus: H1 '3' is Theories of Acids and
+  // Bases, H2 '3' is The Gaseous State. Keying on code alone made them collide and
+  // silently overwrite each other. Group by concept instead.
+  function topicKey(t){
+    return String(t.name||'').toLowerCase()
+      .replace(/^the\s+/,'').replace(/^(chemical|reaction)\s+/,'').trim();
+  }
+  window.TOPIC_GROUPS = new Map();          // key -> {name, syllabuses:Set, members:[{code,syllabus}]}
   function buildTopicFilter(){
-    const seen = new Map();
-    ALL.forEach(q => q.topics.forEach(t => seen.set(t.code, t)));
-    const topics = [...seen.values()].sort((a,b)=>(a.ordinal||0)-(b.ordinal||0));
+    const g = new Map();
+    ALL.forEach(q => q.topics.forEach(t => {
+      const k = topicKey(t);
+      if(!g.has(k)) g.set(k, {key:k, name:t.name, ordinal:t.ordinal||0,
+                             syllabuses:new Set(), members:[]});
+      const e = g.get(k);
+      e.syllabuses.add(t.syllabus);
+      e.members.push({code:String(t.code), syllabus:t.syllabus});
+      if(t.syllabus==='H2') e.name = t.name;          // prefer H2 wording where both exist
+      e.ordinal = Math.min(e.ordinal || 99, t.ordinal || 99);
+    }));
+    TOPIC_GROUPS = g;
     const sel = $('#topic');
-    topics.forEach(t=>{
-      const o=document.createElement('option');
-      o.value=t.code; o.textContent=`${t.code} — ${t.name}`; sel.appendChild(o);
-    });
+    [...g.values()]
+      .sort((a,b)=> a.name.localeCompare(b.name))
+      .forEach(e=>{
+        const only = e.syllabuses.size===1 ? ` (${[...e.syllabuses][0]})` : '';
+        const o=document.createElement('option');
+        o.value=e.key; o.textContent=`${e.name}${only}`;   // no numbers
+        sel.appendChild(o);
+      });
   }
 
   // ---------------- render + filter ----------------
@@ -295,7 +331,7 @@
       return;
     }
     const shown = ALL.filter(q=>{
-      if(tc && !q.topics.some(t=>t.code===tc)) return false;
+      if(tc && !q.topics.some(t=>topicKey(t)===tc)) return false;
       if(!kw) return true;
       const hay = [
         q.content_text,
@@ -322,18 +358,23 @@
 
     const head = document.createElement('div'); head.className='qhead';
     q.topics.forEach(t=>{
-      const organic = String(t.code).startsWith('11');
+      const grp  = TOPIC_GROUPS.get(topicKey(t));
+      const shared = grp && grp.syllabuses.size > 1;
+      const cls  = shared ? 'shared' : (t.syllabus==='H1' ? 'h1' : 'h2');
       head.insertAdjacentHTML('beforeend',
-        `<span class="cell ${organic?'organic':''}">
-           <span class="c-code">${esc(t.code)}</span>
+        `<span class="cell ${cls}">
+           <span class="c-code">${esc(t.syllabus)}</span>
            <span class="c-name">${esc(t.name)}</span>
          </span>`);
     });
     if(q.los.length){
       const los = document.createElement('div'); los.className='los';
       q.los.forEach(l=>{
-        const s=document.createElement('span'); s.className='lo';
-        s.textContent=l.section_code; s.title=l.text||''; los.appendChild(s);
+        const s=document.createElement('span');
+        s.className='lo ' + (l.syllabus==='H1' ? 'h1' : 'h2');
+        s.textContent=l.section_code;
+        s.title=(l.syllabus? l.syllabus+' ':'')+(l.text||'');
+        los.appendChild(s);
       });
       head.appendChild(los);
     }
@@ -348,26 +389,21 @@
         const src=document.createElement('div'); src.className='source';
         if(l1){
           let a;
-          if(p.source_path){                       // original paper on file -> link to it
-            a=document.createElement('a');
-            a.textContent=l1; a.href='#'; a.title='Open the original paper';
+          if(p.source_path){
+            a=document.createElement('a'); a.textContent=l1; a.href='#';
+            a.title='Open the original paper';
             a.addEventListener('click', async e=>{
-              e.preventDefault();
-              a.style.opacity='.5';
+              e.preventDefault(); a.style.opacity='.5';
               try{
-                const { data, error } = await sb.storage
-                  .from('source-papers')
-                  .createSignedUrl(p.source_path, 60);   // private bucket: 60s signed link
+                const { data, error } = await sb.storage.from('source-papers')
+                  .createSignedUrl(p.source_path, 60);
                 if(error || !data?.signedUrl) throw error || new Error('no url');
-                window.open(data.signedUrl, '_blank', 'noopener');
-              }catch(err){
-                console.error('source paper:', err);
-                a.title = "Couldn't open the paper — it may not have been uploaded yet.";
-              }finally{ a.style.opacity=''; }
+                window.open(data.signedUrl,'_blank','noopener');
+              }catch(err){ console.error('source paper:',err);
+                a.title="Couldn't open the paper - it may not be uploaded yet."; }
+              finally{ a.style.opacity=''; }
             });
-          } else {                                  // no file stored -> plain text, as before
-            a=document.createElement('div'); a.textContent=l1;
-          }
+          } else { a=document.createElement('div'); a.textContent=l1; }
           src.appendChild(a);
         }
         if(l2){ const b=document.createElement('div'); b.className='source-sub'; b.textContent=l2; src.appendChild(b); }

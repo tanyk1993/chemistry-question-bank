@@ -206,6 +206,36 @@
         margin-top:.7em; }
   .ws h4 { margin:.6em 0 .3em; font-size:.95rem; }
   .figbroken { font-size:.85rem; color:var(--muted,#8a9099); font-style:italic; }
+
+  /* ---- admin panel + flagging ---- */
+  .adminbar { display:flex; gap:.5rem; align-items:center; }
+  #adminpanel { border:1px solid var(--line,#dfe3e8); border-radius:10px;
+    background:#fff; padding:1rem 1.1rem; margin:0 0 1rem; }
+  #adminpanel h3 { margin:.2rem 0 .6rem; font-size:1rem; }
+  #adminpanel section { margin-bottom:1.2rem; }
+  #adminpanel .row { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
+  #adminpanel input[type=text], #adminpanel input[type=email] {
+    padding:.4rem .55rem; border:1px solid var(--line,#c8ccd2); border-radius:6px; }
+  .flagitem, .allowitem { display:flex; gap:.6rem; align-items:flex-start;
+    padding:.5rem 0; border-top:1px solid var(--line,#eef1f4); }
+  .flagitem .meta, .allowitem .meta { font-size:.85rem; color:var(--muted,#8a9099); }
+  .flagitem .body { flex:1; }
+  .btn-mini { font-size:.8rem; padding:.25rem .55rem; border-radius:6px;
+    border:1px solid var(--line,#c8ccd2); background:#fff; cursor:pointer; }
+  .btn-mini:hover { background:#f4f5f7; }
+  .btn-danger { border-color:#e5b4b1; color:#b3261e; }
+  .qflag { margin-left:.5rem; }
+  .qflag.flagged { color:#b3261e; border-color:#e5b4b1; }
+  .tagedit { margin-top:.6rem; padding-top:.5rem; border-top:1px dashed var(--line,#e3e7ec); }
+  .tagedit .chips { display:flex; flex-wrap:wrap; gap:.35rem; margin-bottom:.4rem; }
+  .tagchip { display:inline-flex; align-items:center; gap:.35rem; font-size:.8rem;
+    background:#eef3fb; border:1px solid #cfe0f7; border-radius:999px; padding:.15rem .5rem; }
+  .tagchip button { border:0; background:none; cursor:pointer; color:#b3261e;
+    font-weight:700; line-height:1; }
+  .tagedit .addrow { display:flex; gap:.4rem; flex-wrap:wrap; align-items:center; }
+  .tagedit select, .tagedit input { padding:.3rem .45rem; border:1px solid var(--line,#c8ccd2);
+    border-radius:6px; font-size:.85rem; }
+  .muted-note { font-size:.8rem; color:var(--muted,#8a9099); }
 </style>
 </head>
 <body>
@@ -238,8 +268,29 @@
     <div class="brand">H2 Chem <span>Question Bank</span></div>
     <div class="spacer"></div>
     <span id="whoami" class="whoami"></span>
-    <button id="signout" class="btn-ghost">Sign out</button>
+    <span class="adminbar">
+      <button id="adminbtn" class="btn-ghost hidden">Admin</button>
+      <button id="signout" class="btn-ghost">Sign out</button>
+    </span>
   </header>
+  <div id="adminpanel" class="hidden" style="margin:1rem;">
+    <section>
+      <h3>Open flags <span id="flagcount" class="muted-note"></span></h3>
+      <div id="flaglist"><div class="muted-note">Loading…</div></div>
+    </section>
+    <section>
+      <h3>Access</h3>
+      <div class="row">
+        <input id="newemail" type="email" placeholder="name@vjc.edu.sg" size="28">
+        <input id="newnote" type="text" placeholder="note (optional)" size="20">
+        <button id="addemail" class="btn-mini">Add</button>
+      </div>
+      <div id="allowlist" style="margin-top:.6rem;"></div>
+      <div class="muted-note" style="margin-top:.4rem;">
+        Adding an address lets that person in the next time they sign in with Google.
+      </div>
+    </section>
+  </div>
   <main>
     <aside class="filters">
       <div class="search-box">
@@ -279,8 +330,33 @@
     session ? enterApp(session) : showGate();
   }
   function showGate(){ app.classList.add('hidden'); gate.classList.remove('hidden'); }
+  const ME = { id:null, email:null, isAdmin:false };
+  let LO_CATALOGUE = [];        // [{id, section_code, text, topic_id, syllabus}]
+  let MY_FLAGS = new Set();     // question ids this user has already flagged
+
+  async function loadMe(session){
+    ME.id = session?.user?.id || null;
+    ME.email = session?.user?.email || null;
+    if(!ME.id) return;
+    const { data } = await sb.from('profiles').select('role').eq('id', ME.id).maybeSingle();
+    ME.isAdmin = String(data?.role||'') === 'admin';
+    document.getElementById('adminbtn').classList.toggle('hidden', !ME.isAdmin);
+    const { data:mine } = await sb.from('flags').select('question_id').eq('status','open');
+    MY_FLAGS = new Set((mine||[]).map(f=>f.question_id));
+  }
+
+  async function loadCatalogue(){
+    if(LO_CATALOGUE.length) return LO_CATALOGUE;
+    const { data } = await sb.from('learning_objectives')
+      .select('id, section_code, text, topic_id, syllabus')
+      .order('section_code');
+    LO_CATALOGUE = data||[];
+    return LO_CATALOGUE;
+  }
+
   async function enterApp(session){
     gate.classList.add('hidden'); app.classList.remove('hidden');
+    await loadMe(session).catch(e=>console.warn('role lookup failed', e));
     $('#whoami').textContent = session.user.email || '';
     await loadQuestions();
   }
@@ -452,6 +528,107 @@
     });
   }
 
+
+  // ---------- flagging (any signed-in user) ----------
+  async function flagQuestion(qid, note){
+    const { error } = await sb.from('flags').insert({ question_id: qid, note: note||null });
+    if(error){ alert('Could not save flag: '+error.message); return false; }
+    MY_FLAGS.add(qid); return true;
+  }
+
+  function flagButton(q){
+    const b=document.createElement('button');
+    b.className='btn-mini qflag'+(MY_FLAGS.has(q.id)?' flagged':'');
+    b.textContent = MY_FLAGS.has(q.id) ? 'Flagged' : 'Flag';
+    b.title = 'Report a problem with this question for an admin to review';
+    b.addEventListener('click', async ()=>{
+      const note = prompt('What looks wrong? (optional)');
+      if(note===null) return;
+      if(await flagQuestion(q.id, note)){ b.textContent='Flagged'; b.classList.add('flagged'); }
+    });
+    return b;
+  }
+
+  // ---------- tag editing (admin only) ----------
+  // question_topics is derived from the LO tags, so it is rebuilt after any change.
+  async function syncTopics(qid){
+    const { data:los } = await sb.from('question_los')
+      .select('learning_objectives ( topic_id )').eq('question_id', qid);
+    const want = [...new Set((los||[]).map(r=>r.learning_objectives?.topic_id).filter(Boolean))];
+    await sb.from('question_topics').delete().eq('question_id', qid);
+    if(want.length) await sb.from('question_topics')
+      .insert(want.map(t=>({ question_id: qid, topic_id: t })));
+  }
+
+  async function removeTag(qid, loId, partLabel){
+    let qy = sb.from('question_los').delete().eq('question_id', qid).eq('lo_id', loId);
+    qy = partLabel ? qy.eq('part_label', partLabel) : qy.is('part_label', null);
+    const { error } = await qy;
+    if(error){ alert('Could not remove tag: '+error.message); return false; }
+    await syncTopics(qid); return true;
+  }
+
+  async function addTag(qid, loId, partLabel){
+    const { error } = await sb.from('question_los')
+      .insert({ question_id: qid, lo_id: loId, part_label: partLabel||null });
+    if(error){ alert('Could not add tag: '+error.message); return false; }
+    await syncTopics(qid); return true;
+  }
+
+  function tagEditor(q){
+    const wrap=document.createElement('div'); wrap.className='tagedit';
+    const chips=document.createElement('div'); chips.className='chips';
+    const draw=()=>{
+      chips.innerHTML='';
+      (q.los_raw||[]).forEach(r=>{
+        const lo=r.learning_objectives; if(!lo) return;
+        const c=document.createElement('span'); c.className='tagchip';
+        c.textContent = (r.part_label? r.part_label+' ' : '') + lo.section_code;
+        const x=document.createElement('button'); x.textContent='x';
+        x.title='Remove this tag';
+        x.addEventListener('click', async ()=>{
+          if(!confirm('Remove '+lo.section_code+'?')) return;
+          if(await removeTag(q.id, lo.id, r.part_label)){
+            q.los_raw = q.los_raw.filter(z=>z!==r);
+            q.los = q.los_raw.map(z=>z.learning_objectives).filter(Boolean);
+            draw();
+          }
+        });
+        c.appendChild(x); chips.appendChild(c);
+      });
+      if(!chips.children.length){
+        const n=document.createElement('span'); n.className='muted-note';
+        n.textContent='No LO tags'; chips.appendChild(n);
+      }
+    };
+    draw();
+
+    const row=document.createElement('div'); row.className='addrow';
+    const part=document.createElement('input');
+    part.placeholder='part (e.g. 1(a)(i)) - blank for whole question';
+    part.size=32;
+    const sel=document.createElement('select');
+    sel.innerHTML='<option value="">Loading LOs…</option>';
+    loadCatalogue().then(cat=>{
+      sel.innerHTML='<option value="">Choose a learning objective…</option>'+
+        cat.map(l=>`<option value="${l.id}">${esc(l.section_code)} — ${esc((l.text||'').slice(0,80))}</option>`).join('');
+    });
+    const add=document.createElement('button'); add.className='btn-mini'; add.textContent='Add tag';
+    add.addEventListener('click', async ()=>{
+      if(!sel.value){ alert('Pick a learning objective first.'); return; }
+      const lo = LO_CATALOGUE.find(l=>l.id===sel.value);
+      if(await addTag(q.id, sel.value, part.value.trim())){
+        q.los_raw = (q.los_raw||[]).concat([{ part_label: part.value.trim()||null,
+                                              learning_objectives: lo }]);
+        q.los = q.los_raw.map(z=>z.learning_objectives).filter(Boolean);
+        part.value=''; sel.value=''; draw();
+      }
+    });
+    row.appendChild(part); row.appendChild(sel); row.appendChild(add);
+    wrap.appendChild(chips); wrap.appendChild(row);
+    return wrap;
+  }
+
   function card(q){
     const el = document.createElement('article'); el.className='qcard';
 
@@ -619,6 +796,13 @@
       foot.appendChild(btn); if(q.answer_key) foot.appendChild(tag);
       el.appendChild(foot);
     }
+    // flag control for everyone; tag editing for admins only
+    const tools=document.createElement('div');
+    tools.style.cssText='display:flex;align-items:center;gap:.4rem;margin-top:.5rem;';
+    tools.appendChild(flagButton(q));
+    el.appendChild(tools);
+    if(ME.isAdmin) el.appendChild(tagEditor(q));
+
     return el;
   }
 
@@ -626,6 +810,75 @@
     if(!session){ showGate(); }
     else if(!gate.classList.contains('hidden')){ enterApp(session); }  // just returned from Google
   });
+
+  // ---------- admin panel ----------
+  async function loadFlags(){
+    const box=document.getElementById('flaglist');
+    const { data, error } = await sb.from('flags')
+      .select('id, question_id, note, created_at, flagged_by, questions ( question_number, section_label, papers ( paper_name, school, year ) )')
+      .eq('status','open').order('created_at',{ascending:false});
+    if(error){ box.innerHTML='<div class="muted-note">Could not load flags: '+esc(error.message)+'</div>'; return; }
+    document.getElementById('flagcount').textContent = data.length ? '('+data.length+')' : '(none)';
+    if(!data.length){ box.innerHTML='<div class="muted-note">Nothing flagged.</div>'; return; }
+    box.innerHTML='';
+    data.forEach(f=>{
+      const q=f.questions||{}, p=q.papers||{};
+      const row=document.createElement('div'); row.className='flagitem';
+      const body=document.createElement('div'); body.className='body';
+      const where=[p.school,p.year,p.paper_name,q.section_label,q.question_number].filter(Boolean).join(' ');
+      body.innerHTML='<div><b>'+esc(where||'question')+'</b></div>'+
+        '<div>'+esc(f.note||'(no note)')+'</div>'+
+        '<div class="meta">'+new Date(f.created_at).toLocaleString()+'</div>';
+      const done=document.createElement('button'); done.className='btn-mini'; done.textContent='Resolve';
+      done.addEventListener('click', async ()=>{
+        const { error:e2 } = await sb.from('flags')
+          .update({ status:'resolved', resolved_by: ME.id, resolved_at: new Date().toISOString() })
+          .eq('id', f.id);
+        if(e2) alert('Could not resolve: '+e2.message); else loadFlags();
+      });
+      row.appendChild(body); row.appendChild(done); box.appendChild(row);
+    });
+  }
+
+  async function loadAllowlist(){
+    const box=document.getElementById('allowlist');
+    const { data, error } = await sb.from('allowed_emails')
+      .select('email, note, added_at').order('email');
+    if(error){ box.innerHTML='<div class="muted-note">Could not load: '+esc(error.message)+'</div>'; return; }
+    box.innerHTML='';
+    (data||[]).forEach(a=>{
+      const row=document.createElement('div'); row.className='allowitem';
+      const body=document.createElement('div'); body.className='body';
+      body.innerHTML='<div>'+esc(a.email)+'</div>'+
+        (a.note?'<div class="meta">'+esc(a.note)+'</div>':'');
+      const del=document.createElement('button'); del.className='btn-mini btn-danger'; del.textContent='Remove';
+      del.addEventListener('click', async ()=>{
+        if(!confirm('Remove access for '+a.email+'?')) return;
+        const { error:e2 } = await sb.from('allowed_emails').delete().eq('email', a.email);
+        if(e2) alert('Could not remove: '+e2.message); else loadAllowlist();
+      });
+      row.appendChild(body); row.appendChild(del); box.appendChild(row);
+    });
+    if(!box.children.length) box.innerHTML='<div class="muted-note">Nobody listed yet.</div>';
+  }
+
+  document.getElementById('adminbtn').addEventListener('click', ()=>{
+    const p=document.getElementById('adminpanel');
+    const open=p.classList.contains('hidden');
+    p.classList.toggle('hidden', !open);
+    if(open){ loadFlags(); loadAllowlist(); }
+  });
+
+  document.getElementById('addemail').addEventListener('click', async ()=>{
+    const em=document.getElementById('newemail').value.trim().toLowerCase();
+    const nt=document.getElementById('newnote').value.trim();
+    if(!em){ alert('Enter an email address.'); return; }
+    const { error } = await sb.from('allowed_emails').insert({ email: em, note: nt||null });
+    if(error){ alert('Could not add: '+error.message); return; }
+    document.getElementById('newemail').value=''; document.getElementById('newnote').value='';
+    loadAllowlist();
+  });
+
   boot();
 </script>
 </body>

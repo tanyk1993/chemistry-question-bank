@@ -164,6 +164,48 @@
   .msg.error{color:#b42318}
   .hidden{display:none!important}
   @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+  /* ---- content rendering (worked solutions, MCQ options, notation) ---- */
+  .stem p, .ws p { margin:.55em 0; }
+  .stem p.c, .ws p.c { text-align:center; margin:1.1em 0; }
+  .gap { display:inline-block; width:3em; }
+  .stem ol.stmts, .ws ol.stmts { margin:.6em 0 .6em 1.5em; }
+  .stem ol.stmts li, .ws ol.stmts li { margin:.25em 0; }
+  table.qt, table.opts-table, table.cmp {
+    border-collapse:collapse; margin:.75em 0; font-size:.97em; }
+  table.qt th, table.qt td,
+  table.opts-table th, table.opts-table td,
+  table.cmp th, table.cmp td {
+    border:1px solid var(--line,#c8ccd2); padding:6px 12px; text-align:center;
+    vertical-align:top; }
+  table.cmp td { text-align:left; }
+  table.opts-table td.ol { font-weight:700; background:#f4f5f7; }
+  .opts-inline { margin:.7em 0 0 .2em; }
+  .opts-inline .opt { margin:.3em 0; }
+  .opts-inline .ol { font-weight:700; display:inline-block; width:1.5em; }
+  /* stacked fractions - the bank's single fraction convention */
+  .frac { display:inline-flex; flex-direction:column; vertical-align:middle;
+          text-align:center; line-height:1.15; margin:0 .18em; }
+  .frac > .fnum { border-bottom:1px solid currentColor; padding:0 .35em; }
+  .frac > .fden { padding:0 .35em; }
+  /* mark-scheme colours */
+  .ws .ans { color:#0b57d0; }
+  .ws .note, .ws .mark-note { color:#c5221f; }
+  .ws p.mark-note { font-style:italic; margin:.3em 0; }
+  .ws ul.marks { margin:.35em 0 .35em 1.2em; }
+  .ws ul.marks li { margin:.2em 0; }
+  .ws .part { display:flex; gap:.7em; margin:.8em 0; }
+  .ws .part .lab { font-weight:700; min-width:3.6em; flex-shrink:0; }
+  .ws .part .body { flex:1; }
+  .ws .part .body > :first-child { margin-top:0; }
+  .ws .part .lab.has-lo { cursor:help; border-bottom:1px dotted var(--muted,#8a9099); }
+  img.q-fig, img.ws-fig { display:block; max-width:100%; height:auto;
+    border:1px solid var(--line,#dfe3e8); border-radius:6px; margin:.7em 0;
+    background:#fff; }
+  .ws { border-left:3px solid var(--line,#dfe3e8); padding:.4em 0 .4em .9em;
+        margin-top:.7em; }
+  .ws h4 { margin:.6em 0 .3em; font-size:.95rem; }
+  .figbroken { font-size:.85rem; color:var(--muted,#8a9099); font-style:italic; }
 </style>
 </head>
 <body>
@@ -260,11 +302,12 @@
     results.innerHTML = '<div class="loading">Loading questions…</div>';
     const { data, error } = await sb
       .from('questions')
-      .select(`id, question_number, content_text, content_html, options, answer_key, status,
-               papers ( school, year, level, paper_number, source_path ),
+      .select(`id, type, section_label, question_number, content_text, content_html, options, answer_key, status,
+               worked_solution,
+               papers ( school, year, level, paper_number, paper_name, assessment_type, source_path ),
                question_assets ( storage_path, slot, ordinal ),
                question_topics ( topics ( code, name, ordinal, syllabus ) ),
-               question_los ( learning_objectives ( section_code, text, syllabus ) )`)
+               question_los ( part_label, learning_objectives ( section_code, text, syllabus ) )`)
       .eq('status','approved')
       .order('question_number');
     if(error){
@@ -272,7 +315,20 @@
         'Check your connection and that you\'re signed in, then reload.</div>';
       console.error(error); return;
     }
-    const assetUrl = p => sb.storage.from('question-assets').getPublicUrl(p).data.publicUrl;
+    // The bucket is colleague-only, so a public URL may not resolve. Ask for a
+    // signed URL and fall back to the public one if signing isn't needed.
+    const paths = [...new Set((data||[]).flatMap(q =>
+      (q.question_assets||[]).map(a => a.storage_path)).filter(Boolean))];
+    const SIGNED = new Map();
+    if(paths.length){
+      try{
+        const { data:sg } = await sb.storage.from('question-assets')
+          .createSignedUrls(paths, 60*60);
+        (sg||[]).forEach(r => { if(r.signedUrl) SIGNED.set(r.path, r.signedUrl); });
+      }catch(err){ console.warn('signing assets failed, falling back to public', err); }
+    }
+    const assetUrl = p => SIGNED.get(p) ||
+      sb.storage.from('question-assets').getPublicUrl(p).data.publicUrl;
     ALL = (data||[]).map(q => ({
       ...q,
       paper: q.papers || null,
@@ -280,7 +336,8 @@
         .slice().sort((a,b)=>(a.ordinal||0)-(b.ordinal||0))
         .map(a => ({ ...a, url: assetUrl(a.storage_path) })),
       topics: (q.question_topics||[]).map(x=>x.topics).filter(Boolean),
-      los: (q.question_los||[]).map(x=>x.learning_objectives).filter(Boolean)
+      los: (q.question_los||[]).map(x=>x.learning_objectives).filter(Boolean),
+      los_raw: (q.question_los||[])
     }));
     buildTopicFilter(); render();
   }
@@ -353,6 +410,48 @@
 
   function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
 
+
+  // An asset's slot says where it belongs: 'ans-*' / 'sol-*' are answer-side
+  // figures and must stay hidden until the answer is revealed.
+  const isAnswerSlot = s => /^(ans|sol)[-_]/i.test(s||'');
+  const isOptSlot    = s => /^[A-E]$/.test(s||'');
+  const baseName     = p => String(p||'').replace(/^.*\//,'');
+
+  // content_html / worked_solution reference figures by filename
+  // (<img data-asset="FILE.png">) because the bucket is private and no URL can
+  // be baked in. Swap in the resolved URL at render time.
+  function resolveAssets(root, assets){
+    const byName = new Map((assets||[]).map(a => [baseName(a.storage_path), a]));
+    root.querySelectorAll('img[data-asset]').forEach(im => {
+      const a = byName.get(baseName(im.getAttribute('data-asset')));
+      if(a && a.url){ im.src = a.url; im.loading='lazy'; im.removeAttribute('data-asset'); }
+      else {
+        const note=document.createElement('div'); note.className='figbroken';
+        note.textContent='[figure not available]';
+        im.replaceWith(note);
+      }
+    });
+  }
+
+  // Part labels in a worked solution carry their own LO tags; show them on hover.
+  function annotateParts(root, q){
+    const byPart = new Map();
+    (q.los_raw||[]).forEach(r=>{
+      if(!r.part_label) return;
+      const lo = r.learning_objectives; if(!lo) return;
+      const key = String(r.part_label).replace(/^\d+/,'');   // '1(a)(i)' -> '(a)(i)'
+      if(!byPart.has(key)) byPart.set(key,[]);
+      byPart.get(key).push(lo);
+    });
+    if(!byPart.size) return;
+    root.querySelectorAll('.part .lab').forEach(lab=>{
+      const los = byPart.get(lab.textContent.trim());
+      if(!los || !los.length) return;
+      lab.classList.add('has-lo');
+      lab.title = los.map(l => l.section_code + (l.text ? ' - ' + l.text : '')).join('\n');
+    });
+  }
+
   function card(q){
     const el = document.createElement('article'); el.className='qcard';
 
@@ -383,8 +482,18 @@
     if(q.paper){
       const p=q.paper;
       const l1=[p.school, p.year].filter(Boolean).join(' ');
-      const l2=[p.level, p.paper_number?'P'+p.paper_number:null,
-                q.question_number?'Q'+q.question_number:null].filter(Boolean).join(' ');
+      // paper_name is free text set by an admin ("WA2"); only fall back to
+      // P{n} for genuinely numbered papers, so a WA isn't labelled "P2".
+      const pname = p.paper_name || (p.paper_number ? 'P'+p.paper_number : null);
+      // MCQ and structured questions share numbering within a paper, so the
+      // question type has to appear or "WA2 Q1" is ambiguous.
+      // section_label is free text an admin sets ('MCQ', 'SQ', ...). Fall back to
+      // the question type only when it hasn't been filled in.
+      const sect = q.section_label || (q.type==='mcq' ? 'MCQ' : null);
+      const qlabel = q.question_number
+        ? [sect, (sect ? '' : 'Q') + q.question_number].filter(Boolean).join(' ')
+        : null;
+      const l2=[p.level, pname, qlabel].filter(Boolean).join(' ');
       if(l1||l2){
         const src=document.createElement('div'); src.className='source';
         if(l1){
@@ -415,12 +524,15 @@
     if(q.content_html){ stem.innerHTML=q.content_html; }   // formatted display layer
     else stem.textContent=q.content_text||'';
 
-    // place linked figures: stem images fill the "image pending" slots; option images become a grid
+    resolveAssets(stem, q.assets);
+
+    // Only question-side assets belong with the stem; ans-/sol- figures are held
+    // back for the answer. Legacy papers mark figure positions with .fig nodes.
     if(q.assets && q.assets.length){
-      const isOpt = s => /^[A-E]$/.test(s||'');
-      const stemImgs = q.assets.filter(a => !isOpt(a.slot));
-      const optImgs  = q.assets.filter(a =>  isOpt(a.slot))
-                                .sort((a,b)=> (a.slot>b.slot?1:-1));
+      const qAssets  = q.assets.filter(a => !isAnswerSlot(a.slot));
+      const stemImgs = qAssets.filter(a => !isOptSlot(a.slot));
+      const optImgs  = qAssets.filter(a =>  isOptSlot(a.slot))
+                              .sort((a,b)=> (a.slot>b.slot?1:-1));
       const figImg = a => {
         const w=document.createElement('div'); w.className='figimg';
         const im=document.createElement('img'); im.src=a.url; im.loading='lazy'; im.alt='';
@@ -443,8 +555,13 @@
         else if(optImgs.length && !gridPlaced){ f.replaceWith(optGrid()); gridPlaced=true; }
         else f.remove();
       });
-      while(si < stemImgs.length) stem.appendChild(figImg(stemImgs[si++]));  // extra stem figs
-      if(optImgs.length && !gridPlaced) stem.appendChild(optGrid());          // options had no slot
+      // Anything already placed by data-asset is in the markup, so only append
+      // leftovers when the markup had no <img> of its own.
+      const placed = stem.querySelectorAll('img').length;
+      if(!placed){
+        while(si < stemImgs.length) stem.appendChild(figImg(stemImgs[si++]));
+        if(optImgs.length && !gridPlaced) stem.appendChild(optGrid());
+      }
     }
     el.appendChild(stem);
 
@@ -460,19 +577,47 @@
       el.appendChild(ul);
     }
 
-    if(q.answer_key){
+    // ---- answer side: key, worked solution, and any ans-/sol- figures ----
+    const answerAssets = (q.assets||[]).filter(a => isAnswerSlot(a.slot));
+    const hasAnswer = q.answer_key || q.worked_solution || answerAssets.length;
+    if(hasAnswer){
       const foot=document.createElement('div'); foot.className='qfoot';
-      const btn=document.createElement('button'); btn.className='reveal'; btn.textContent='Show answer';
+      const btn=document.createElement('button'); btn.className='reveal';
+      btn.textContent='Show answer';
       const tag=document.createElement('span'); tag.className='ans-tag';
-      tag.textContent='Answer: '+q.answer_key;
+      if(q.answer_key) tag.textContent='Answer: '+q.answer_key;
+
+      // built once, on first reveal
+      let body=null;
+      const buildBody = () => {
+        const d=document.createElement('div'); d.className='ws'; d.style.display='none';
+        if(q.worked_solution){
+          d.innerHTML=q.worked_solution;
+          resolveAssets(d, q.assets);
+          annotateParts(d, q);
+        }
+        // answer figures the markup didn't already place
+        const placed=new Set([...d.querySelectorAll('img')].map(i=>i.getAttribute('src')));
+        answerAssets.forEach(a=>{
+          if(placed.has(a.url)) return;
+          const im=document.createElement('img'); im.className='ws-fig';
+          im.src=a.url; im.loading='lazy'; im.alt='';
+          d.appendChild(im);
+        });
+        el.appendChild(d); return d;
+      };
+
       btn.addEventListener('click',()=>{
-        const on = tag.style.display!=='inline';
-        tag.style.display = on?'inline':'none';
+        const on = !(tag.style.display==='inline' || (body && body.style.display==='block'));
+        if(q.answer_key) tag.style.display = on?'inline':'none';
+        if(!body) body = buildBody();
+        body.style.display = on?'block':'none';
         btn.textContent = on?'Hide answer':'Show answer';
         if(!q.content_html) el.querySelectorAll('.opts li').forEach(li=>
           li.classList.toggle('correct', on && li.dataset.k===q.answer_key));
       });
-      foot.appendChild(btn); foot.appendChild(tag); el.appendChild(foot);
+      foot.appendChild(btn); if(q.answer_key) foot.appendChild(tag);
+      el.appendChild(foot);
     }
     return el;
   }

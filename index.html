@@ -236,6 +236,14 @@
   .tagedit select, .tagedit input { padding:.3rem .45rem; border:1px solid var(--line,#c8ccd2);
     border-radius:6px; font-size:.85rem; }
   .muted-note { font-size:.8rem; color:var(--muted,#8a9099); }
+  .qtchip { display:inline-flex; align-items:center; gap:.35rem; font-size:.8rem;
+    border-radius:999px; padding:.15rem .5rem; border:1px solid; }
+  .qt-physical { background:#e8f5ec; border-color:#b7ddc4; color:#1c6b3c; }
+  .qt-organic  { background:#f2ecfb; border-color:#d5c4ee; color:#5b3a99; }
+  .qt-general  { background:#f1f3f5; border-color:#d6dae0; color:#4a5158; }
+  .qtchip button { border:0; background:none; cursor:pointer; font-weight:700;
+    line-height:1; color:inherit; opacity:.65; }
+  .qtchip button:hover { opacity:1; }
 </style>
 </head>
 <body>
@@ -345,6 +353,15 @@
     MY_FLAGS = new Set((mine||[]).map(f=>f.question_id));
   }
 
+  let QT_CATALOGUE = [];
+  async function loadTypes(){
+    if(QT_CATALOGUE.length) return QT_CATALOGUE;
+    const { data } = await sb.from('question_types')
+      .select('id, code, name, area').order('ordinal');
+    QT_CATALOGUE = data||[];
+    return QT_CATALOGUE;
+  }
+
   async function loadCatalogue(){
     if(LO_CATALOGUE.length) return LO_CATALOGUE;
     const { data } = await sb.from('learning_objectives')
@@ -383,7 +400,8 @@
                papers ( school, year, level, paper_number, paper_name, assessment_type, source_path ),
                question_assets ( storage_path, slot, ordinal ),
                question_topics ( topics ( code, name, ordinal, syllabus ) ),
-               question_los ( part_label, learning_objectives ( section_code, text, syllabus ) )`)
+               question_los ( part_label, learning_objectives ( id, section_code, text, syllabus, topic_id ) ),
+               question_question_types ( part_label, question_types ( id, code, name, area ) )`)
       .eq('status','approved')
       .order('question_number');
     if(error){
@@ -413,7 +431,8 @@
         .map(a => ({ ...a, url: assetUrl(a.storage_path) })),
       topics: (q.question_topics||[]).map(x=>x.topics).filter(Boolean),
       los: (q.question_los||[]).map(x=>x.learning_objectives).filter(Boolean),
-      los_raw: (q.question_los||[])
+      los_raw: (q.question_los||[]),
+      qtypes: (q.question_question_types||[])
     }));
     buildTopicFilter(); render();
   }
@@ -549,6 +568,20 @@
     return b;
   }
 
+  function qtypeChips(q){
+    if(!q.qtypes || !q.qtypes.length) return null;
+    const wrap=document.createElement('div');
+    wrap.style.cssText='display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.4rem;';
+    q.qtypes.forEach(r=>{
+      const t=r.question_types; if(!t) return;
+      const c=document.createElement('span');
+      c.className='qtchip qt-'+(t.area||'general');
+      c.textContent=(r.part_label? r.part_label+' ' : '')+t.name;
+      wrap.appendChild(c);
+    });
+    return wrap;
+  }
+
   // ---------- tag editing (admin only) ----------
   // question_topics is derived from the LO tags, so it is rebuilt after any change.
   async function syncTopics(qid){
@@ -573,6 +606,60 @@
       .insert({ question_id: qid, lo_id: loId, part_label: partLabel||null });
     if(error){ alert('Could not add tag: '+error.message); return false; }
     await syncTopics(qid); return true;
+  }
+
+  function typeEditor(q){
+    const wrap=document.createElement('div'); wrap.className='tagedit';
+    const chips=document.createElement('div'); chips.className='chips';
+    const draw=()=>{
+      chips.innerHTML='';
+      (q.qtypes||[]).forEach(r=>{
+        const t=r.question_types; if(!t) return;
+        const c=document.createElement('span');
+        c.className='qtchip qt-'+(t.area||'general');
+        c.textContent=(r.part_label? r.part_label+' ' : '')+t.name;
+        const x=document.createElement('button'); x.textContent='x'; x.title='Remove';
+        x.addEventListener('click', async ()=>{
+          let del=sb.from('question_question_types').delete()
+                    .eq('question_id',q.id).eq('type_id',t.id);
+          del = r.part_label ? del.eq('part_label',r.part_label) : del.is('part_label',null);
+          const { error }=await del;
+          if(error){ alert('Could not remove: '+error.message); return; }
+          q.qtypes=q.qtypes.filter(z=>z!==r); draw();
+        });
+        c.appendChild(x); chips.appendChild(c);
+      });
+      if(!chips.children.length){
+        const n=document.createElement('span'); n.className='muted-note';
+        n.textContent='No question types'; chips.appendChild(n);
+      }
+    };
+    draw();
+    const row=document.createElement('div'); row.className='addrow';
+    const part=document.createElement('input');
+    part.placeholder='part (e.g. 1(a)) - blank for whole question'; part.size=32;
+    const sel=document.createElement('select');
+    sel.innerHTML='<option value="">Loading…</option>';
+    loadTypes().then(cat=>{
+      sel.innerHTML='<option value="">Choose a question type…</option>'+
+        cat.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');
+    });
+    const add=document.createElement('button'); add.className='btn-mini'; add.textContent='Add type';
+    add.addEventListener('click', async ()=>{
+      if(!sel.value){ alert('Pick a question type first.'); return; }
+      const t=QT_CATALOGUE.find(x=>x.id===sel.value);
+      const pl=part.value.trim()||null;
+      const { error }=await sb.from('question_question_types')
+        .insert({ question_id:q.id, type_id:sel.value, part_label:pl });
+      if(error){ alert('Could not add: '+error.message); return; }
+      q.qtypes=(q.qtypes||[]).concat([{ part_label:pl, question_types:t }]);
+      part.value=''; sel.value=''; draw();
+    });
+    row.appendChild(part); row.appendChild(sel); row.appendChild(add);
+    const h=document.createElement('div'); h.className='muted-note';
+    h.textContent='Question types';
+    wrap.appendChild(h); wrap.appendChild(chips); wrap.appendChild(row);
+    return wrap;
   }
 
   function tagEditor(q){
@@ -801,7 +888,8 @@
     tools.style.cssText='display:flex;align-items:center;gap:.4rem;margin-top:.5rem;';
     tools.appendChild(flagButton(q));
     el.appendChild(tools);
-    if(ME.isAdmin) el.appendChild(tagEditor(q));
+    const chips=qtypeChips(q); if(chips && !ME.isAdmin) el.appendChild(chips);
+    if(ME.isAdmin){ el.appendChild(tagEditor(q)); el.appendChild(typeEditor(q)); }
 
     return el;
   }

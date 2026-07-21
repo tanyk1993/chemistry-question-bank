@@ -113,8 +113,8 @@
   .stem .opts li{display:block;gap:0;border:0}
   .stem sub,.stem sup{line-height:0}
   .stem .opt b{font-family:"IBM Plex Mono";color:var(--muted);margin-right:.5rem}
-  .stem ol.stmts{margin:.5rem 0;padding-left:1.6rem}
-  .stem ol.stmts li{margin:.15rem 0}
+  .stem ol.stmts,.stem ul.stmts{margin:.5rem 0;padding-left:1.6rem}
+  .stem ol.stmts li,.stem ul.stmts li{margin:.15rem 0}
   .stem .fig{display:block;font-size:.82rem;color:#8a97a3;background:#eef2f5;
     border:1px dashed #c4ced6;border-radius:7px;padding:.4rem .6rem;margin:.5rem 0}
   .stem .muted{color:var(--muted);font-size:.88rem;margin-top:.3rem}
@@ -167,10 +167,16 @@
 
   /* ---- content rendering (worked solutions, MCQ options, notation) ---- */
   .stem p, .ws p { margin:.55em 0; }
+  /* structured-question parts (from ingest.py) are stacked <div class="qpart">
+     siblings with no default block margin, so consecutive parts ran together
+     ("squashed"). Give them the same vertical rhythm as stem paragraphs. */
+  .stem .qpart { margin:.55em 0; }
   .stem p.c, .ws p.c { text-align:center; margin:1.1em 0; }
   .gap { display:inline-block; width:3em; }
-  .stem ol.stmts, .ws ol.stmts { margin:.6em 0 .6em 1.5em; }
-  .stem ol.stmts li, .ws ol.stmts li { margin:.25em 0; }
+  .stem ol.stmts, .ws ol.stmts,
+  .stem ul.stmts, .ws ul.stmts { margin:.6em 0 .6em 1.5em; }
+  .stem ol.stmts li, .ws ol.stmts li,
+  .stem ul.stmts li, .ws ul.stmts li { margin:.25em 0; }
   table.qt, table.opts-table, table.cmp {
     border-collapse:collapse; margin:.75em 0; font-size:.97em; }
   table.qt th, table.qt td,

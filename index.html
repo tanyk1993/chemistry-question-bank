@@ -174,8 +174,12 @@
   /* mark allocations e.g. [2] come from ingest as <span class="mk">, previously
      unstyled so they landed wherever the surrounding markup left them. Standardise:
      push to the right margin of the part, muted monospace, exam-style. */
-  .stem .mk { float:right; margin-left:.6em; font-family:"IBM Plex Mono";
-    font-size:.85em; font-weight:600; color:var(--muted); }
+  /* mark allocations render in the same typeface/size as the question text
+     (standardised), distinguished only by muting + right float, exam-style. */
+  .stem .mk { float:right; margin-left:.6em; font-weight:600; color:var(--muted); }
+  /* centred figure captions (data carries the .figcap hook) */
+  .stem .figcap { text-align:center; color:var(--muted); font-size:.9rem;
+    margin:.15rem 0 .5rem; }
   .stem .qpart::after { content:""; display:block; clear:both; }
   .stem p.c, .ws p.c { text-align:center; margin:1.1em 0; }
   .gap { display:inline-block; width:3em; }
@@ -184,7 +188,7 @@
   .stem ol.stmts li, .ws ol.stmts li,
   .stem ul.stmts li, .ws ul.stmts li { margin:.25em 0; }
   table.qt, table.opts-table, table.cmp {
-    border-collapse:collapse; margin:.75em 0; font-size:.97em; }
+    border-collapse:collapse; margin:.75em 0; font-size:1em; }
   table.qt th, table.qt td,
   table.opts-table th, table.opts-table td,
   table.cmp th, table.cmp td {

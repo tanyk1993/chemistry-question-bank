@@ -171,6 +171,12 @@
      siblings with no default block margin, so consecutive parts ran together
      ("squashed"). Give them the same vertical rhythm as stem paragraphs. */
   .stem .qpart { margin:.55em 0; }
+  /* mark allocations e.g. [2] come from ingest as <span class="mk">, previously
+     unstyled so they landed wherever the surrounding markup left them. Standardise:
+     push to the right margin of the part, muted monospace, exam-style. */
+  .stem .mk { float:right; margin-left:.6em; font-family:"IBM Plex Mono";
+    font-size:.85em; font-weight:600; color:var(--muted); }
+  .stem .qpart::after { content:""; display:block; clear:both; }
   .stem p.c, .ws p.c { text-align:center; margin:1.1em 0; }
   .gap { display:inline-block; width:3em; }
   .stem ol.stmts, .ws ol.stmts,

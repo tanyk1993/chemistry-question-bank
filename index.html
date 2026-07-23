@@ -214,7 +214,8 @@
   .ws .part .lab { font-weight:700; min-width:3.6em; flex-shrink:0; }
   .ws .part .body { flex:1; }
   .ws .part .body > :first-child { margin-top:0; }
-  .ws .part .lab.has-lo { cursor:help; border-bottom:1px dotted var(--muted,#8a9099); }
+  .ws .part .lab.has-lo,
+  .stem .qpart > .pl.has-lo { cursor:help; border-bottom:1px dotted var(--muted,#8a9099); }
   img.q-fig, img.ws-fig { display:block; max-width:100%; height:auto;
     border:1px solid var(--line,#dfe3e8); border-radius:6px; margin:.7em 0;
     background:#fff; }
@@ -544,7 +545,9 @@
     });
   }
 
-  // Part labels in a worked solution carry their own LO tags; show them on hover.
+  // Part labels carry their own LO tags; show them on hover. Two markup shapes:
+  // worked solutions use <div class="part"><span class="lab">, question stems use
+  // <div class="qpart"><span class="pl"> (ingest.py). Both hold the same label text.
   function annotateParts(root, q){
     const byPart = new Map();
     (q.los_raw||[]).forEach(r=>{
@@ -555,7 +558,7 @@
       byPart.get(key).push(lo);
     });
     if(!byPart.size) return;
-    root.querySelectorAll('.part .lab').forEach(lab=>{
+    root.querySelectorAll('.part .lab, .qpart > .pl').forEach(lab=>{
       const los = byPart.get(lab.textContent.trim());
       if(!los || !los.length) return;
       lab.classList.add('has-lo');
@@ -805,6 +808,7 @@
     else stem.textContent=q.content_text||'';
 
     resolveAssets(stem, q.assets);
+    annotateParts(stem, q);
 
     // Only question-side assets belong with the stem; ans-/sol- figures are held
     // back for the answer. Legacy papers mark figure positions with .fig nodes.

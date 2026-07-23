@@ -557,10 +557,13 @@
       if(!byPart.has(key)) byPart.set(key,[]);
       byPart.get(key).push(lo);
     });
-    if(!byPart.size) return;
+    // Deliberately no early return on an empty map: re-annotating after a tag edit
+    // must be able to CLEAR a label whose last tag was just removed, not only set.
     root.querySelectorAll('.part .lab, .qpart > .pl').forEach(lab=>{
       const los = byPart.get(lab.textContent.trim());
-      if(!los || !los.length) return;
+      if(!los || !los.length){
+        lab.classList.remove('has-lo'); lab.removeAttribute('title'); return;
+      }
       lab.classList.add('has-lo');
       lab.title = los.map(l => l.section_code + (l.text ? ' - ' + l.text : '')).join('\n');
     });
@@ -684,6 +687,12 @@
   function tagEditor(q){
     const wrap=document.createElement('div'); wrap.className='tagedit';
     const chips=document.createElement('div'); chips.className='chips';
+    // Tooltips are written into the DOM at render time, so a tag edit leaves them
+    // stale until the stem (and any already-built worked solution) is re-annotated.
+    const refreshHover=()=>{
+      const cardEl = wrap.closest('.qcard'); if(!cardEl) return;
+      cardEl.querySelectorAll('.stem, .ws').forEach(r=>annotateParts(r, q));
+    };
     const draw=()=>{
       chips.innerHTML='';
       (q.los_raw||[]).forEach(r=>{
@@ -697,7 +706,7 @@
           if(await removeTag(q.id, lo.id, r.part_label)){
             q.los_raw = q.los_raw.filter(z=>z!==r);
             q.los = q.los_raw.map(z=>z.learning_objectives).filter(Boolean);
-            draw();
+            draw(); refreshHover();
           }
         });
         c.appendChild(x); chips.appendChild(c);
@@ -711,7 +720,7 @@
 
     const row=document.createElement('div'); row.className='addrow';
     const part=document.createElement('input');
-    part.placeholder='part (e.g. 1(a)(i)) - blank for whole question';
+    part.placeholder='part (e.g. (a)(i)) - blank for whole question';
     part.size=32;
     const sel=document.createElement('select');
     sel.innerHTML='<option value="">Loading LOs…</option>';
@@ -727,7 +736,7 @@
         q.los_raw = (q.los_raw||[]).concat([{ part_label: part.value.trim()||null,
                                               learning_objectives: lo }]);
         q.los = q.los_raw.map(z=>z.learning_objectives).filter(Boolean);
-        part.value=''; sel.value=''; draw();
+        part.value=''; sel.value=''; draw(); refreshHover();
       }
     });
     row.appendChild(part); row.appendChild(sel); row.appendChild(add);

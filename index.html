@@ -379,12 +379,19 @@
     return QT_CATALOGUE;
   }
 
+  // section_code is text, so a plain DB sort puts 10(a) before 2(a). Re-sort in JS
+  // with numeric-aware compare. Group by syllabus first: a topic code is only unique
+  // WITHIN a syllabus, so H1 3(a) and H2 3(a) are different objectives.
+  const byCode = (a,b) =>
+    (a.syllabus||'').localeCompare(b.syllabus||'') ||
+    (a.section_code||'').localeCompare(b.section_code||'', undefined, { numeric:true });
+
   async function loadCatalogue(){
     if(LO_CATALOGUE.length) return LO_CATALOGUE;
     const { data } = await sb.from('learning_objectives')
       .select('id, section_code, text, topic_id, syllabus')
       .order('section_code');
-    LO_CATALOGUE = data||[];
+    LO_CATALOGUE = (data||[]).slice().sort(byCode);
     return LO_CATALOGUE;
   }
 
@@ -726,7 +733,7 @@
     sel.innerHTML='<option value="">Loading LOs…</option>';
     loadCatalogue().then(cat=>{
       sel.innerHTML='<option value="">Choose a learning objective…</option>'+
-        cat.map(l=>`<option value="${l.id}">${esc(l.section_code)} — ${esc((l.text||'').slice(0,80))}</option>`).join('');
+        cat.map(l=>`<option value="${l.id}">${esc(l.syllabus||'')} ${esc(l.section_code)} — ${esc((l.text||'').slice(0,80))}</option>`).join('');
     });
     const add=document.createElement('button'); add.className='btn-mini'; add.textContent='Add tag';
     add.addEventListener('click', async ()=>{

@@ -83,6 +83,12 @@
   .cell.shared .c-code{color:var(--both)}
   .cell .c-name{font-size:.6rem;text-transform:uppercase;letter-spacing:.03em;
     color:var(--muted);max-width:8rem}
+  /* Amber badge for approved questions with no topic tag (e.g. DBQs that genuinely
+     resist the LOs). Echoes .cell's shape so it sits in the topic row, but the amber
+     reads as an absence rather than another topic colour. */
+  .cell.untagged{border-color:#c98a1a;background:#fdf3e0}
+  .cell.untagged .c-code{color:#a96f12;font-family:"IBM Plex Mono";font-weight:600;font-size:.8rem}
+  .cell.untagged .c-name{color:#a96f12}
   .los{display:flex;flex-wrap:wrap;gap:.35rem;margin-left:auto;align-items:flex-start}
   .lo{font-family:"IBM Plex Mono";font-size:.75rem;padding:.18rem .4rem;border-radius:5px;
     background:var(--paper);border:1px solid var(--line);color:var(--ink);cursor:help}
@@ -490,6 +496,10 @@
         o.value=e.key; o.textContent=`${e.name}${only}`;   // no numbers
         sel.appendChild(o);
       });
+    // Synthetic option: approved questions carrying no topic tag at all.
+    const ut=document.createElement('option');
+    ut.value='__untagged__'; ut.textContent='— Untagged —';
+    sel.appendChild(ut);
   }
 
   // ---------------- render + filter ----------------
@@ -507,7 +517,8 @@
       return;
     }
     const shown = ALL.filter(q=>{
-      if(tc && !q.topics.some(t=>topicKey(t)===tc)) return false;
+      if(tc==='__untagged__'){ if(q.topics.length) return false; }
+      else if(tc && !q.topics.some(t=>topicKey(t)===tc)) return false;
       if(!kw) return true;
       const hay = [
         q.content_text,
@@ -671,7 +682,10 @@
     sel.innerHTML='<option value="">Loading…</option>';
     loadTypes().then(cat=>{
       sel.innerHTML='<option value="">Choose a question type…</option>'+
-        cat.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');
+        cat.map(t=>{
+          const a = (t.area && t.area!=='general') ? ` (${t.area})` : '';
+          return `<option value="${t.id}">${esc(t.name)}${esc(a)}</option>`;
+        }).join('');
     });
     const add=document.createElement('button'); add.className='btn-mini'; add.textContent='Add type';
     add.addEventListener('click', async ()=>{
@@ -765,6 +779,13 @@
            <span class="c-name">${esc(t.name)}</span>
          </span>`);
     });
+    if(!q.topics.length){
+      head.insertAdjacentHTML('beforeend',
+        `<span class="cell untagged" title="No topic tag — not matched to any learning objective">
+           <span class="c-code">—</span>
+           <span class="c-name">untagged</span>
+         </span>`);
+    }
     if(q.los.length){
       const los = document.createElement('div'); los.className='los';
       q.los.forEach(l=>{

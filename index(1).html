@@ -1,0 +1,1030 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>H2 Chem Question Bank</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f3f6f8; --card:#ffffff; --ink:#14202e; --muted:#5b6b7a;
+    --line:#dde3e9; --teal:#0e7490; --teal-soft:#e2f1f4;
+    --green:#137a52; --green-soft:#e2f2ea; --amber:#b45309;
+    --h1:#7c3aed; --h1-soft:#f0e9fe;      /* H1-only */
+    --h2:#0e7490; --h2-soft:#e2f1f4;      /* H2-only */
+    --both:#137a52; --both-soft:#e2f2ea;  /* shared by both syllabuses */
+    --focus:#0e7490;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:"IBM Plex Sans",system-ui,sans-serif;
+    background:var(--paper); color:var(--ink);
+    -webkit-font-smoothing:antialiased; line-height:1.5;
+  }
+  code,.mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+  a{color:var(--teal)}
+  button{font-family:inherit;cursor:pointer}
+  :focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+
+  /* ---------- header ---------- */
+  header{
+    display:flex;align-items:center;gap:.7rem;
+    padding:.9rem 1.25rem;border-bottom:1px solid var(--line);
+    background:var(--card);position:sticky;top:0;z-index:5;
+  }
+  .mark{width:26px;height:26px;color:var(--teal);flex:none}
+  .brand{font-weight:700;letter-spacing:-.01em}
+  .brand span{color:var(--muted);font-weight:500}
+  header .spacer{flex:1}
+  .whoami{color:var(--muted);font-size:.85rem;margin-right:.25rem}
+  .btn-ghost{
+    background:transparent;border:1px solid var(--line);color:var(--ink);
+    padding:.4rem .7rem;border-radius:7px;font-size:.85rem;font-weight:500;
+  }
+  .btn-ghost:hover{border-color:var(--muted)}
+
+  /* ---------- layout ---------- */
+  main{max-width:1080px;margin:0 auto;padding:1.5rem 1.25rem 4rem;
+       display:grid;grid-template-columns:260px 1fr;gap:1.5rem}
+  @media (max-width:760px){main{grid-template-columns:1fr;gap:1rem}}
+
+  .filters{position:sticky;top:73px;align-self:start;display:flex;flex-direction:column;gap:1.1rem}
+  @media (max-width:760px){.filters{position:static}}
+  .filters label{display:block;font-size:.72rem;text-transform:uppercase;
+    letter-spacing:.08em;color:var(--muted);font-weight:600;margin-bottom:.4rem}
+  .search-box input,select{
+    width:100%;padding:.6rem .7rem;border:1px solid var(--line);border-radius:8px;
+    background:var(--card);font:inherit;color:var(--ink)
+  }
+  .search-box input::placeholder{color:#9aa7b3}
+  .count{font-size:.85rem;color:var(--muted)}
+  .count b{color:var(--ink)}
+
+  /* ---------- question cards ---------- */
+  .results{display:flex;flex-direction:column;gap:.9rem;min-height:40vh}
+  .qcard{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:1.05rem 1.15rem;display:flex;flex-direction:column;gap:.75rem}
+  .qhead{display:flex;align-items:flex-start;gap:.7rem;flex-wrap:wrap}
+  .qno{font-family:"IBM Plex Mono";font-size:.78rem;color:var(--muted);
+    padding-top:.35rem;min-width:2.2rem}
+  /* periodic-cell topic badge */
+  .cell{display:inline-flex;flex-direction:column;justify-content:space-between;
+    width:auto;min-width:3.1rem;padding:.28rem .45rem;border-radius:7px;
+    border:1.5px solid var(--teal);background:var(--teal-soft);line-height:1.1}
+  .cell.h1{border-color:var(--h1);background:var(--h1-soft)}
+  .cell.h2{border-color:var(--h2);background:var(--h2-soft)}
+  .cell.shared{border-color:var(--both);background:var(--both-soft)}
+  .cell .c-code{font-family:"IBM Plex Mono";font-weight:600;font-size:.95rem;color:var(--teal)}
+  .cell.h1 .c-code{color:var(--h1)}
+  .cell.h2 .c-code{color:var(--h2)}
+  .cell.shared .c-code{color:var(--both)}
+  .cell .c-name{font-size:.6rem;text-transform:uppercase;letter-spacing:.03em;
+    color:var(--muted);max-width:8rem}
+  /* Amber badge for approved questions with no topic tag (e.g. DBQs that genuinely
+     resist the LOs). Echoes .cell's shape so it sits in the topic row, but the amber
+     reads as an absence rather than another topic colour. */
+  .cell.untagged{border-color:#c98a1a;background:#fdf3e0}
+  .cell.untagged .c-code{color:#a96f12;font-family:"IBM Plex Mono";font-weight:600;font-size:.8rem}
+  .cell.untagged .c-name{color:#a96f12}
+  .los{display:flex;flex-wrap:wrap;gap:.35rem;margin-left:auto;align-items:flex-start}
+  .lo{font-family:"IBM Plex Mono";font-size:.75rem;padding:.18rem .4rem;border-radius:5px;
+    background:var(--paper);border:1px solid var(--line);color:var(--ink);cursor:help}
+  .lo.h1{background:var(--h1-soft);color:var(--h1)}
+  .lo.h2{background:var(--h2-soft);color:var(--h2)}
+  .stem{font-size:.98rem}
+  .source{font-family:"IBM Plex Mono";font-size:.72rem;letter-spacing:.02em;
+    color:var(--muted);margin:-.1rem 0 .25rem;line-height:1.35}
+  .source>div{font-weight:600;color:var(--ink)}
+  .source .source-sub{font-weight:400;color:var(--muted)}
+  .source>a{font-weight:600;color:var(--teal);text-decoration:none;cursor:pointer;
+    border-bottom:1px dotted var(--teal)}
+  .source>a:hover{border-bottom-style:solid}
+  .stem .figimg{margin:.6rem 0;text-align:center}
+  .stem .figimg img{max-width:min(100%,34em);border:1px solid var(--line);border-radius:8px;background:#fff;padding:6px}
+  .stem .optgrid{display:flex;flex-direction:column;gap:.5rem;margin:.5rem 0}
+  .stem .optrow{display:flex;gap:.6rem;align-items:center;background:var(--paper);
+    border-radius:8px;padding:.5rem .6rem}
+  .stem .optrow b{font-family:"IBM Plex Mono";color:var(--muted);flex:none}
+  .stem .optrow img{max-width:100%;border:1px solid var(--line);border-radius:6px;background:#fff;padding:4px}
+  /* formatted display layer */
+  .stem .el{font-family:"Times New Roman",Georgia,serif;font-style:italic}
+  .stem .opts{list-style:none;margin:.5rem 0 0;padding:0;display:flex;flex-direction:column;gap:.35rem}
+  .stem .opt{padding:.4rem .6rem;background:var(--paper);border-radius:7px;line-height:1.6}
+  /* the card-level rule `.opts li{display:flex}` turns every child - including each
+     <sub>/<sup> - into a separate flex item with a gap, which shatters "W<sub>2</sub>Y<sub>3</sub>"
+     into "W 2 Y 3". Inside .stem the options are prose, so restore normal inline flow. */
+  .stem .opts li{display:block;gap:0;border:0}
+  .stem sub,.stem sup{line-height:0}
+  .stem .opt b{font-family:"IBM Plex Mono";color:var(--muted);margin-right:.5rem}
+  .stem ol.stmts,.stem ul.stmts{margin:.5rem 0;padding-left:1.6rem}
+  .stem ol.stmts li,.stem ul.stmts li{margin:.15rem 0}
+  .stem .fig{display:block;font-size:.82rem;color:#8a97a3;background:#eef2f5;
+    border:1px dashed #c4ced6;border-radius:7px;padding:.4rem .6rem;margin:.5rem 0}
+  .stem .muted{color:var(--muted);font-size:.88rem;margin-top:.3rem}
+  table.qt{border-collapse:collapse;margin:.6rem 0;font-size:.9rem;width:100%}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:.35rem .55rem;text-align:center;vertical-align:top}
+  table.qt th{background:var(--paper);font-weight:600}
+  .stem math{font-size:1.05em;vertical-align:middle}
+  table.opt2col{border-collapse:separate;border-spacing:0 .35rem;width:100%;margin:.5rem 0}
+  table.opt2col td{background:var(--paper);padding:.45rem .55rem;vertical-align:baseline}
+  table.opt2col td.l{font-family:"IBM Plex Mono";color:var(--muted);width:1.4rem;border-radius:7px 0 0 7px}
+  table.opt2col td.eq{width:100%}
+  table.opt2col td.dh{color:var(--muted);white-space:nowrap;border-radius:0 7px 7px 0}
+  .opts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.3rem}
+  .opts li{display:flex;gap:.55rem;padding:.4rem .55rem;border:1px solid transparent;
+    border-radius:7px;background:var(--paper);font-size:.92rem}
+  .opts li .k{font-family:"IBM Plex Mono";font-weight:600;color:var(--muted);flex:none}
+  .opts li.correct{background:var(--green-soft);border-color:var(--green)}
+  .opts li.correct .k{color:var(--green)}
+  .qfoot{display:flex;align-items:center;gap:.6rem}
+  .reveal{background:transparent;border:1px solid var(--line);border-radius:7px;
+    padding:.35rem .65rem;font-size:.8rem;font-weight:500;color:var(--teal)}
+  .reveal:hover{border-color:var(--teal)}
+  .ans-tag{font-family:"IBM Plex Mono";font-size:.8rem;color:var(--green);font-weight:600;display:none}
+
+  .empty,.loading{text-align:center;color:var(--muted);padding:3rem 1rem;
+    border:1px dashed var(--line);border-radius:12px;background:var(--card)}
+  .empty b{color:var(--ink)}
+
+  /* ---------- login ---------- */
+  .gate{min-height:100vh;display:grid;place-items:center;padding:1.5rem}
+  .login{width:100%;max-width:360px;background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:1.75rem}
+  .login .mark{width:34px;height:34px;margin-bottom:.75rem}
+  .login h1{font-size:1.25rem;margin:.1rem 0 .3rem}
+  .login p{color:var(--muted);font-size:.9rem;margin:0 0 1.25rem}
+  .field{margin-bottom:.8rem}
+  .field label{display:block;font-size:.75rem;text-transform:uppercase;letter-spacing:.07em;
+    color:var(--muted);font-weight:600;margin-bottom:.35rem}
+  .field input{width:100%;padding:.6rem .7rem;border:1px solid var(--line);border-radius:8px;font:inherit}
+  .btn-primary{width:100%;background:var(--teal);color:#fff;border:none;border-radius:9px;
+    padding:.7rem;font-weight:600;font-size:.95rem;margin-top:.4rem}
+  .btn-primary:hover{background:#0b5c73}
+  .btn-primary:disabled{opacity:.6;cursor:default}
+  .btn-google{display:flex;align-items:center;justify-content:center;gap:.6rem}
+  .btn-google svg{background:#fff;border-radius:3px;padding:2px}
+  .msg{font-size:.85rem;margin-top:.8rem;min-height:1.1rem}
+  .msg.error{color:#b42318}
+  .hidden{display:none!important}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+  /* ---- content rendering (worked solutions, MCQ options, notation) ---- */
+  .stem p, .ws p { margin:.55em 0; }
+  /* structured-question parts (from ingest.py) are stacked <div class="qpart">
+     siblings with no default block margin, so consecutive parts ran together
+     ("squashed"). Give them the same vertical rhythm as stem paragraphs. */
+  .stem .qpart { margin:.55em 0; }
+  /* mark allocations e.g. [2] come from ingest as <span class="mk">, previously
+     unstyled so they landed wherever the surrounding markup left them. Standardise:
+     push to the right margin of the part, muted monospace, exam-style. */
+  /* mark allocations render in the same typeface/size as the question text
+     (standardised), distinguished only by muting + right float, exam-style. */
+  .stem .mk { float:right; margin-left:.6em; font-weight:600; color:var(--muted); }
+  /* centred figure captions (data carries the .figcap hook) */
+  .stem .figcap { text-align:center; color:var(--muted); font-size:.9rem;
+    margin:.15rem 0 .5rem; }
+  .stem .qpart::after { content:""; display:block; clear:both; }
+  .stem p.c, .ws p.c { text-align:center; margin:1.1em 0; }
+  .gap { display:inline-block; width:3em; }
+  .stem ol.stmts, .ws ol.stmts,
+  .stem ul.stmts, .ws ul.stmts { margin:.6em 0 .6em 1.5em; }
+  .stem ol.stmts li, .ws ol.stmts li,
+  .stem ul.stmts li, .ws ul.stmts li { margin:.25em 0; }
+  table.qt, table.opts-table, table.cmp {
+    border-collapse:collapse; margin:.75em 0; font-size:1em; }
+  table.qt th, table.qt td,
+  table.opts-table th, table.opts-table td,
+  table.cmp th, table.cmp td {
+    border:1px solid var(--line,#c8ccd2); padding:6px 12px; text-align:center;
+    vertical-align:top; }
+  table.cmp td { text-align:left; }
+  table.opts-table td.ol { font-weight:700; background:#f4f5f7; }
+  .opts-inline { margin:.7em 0 0 .2em; }
+  .opts-inline .opt { margin:.3em 0; }
+  .opts-inline .ol { font-weight:700; display:inline-block; width:1.5em; }
+  /* stacked fractions - the bank's single fraction convention */
+  .frac { display:inline-flex; flex-direction:column; vertical-align:middle;
+          text-align:center; line-height:1.15; margin:0 .18em; }
+  .frac > .fnum { border-bottom:1px solid currentColor; padding:0 .35em; }
+  .frac > .fden { padding:0 .35em; }
+  /* mark-scheme colours */
+  .ws .ans { color:#0b57d0; }
+  .ws .note, .ws .mark-note { color:#c5221f; }
+  .ws p.mark-note { font-style:italic; margin:.3em 0; }
+  .ws ul.marks { margin:.35em 0 .35em 1.2em; }
+  .ws ul.marks li { margin:.2em 0; }
+  .ws .part { display:flex; gap:.7em; margin:.8em 0; }
+  .ws .part .lab { font-weight:700; min-width:3.6em; flex-shrink:0; }
+  .ws .part .body { flex:1; }
+  .ws .part .body > :first-child { margin-top:0; }
+  .ws .part .lab.has-lo,
+  .stem .qpart > .pl.has-lo { cursor:help; border-bottom:1px dotted var(--muted,#8a9099); }
+  img.q-fig, img.ws-fig { display:block; max-width:100%; height:auto;
+    border:1px solid var(--line,#dfe3e8); border-radius:6px; margin:.7em 0;
+    background:#fff; }
+  .ws { border-left:3px solid var(--line,#dfe3e8); padding:.4em 0 .4em .9em;
+        margin-top:.7em; }
+  .ws h4 { margin:.6em 0 .3em; font-size:.95rem; }
+  .figbroken { font-size:.85rem; color:var(--muted,#8a9099); font-style:italic; }
+
+  /* ---- admin panel + flagging ---- */
+  .adminbar { display:flex; gap:.5rem; align-items:center; }
+  #adminpanel { border:1px solid var(--line,#dfe3e8); border-radius:10px;
+    background:#fff; padding:1rem 1.1rem; margin:0 0 1rem; }
+  #adminpanel h3 { margin:.2rem 0 .6rem; font-size:1rem; }
+  #adminpanel section { margin-bottom:1.2rem; }
+  #adminpanel .row { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
+  #adminpanel input[type=text], #adminpanel input[type=email] {
+    padding:.4rem .55rem; border:1px solid var(--line,#c8ccd2); border-radius:6px; }
+  .flagitem, .allowitem { display:flex; gap:.6rem; align-items:flex-start;
+    padding:.5rem 0; border-top:1px solid var(--line,#eef1f4); }
+  .flagitem .meta, .allowitem .meta { font-size:.85rem; color:var(--muted,#8a9099); }
+  .flagitem .body { flex:1; }
+  .btn-mini { font-size:.8rem; padding:.25rem .55rem; border-radius:6px;
+    border:1px solid var(--line,#c8ccd2); background:#fff; cursor:pointer; }
+  .btn-mini:hover { background:#f4f5f7; }
+  .btn-danger { border-color:#e5b4b1; color:#b3261e; }
+  .qflag { margin-left:.5rem; }
+  .qflag.flagged { color:#b3261e; border-color:#e5b4b1; }
+  .tagedit { margin-top:.6rem; padding-top:.5rem; border-top:1px dashed var(--line,#e3e7ec); }
+  .tagedit .chips { display:flex; flex-wrap:wrap; gap:.35rem; margin-bottom:.4rem; }
+  .tagchip { display:inline-flex; align-items:center; gap:.35rem; font-size:.8rem;
+    background:#eef3fb; border:1px solid #cfe0f7; border-radius:999px; padding:.15rem .5rem; }
+  .tagchip button { border:0; background:none; cursor:pointer; color:#b3261e;
+    font-weight:700; line-height:1; }
+  .tagedit .addrow { display:flex; gap:.4rem; flex-wrap:wrap; align-items:center; }
+  .tagedit select, .tagedit input { padding:.3rem .45rem; border:1px solid var(--line,#c8ccd2);
+    border-radius:6px; font-size:.85rem; }
+  .muted-note { font-size:.8rem; color:var(--muted,#8a9099); }
+  .qtchip { display:inline-flex; align-items:center; gap:.35rem; font-size:.8rem;
+    border-radius:999px; padding:.15rem .5rem; border:1px solid; }
+  .qt-physical { background:#e8f5ec; border-color:#b7ddc4; color:#1c6b3c; }
+  .qt-organic  { background:#f2ecfb; border-color:#d5c4ee; color:#5b3a99; }
+  .qt-general  { background:#f1f3f5; border-color:#d6dae0; color:#4a5158; }
+  .qtchip button { border:0; background:none; cursor:pointer; font-weight:700;
+    line-height:1; color:inherit; opacity:.65; }
+  .qtchip button:hover { opacity:1; }
+</style>
+</head>
+<body>
+
+<!-- benzene-ring mark, reused in header + login -->
+<template id="mark">
+  <svg class="mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+    <path d="M12 2.4 20.3 7v10L12 21.6 3.7 17V7z"/><circle cx="12" cy="12" r="4.3"/>
+  </svg>
+</template>
+
+<!-- ============ LOGIN GATE ============ -->
+<div id="gate" class="gate">
+  <div class="login">
+    <span data-mark></span>
+    <h1>H2 Chem Question Bank</h1>
+    <p>Sign in with your VJC Google account to search the bank.</p>
+    <button id="signin" class="btn-primary btn-google">
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path fill="#fff" d="M17.6 9.2c0-.6-.05-1.18-.16-1.74H9v3.3h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.71-1.57 2.64-3.88 2.64-6.54z" opacity=".0"/><path fill="#EA4335" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.83.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.94v2.33A9 9 0 0 0 9 18z"/><path fill="#4285F4" d="M17.6 9.2c0-.6-.05-1.18-.16-1.74H9v3.3h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.71-1.57 2.64-3.88 2.64-6.54z"/><path fill="#FBBC05" d="M3.96 10.72A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.18.28-1.72V4.95H.94A9 9 0 0 0 0 9c0 1.45.35 2.82.94 4.05l3.02-2.33z"/><path fill="#34A853" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.59C13.47.9 11.43 0 9 0A9 9 0 0 0 .94 4.95l3.02 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
+      <span>Sign in with Google</span>
+    </button>
+    <div id="loginmsg" class="msg"></div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" class="hidden">
+  <header>
+    <span data-mark></span>
+    <div class="brand">H2 Chem <span>Question Bank</span></div>
+    <div class="spacer"></div>
+    <span id="whoami" class="whoami"></span>
+    <span class="adminbar">
+      <button id="adminbtn" class="btn-ghost hidden">Admin</button>
+      <button id="signout" class="btn-ghost">Sign out</button>
+    </span>
+  </header>
+  <div id="adminpanel" class="hidden" style="margin:1rem;">
+    <section>
+      <h3>Open flags <span id="flagcount" class="muted-note"></span></h3>
+      <div id="flaglist"><div class="muted-note">Loading…</div></div>
+    </section>
+    <section>
+      <h3>Access</h3>
+      <div class="row">
+        <input id="newemail" type="email" placeholder="name@vjc.edu.sg" size="28">
+        <input id="newnote" type="text" placeholder="note (optional)" size="20">
+        <button id="addemail" class="btn-mini">Add</button>
+      </div>
+      <div id="allowlist" style="margin-top:.6rem;"></div>
+      <div class="muted-note" style="margin-top:.4rem;">
+        Adding an address lets that person in the next time they sign in with Google.
+      </div>
+    </section>
+  </div>
+  <main>
+    <aside class="filters">
+      <div class="search-box">
+        <label for="kw">Search</label>
+        <input id="kw" type="search" placeholder="reagent, formula, term…" autocomplete="off">
+      </div>
+      <div>
+        <label for="topic">Topic</label>
+        <select id="topic"><option value="">All topics</option></select>
+      </div>
+      <div class="count" id="count"></div>
+    </aside>
+    <section class="results" id="results">
+      <div class="loading">Loading questions…</div>
+    </section>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ---- config (anon key is safe in frontend; RLS guards the data) ----
+  const SUPABASE_URL  = "https://pnnbbnumcnalpbipovik.supabase.co";
+  const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBubmJibnVtY25hbHBiaXBvdmlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyMzM3MDUsImV4cCI6MjA5ODgwOTcwNX0.jn7rl9loylSuS_gNYqSmJQctQD2BvAd1tryITEQ858I";
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+  // paint the benzene mark into every placeholder
+  const markHTML = document.getElementById('mark').innerHTML;
+  document.querySelectorAll('[data-mark]').forEach(el => el.innerHTML = markHTML);
+
+  const $ = s => document.querySelector(s);
+  const gate = $('#gate'), app = $('#app');
+  let ALL = [];  // loaded questions
+
+  // ---------------- auth ----------------
+  async function boot(){
+    const { data:{ session } } = await sb.auth.getSession();
+    session ? enterApp(session) : showGate();
+  }
+  function showGate(){ app.classList.add('hidden'); gate.classList.remove('hidden'); }
+  const ME = { id:null, email:null, isAdmin:false };
+  let LO_CATALOGUE = [];        // [{id, section_code, text, topic_id, syllabus}]
+  let MY_FLAGS = new Set();     // question ids this user has already flagged
+
+  async function loadMe(session){
+    ME.id = session?.user?.id || null;
+    ME.email = session?.user?.email || null;
+    if(!ME.id) return;
+    const { data } = await sb.from('profiles').select('role').eq('id', ME.id).maybeSingle();
+    ME.isAdmin = String(data?.role||'') === 'admin';
+    document.getElementById('adminbtn').classList.toggle('hidden', !ME.isAdmin);
+    const { data:mine } = await sb.from('flags').select('question_id').eq('status','open');
+    MY_FLAGS = new Set((mine||[]).map(f=>f.question_id));
+  }
+
+  let QT_CATALOGUE = [];
+  async function loadTypes(){
+    if(QT_CATALOGUE.length) return QT_CATALOGUE;
+    const { data } = await sb.from('question_types')
+      .select('id, code, name, area').order('ordinal');
+    QT_CATALOGUE = data||[];
+    return QT_CATALOGUE;
+  }
+
+  // section_code is text, so a plain DB sort puts 10(a) before 2(a). Re-sort in JS
+  // with numeric-aware compare. Group by syllabus first: a topic code is only unique
+  // WITHIN a syllabus, so H1 3(a) and H2 3(a) are different objectives.
+  const byCode = (a,b) =>
+    (a.syllabus||'').localeCompare(b.syllabus||'') ||
+    (a.section_code||'').localeCompare(b.section_code||'', undefined, { numeric:true });
+
+  async function loadCatalogue(){
+    if(LO_CATALOGUE.length) return LO_CATALOGUE;
+    const { data } = await sb.from('learning_objectives')
+      .select('id, section_code, text, topic_id, syllabus')
+      .order('section_code');
+    LO_CATALOGUE = (data||[]).slice().sort(byCode);
+    return LO_CATALOGUE;
+  }
+
+  async function enterApp(session){
+    gate.classList.add('hidden'); app.classList.remove('hidden');
+    await loadMe(session).catch(e=>console.warn('role lookup failed', e));
+    $('#whoami').textContent = session.user.email || '';
+    await loadQuestions();
+  }
+  $('#signin').addEventListener('click', signIn);
+  async function signIn(){
+    const msg = $('#loginmsg'); msg.textContent=''; msg.className='msg';
+    const { error } = await sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin }
+    });
+    // on success the browser redirects to Google; we only reach here on error
+    if(error){ msg.textContent = "Couldn't start Google sign-in — please try again."; msg.className='msg error'; }
+  }
+  $('#signout').addEventListener('click', async ()=>{ await sb.auth.signOut(); ALL=[]; showGate(); });
+
+  // ---------------- data ----------------
+  async function loadQuestions(){
+    const results = $('#results');
+    results.innerHTML = '<div class="loading">Loading questions…</div>';
+    const { data, error } = await sb
+      .from('questions')
+      .select(`id, type, section_label, question_number, content_text, content_html, options, answer_key, status,
+               worked_solution,
+               papers ( school, year, level, paper_number, paper_name, assessment_type, source_path ),
+               question_assets ( storage_path, slot, ordinal ),
+               question_topics ( topics ( code, name, ordinal, syllabus ) ),
+               question_los ( part_label, learning_objectives ( id, section_code, text, syllabus, topic_id ) ),
+               question_question_types ( part_label, question_types ( id, code, name, area ) )`)
+      .eq('status','approved')
+      .order('question_number');
+    if(error){
+      results.innerHTML = '<div class="empty"><b>Couldn\'t load questions.</b><br>'+
+        'Check your connection and that you\'re signed in, then reload.</div>';
+      console.error(error); return;
+    }
+    // The bucket is colleague-only, so a public URL may not resolve. Ask for a
+    // signed URL and fall back to the public one if signing isn't needed.
+    const paths = [...new Set((data||[]).flatMap(q =>
+      (q.question_assets||[]).map(a => a.storage_path)).filter(Boolean))];
+    const SIGNED = new Map();
+    if(paths.length){
+      try{
+        const { data:sg } = await sb.storage.from('question-assets')
+          .createSignedUrls(paths, 60*60);
+        (sg||[]).forEach(r => { if(r.signedUrl) SIGNED.set(r.path, r.signedUrl); });
+      }catch(err){ console.warn('signing assets failed, falling back to public', err); }
+    }
+    const assetUrl = p => SIGNED.get(p) ||
+      sb.storage.from('question-assets').getPublicUrl(p).data.publicUrl;
+    ALL = (data||[]).map(q => ({
+      ...q,
+      paper: q.papers || null,
+      assets: (q.question_assets||[])
+        .slice().sort((a,b)=>(a.ordinal||0)-(b.ordinal||0))
+        .map(a => ({ ...a, url: assetUrl(a.storage_path) })),
+      topics: (q.question_topics||[]).map(x=>x.topics).filter(Boolean),
+      los: (q.question_los||[]).map(x=>x.learning_objectives).filter(Boolean),
+      los_raw: (q.question_los||[]),
+      qtypes: (q.question_question_types||[])
+    }));
+    buildTopicFilter(); render();
+  }
+  // A topic's code is only unique WITHIN a syllabus: H1 '3' is Theories of Acids and
+  // Bases, H2 '3' is The Gaseous State. Keying on code alone made them collide and
+  // silently overwrite each other. Group by concept instead.
+  function topicKey(t){
+    return String(t.name||'').toLowerCase()
+      .replace(/^the\s+/,'').replace(/^(chemical|reaction)\s+/,'').trim();
+  }
+  window.TOPIC_GROUPS = new Map();          // key -> {name, syllabuses:Set, members:[{code,syllabus}]}
+  function buildTopicFilter(){
+    const g = new Map();
+    ALL.forEach(q => q.topics.forEach(t => {
+      const k = topicKey(t);
+      if(!g.has(k)) g.set(k, {key:k, name:t.name, ordinal:t.ordinal||0,
+                             syllabuses:new Set(), members:[]});
+      const e = g.get(k);
+      e.syllabuses.add(t.syllabus);
+      e.members.push({code:String(t.code), syllabus:t.syllabus});
+      if(t.syllabus==='H2') e.name = t.name;          // prefer H2 wording where both exist
+      e.ordinal = Math.min(e.ordinal || 99, t.ordinal || 99);
+    }));
+    TOPIC_GROUPS = g;
+    const sel = $('#topic');
+    [...g.values()]
+      .sort((a,b)=> a.name.localeCompare(b.name))
+      .forEach(e=>{
+        const only = e.syllabuses.size===1 ? ` (${[...e.syllabuses][0]})` : '';
+        const o=document.createElement('option');
+        o.value=e.key; o.textContent=`${e.name}${only}`;   // no numbers
+        sel.appendChild(o);
+      });
+    // Synthetic option: approved questions carrying no topic tag at all.
+    const ut=document.createElement('option');
+    ut.value='__untagged__'; ut.textContent='— Untagged —';
+    sel.appendChild(ut);
+  }
+
+  // ---------------- render + filter ----------------
+  $('#kw').addEventListener('input', render);
+  $('#topic').addEventListener('change', render);
+
+  function render(){
+    const kw = $('#kw').value.trim().toLowerCase();
+    const tc = $('#topic').value;
+    const box = $('#results');
+    if(!kw && !tc){                       // blank default: nothing until the user picks/searches
+      $('#count').innerHTML = `<b>${ALL.length}</b> question${ALL.length===1?'':'s'} in the bank`;
+      box.innerHTML = '<div class="empty"><b>Pick a topic or type a search to begin.</b><br>'+
+        'Filter by topic on the left, or search for a reagent, formula, or term.</div>';
+      return;
+    }
+    const shown = ALL.filter(q=>{
+      if(tc==='__untagged__'){ if(q.topics.length) return false; }
+      else if(tc && !q.topics.some(t=>topicKey(t)===tc)) return false;
+      if(!kw) return true;
+      const hay = [
+        q.content_text,
+        Object.values(q.options||{}).join(' '),
+        q.los.map(l=>l.section_code+' '+l.text).join(' '),
+        q.topics.map(t=>t.name).join(' ')
+      ].join(' ').toLowerCase();
+      return hay.includes(kw);
+    });
+    $('#count').innerHTML = `<b>${shown.length}</b> of ${ALL.length} question${ALL.length===1?'':'s'}`;
+    if(!shown.length){
+      box.innerHTML = '<div class="empty"><b>No questions match.</b><br>'+
+        'Try a broader keyword or a different topic.</div>';
+      return;
+    }
+    box.innerHTML = '';
+    shown.forEach(q => box.appendChild(card(q)));
+  }
+
+  function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
+
+
+  // An asset's slot says where it belongs: 'ans-*' / 'sol-*' are answer-side
+  // figures and must stay hidden until the answer is revealed.
+  const isAnswerSlot = s => /^(ans|sol)[-_]/i.test(s||'');
+  const isOptSlot    = s => /^[A-E]$/.test(s||'');
+  const baseName     = p => String(p||'').replace(/^.*\//,'');
+
+  // content_html / worked_solution reference figures by filename
+  // (<img data-asset="FILE.png">) because the bucket is private and no URL can
+  // be baked in. Swap in the resolved URL at render time.
+  function resolveAssets(root, assets){
+    const byName = new Map((assets||[]).map(a => [baseName(a.storage_path), a]));
+    root.querySelectorAll('img[data-asset]').forEach(im => {
+      const a = byName.get(baseName(im.getAttribute('data-asset')));
+      if(a && a.url){ im.src = a.url; im.loading='lazy'; im.removeAttribute('data-asset'); }
+      else {
+        const note=document.createElement('div'); note.className='figbroken';
+        note.textContent='[figure not available]';
+        im.replaceWith(note);
+      }
+    });
+  }
+
+  // Part labels carry their own LO tags; show them on hover. Two markup shapes:
+  // worked solutions use <div class="part"><span class="lab">, question stems use
+  // <div class="qpart"><span class="pl"> (ingest.py). Both hold the same label text.
+  function annotateParts(root, q){
+    const byPart = new Map();
+    (q.los_raw||[]).forEach(r=>{
+      if(!r.part_label) return;
+      const lo = r.learning_objectives; if(!lo) return;
+      const key = String(r.part_label).replace(/^\d+/,'');   // '1(a)(i)' -> '(a)(i)'
+      if(!byPart.has(key)) byPart.set(key,[]);
+      byPart.get(key).push(lo);
+    });
+    // Deliberately no early return on an empty map: re-annotating after a tag edit
+    // must be able to CLEAR a label whose last tag was just removed, not only set.
+    root.querySelectorAll('.part .lab, .qpart > .pl').forEach(lab=>{
+      const los = byPart.get(lab.textContent.trim());
+      if(!los || !los.length){
+        lab.classList.remove('has-lo'); lab.removeAttribute('title'); return;
+      }
+      lab.classList.add('has-lo');
+      lab.title = los.map(l => l.section_code + (l.text ? ' - ' + l.text : '')).join('\n');
+    });
+  }
+
+
+  // ---------- flagging (any signed-in user) ----------
+  async function flagQuestion(qid, note){
+    const { error } = await sb.from('flags').insert({ question_id: qid, note: note||null });
+    if(error){ alert('Could not save flag: '+error.message); return false; }
+    MY_FLAGS.add(qid); return true;
+  }
+
+  function flagButton(q){
+    const b=document.createElement('button');
+    b.className='btn-mini qflag'+(MY_FLAGS.has(q.id)?' flagged':'');
+    b.textContent = MY_FLAGS.has(q.id) ? 'Flagged' : 'Flag';
+    b.title = 'Report a problem with this question for an admin to review';
+    b.addEventListener('click', async ()=>{
+      const note = prompt('What looks wrong? (optional)');
+      if(note===null) return;
+      if(await flagQuestion(q.id, note)){ b.textContent='Flagged'; b.classList.add('flagged'); }
+    });
+    return b;
+  }
+
+  function qtypeChips(q){
+    if(!q.qtypes || !q.qtypes.length) return null;
+    const wrap=document.createElement('div');
+    wrap.style.cssText='display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.4rem;';
+    q.qtypes.forEach(r=>{
+      const t=r.question_types; if(!t) return;
+      const c=document.createElement('span');
+      c.className='qtchip qt-'+(t.area||'general');
+      c.textContent=(r.part_label? r.part_label+' ' : '')+t.name;
+      wrap.appendChild(c);
+    });
+    return wrap;
+  }
+
+  // ---------- tag editing (admin only) ----------
+  // question_topics is derived from the LO tags, so it is rebuilt after any change.
+  async function syncTopics(qid){
+    const { data:los } = await sb.from('question_los')
+      .select('learning_objectives ( topic_id )').eq('question_id', qid);
+    const want = [...new Set((los||[]).map(r=>r.learning_objectives?.topic_id).filter(Boolean))];
+    await sb.from('question_topics').delete().eq('question_id', qid);
+    if(want.length) await sb.from('question_topics')
+      .insert(want.map(t=>({ question_id: qid, topic_id: t })));
+  }
+
+  async function removeTag(qid, loId, partLabel){
+    let qy = sb.from('question_los').delete().eq('question_id', qid).eq('lo_id', loId);
+    qy = partLabel ? qy.eq('part_label', partLabel) : qy.is('part_label', null);
+    const { error } = await qy;
+    if(error){ alert('Could not remove tag: '+error.message); return false; }
+    await syncTopics(qid); return true;
+  }
+
+  async function addTag(qid, loId, partLabel){
+    const { error } = await sb.from('question_los')
+      .insert({ question_id: qid, lo_id: loId, part_label: partLabel||null });
+    if(error){ alert('Could not add tag: '+error.message); return false; }
+    await syncTopics(qid); return true;
+  }
+
+  function typeEditor(q){
+    const wrap=document.createElement('div'); wrap.className='tagedit';
+    const chips=document.createElement('div'); chips.className='chips';
+    const draw=()=>{
+      chips.innerHTML='';
+      (q.qtypes||[]).forEach(r=>{
+        const t=r.question_types; if(!t) return;
+        const c=document.createElement('span');
+        c.className='qtchip qt-'+(t.area||'general');
+        c.textContent=(r.part_label? r.part_label+' ' : '')+t.name;
+        const x=document.createElement('button'); x.textContent='x'; x.title='Remove';
+        x.addEventListener('click', async ()=>{
+          let del=sb.from('question_question_types').delete()
+                    .eq('question_id',q.id).eq('type_id',t.id);
+          del = r.part_label ? del.eq('part_label',r.part_label) : del.is('part_label',null);
+          const { error }=await del;
+          if(error){ alert('Could not remove: '+error.message); return; }
+          q.qtypes=q.qtypes.filter(z=>z!==r); draw();
+        });
+        c.appendChild(x); chips.appendChild(c);
+      });
+      if(!chips.children.length){
+        const n=document.createElement('span'); n.className='muted-note';
+        n.textContent='No question types'; chips.appendChild(n);
+      }
+    };
+    draw();
+    const row=document.createElement('div'); row.className='addrow';
+    const part=document.createElement('input');
+    part.placeholder='part (e.g. 1(a)) - blank for whole question'; part.size=32;
+    const sel=document.createElement('select');
+    sel.innerHTML='<option value="">Loading…</option>';
+    loadTypes().then(cat=>{
+      sel.innerHTML='<option value="">Choose a question type…</option>'+
+        cat.map(t=>{
+          const a = (t.area && t.area!=='general') ? ` (${t.area})` : '';
+          return `<option value="${t.id}">${esc(t.name)}${esc(a)}</option>`;
+        }).join('');
+    });
+    const add=document.createElement('button'); add.className='btn-mini'; add.textContent='Add type';
+    add.addEventListener('click', async ()=>{
+      if(!sel.value){ alert('Pick a question type first.'); return; }
+      const t=QT_CATALOGUE.find(x=>x.id===sel.value);
+      const pl=part.value.trim()||null;
+      const { error }=await sb.from('question_question_types')
+        .insert({ question_id:q.id, type_id:sel.value, part_label:pl });
+      if(error){ alert('Could not add: '+error.message); return; }
+      q.qtypes=(q.qtypes||[]).concat([{ part_label:pl, question_types:t }]);
+      part.value=''; sel.value=''; draw();
+    });
+    row.appendChild(part); row.appendChild(sel); row.appendChild(add);
+    const h=document.createElement('div'); h.className='muted-note';
+    h.textContent='Question types';
+    wrap.appendChild(h); wrap.appendChild(chips); wrap.appendChild(row);
+    return wrap;
+  }
+
+  function tagEditor(q){
+    const wrap=document.createElement('div'); wrap.className='tagedit';
+    const chips=document.createElement('div'); chips.className='chips';
+    // Tooltips are written into the DOM at render time, so a tag edit leaves them
+    // stale until the stem (and any already-built worked solution) is re-annotated.
+    const refreshHover=()=>{
+      const cardEl = wrap.closest('.qcard'); if(!cardEl) return;
+      cardEl.querySelectorAll('.stem, .ws').forEach(r=>annotateParts(r, q));
+    };
+    const draw=()=>{
+      chips.innerHTML='';
+      (q.los_raw||[]).forEach(r=>{
+        const lo=r.learning_objectives; if(!lo) return;
+        const c=document.createElement('span'); c.className='tagchip';
+        c.textContent = (r.part_label? r.part_label+' ' : '') + lo.section_code;
+        const x=document.createElement('button'); x.textContent='x';
+        x.title='Remove this tag';
+        x.addEventListener('click', async ()=>{
+          if(!confirm('Remove '+lo.section_code+'?')) return;
+          if(await removeTag(q.id, lo.id, r.part_label)){
+            q.los_raw = q.los_raw.filter(z=>z!==r);
+            q.los = q.los_raw.map(z=>z.learning_objectives).filter(Boolean);
+            draw(); refreshHover();
+          }
+        });
+        c.appendChild(x); chips.appendChild(c);
+      });
+      if(!chips.children.length){
+        const n=document.createElement('span'); n.className='muted-note';
+        n.textContent='No LO tags'; chips.appendChild(n);
+      }
+    };
+    draw();
+
+    const row=document.createElement('div'); row.className='addrow';
+    const part=document.createElement('input');
+    part.placeholder='part (e.g. (a)(i)) - blank for whole question';
+    part.size=32;
+    const sel=document.createElement('select');
+    sel.innerHTML='<option value="">Loading LOs…</option>';
+    loadCatalogue().then(cat=>{
+      sel.innerHTML='<option value="">Choose a learning objective…</option>'+
+        cat.map(l=>`<option value="${l.id}">${esc(l.syllabus||'')} ${esc(l.section_code)} — ${esc((l.text||'').slice(0,80))}</option>`).join('');
+    });
+    const add=document.createElement('button'); add.className='btn-mini'; add.textContent='Add tag';
+    add.addEventListener('click', async ()=>{
+      if(!sel.value){ alert('Pick a learning objective first.'); return; }
+      const lo = LO_CATALOGUE.find(l=>l.id===sel.value);
+      if(await addTag(q.id, sel.value, part.value.trim())){
+        q.los_raw = (q.los_raw||[]).concat([{ part_label: part.value.trim()||null,
+                                              learning_objectives: lo }]);
+        q.los = q.los_raw.map(z=>z.learning_objectives).filter(Boolean);
+        part.value=''; sel.value=''; draw(); refreshHover();
+      }
+    });
+    row.appendChild(part); row.appendChild(sel); row.appendChild(add);
+    wrap.appendChild(chips); wrap.appendChild(row);
+    return wrap;
+  }
+
+  function card(q){
+    const el = document.createElement('article'); el.className='qcard';
+
+    const head = document.createElement('div'); head.className='qhead';
+    q.topics.forEach(t=>{
+      const grp  = TOPIC_GROUPS.get(topicKey(t));
+      const shared = grp && grp.syllabuses.size > 1;
+      const cls  = shared ? 'shared' : (t.syllabus==='H1' ? 'h1' : 'h2');
+      head.insertAdjacentHTML('beforeend',
+        `<span class="cell ${cls}">
+           <span class="c-code">${esc(t.syllabus)}</span>
+           <span class="c-name">${esc(t.name)}</span>
+         </span>`);
+    });
+    if(!q.topics.length){
+      head.insertAdjacentHTML('beforeend',
+        `<span class="cell untagged" title="No topic tag — not matched to any learning objective">
+           <span class="c-code">—</span>
+           <span class="c-name">untagged</span>
+         </span>`);
+    }
+    if(q.los.length){
+      const los = document.createElement('div'); los.className='los';
+      q.los.forEach(l=>{
+        const s=document.createElement('span');
+        s.className='lo ' + (l.syllabus==='H1' ? 'h1' : 'h2');
+        s.textContent=l.section_code;
+        s.title=(l.syllabus? l.syllabus+' ':'')+(l.text||'');
+        los.appendChild(s);
+      });
+      head.appendChild(los);
+    }
+    el.appendChild(head);
+
+    if(q.paper){
+      const p=q.paper;
+      const l1=[p.school, p.year].filter(Boolean).join(' ');
+      // paper_name is free text set by an admin ("WA2"); only fall back to
+      // P{n} for genuinely numbered papers, so a WA isn't labelled "P2".
+      const pname = p.paper_name || (p.paper_number ? 'P'+p.paper_number : null);
+      // MCQ and structured questions share numbering within a paper, so the
+      // question type has to appear or "WA2 Q1" is ambiguous.
+      // section_label is free text an admin sets ('MCQ', 'SQ', ...). Fall back to
+      // the question type only when it hasn't been filled in.
+      const sect = q.section_label || (q.type==='mcq' ? 'MCQ' : null);
+      const qlabel = q.question_number
+        ? [sect, (sect ? '' : 'Q') + q.question_number].filter(Boolean).join(' ')
+        : null;
+      const l2=[p.level, pname, qlabel].filter(Boolean).join(' ');
+      if(l1||l2){
+        const src=document.createElement('div'); src.className='source';
+        if(l1){
+          let a;
+          if(p.source_path){
+            a=document.createElement('a'); a.textContent=l1; a.href='#';
+            a.title='Open the original paper';
+            a.addEventListener('click', async e=>{
+              e.preventDefault(); a.style.opacity='.5';
+              try{
+                const { data, error } = await sb.storage.from('source-papers')
+                  .createSignedUrl(p.source_path, 60);
+                if(error || !data?.signedUrl) throw error || new Error('no url');
+                window.open(data.signedUrl,'_blank','noopener');
+              }catch(err){ console.error('source paper:',err);
+                a.title="Couldn't open the paper - it may not be uploaded yet."; }
+              finally{ a.style.opacity=''; }
+            });
+          } else { a=document.createElement('div'); a.textContent=l1; }
+          src.appendChild(a);
+        }
+        if(l2){ const b=document.createElement('div'); b.className='source-sub'; b.textContent=l2; src.appendChild(b); }
+        el.appendChild(src);
+      }
+    }
+
+    const stem=document.createElement('div'); stem.className='stem';
+    if(q.content_html){ stem.innerHTML=q.content_html; }   // formatted display layer
+    else stem.textContent=q.content_text||'';
+
+    resolveAssets(stem, q.assets);
+    annotateParts(stem, q);
+
+    // Only question-side assets belong with the stem; ans-/sol- figures are held
+    // back for the answer. Legacy papers mark figure positions with .fig nodes.
+    if(q.assets && q.assets.length){
+      const qAssets  = q.assets.filter(a => !isAnswerSlot(a.slot));
+      const stemImgs = qAssets.filter(a => !isOptSlot(a.slot));
+      const optImgs  = qAssets.filter(a =>  isOptSlot(a.slot))
+                              .sort((a,b)=> (a.slot>b.slot?1:-1));
+      const figImg = a => {
+        const w=document.createElement('div'); w.className='figimg';
+        const im=document.createElement('img'); im.src=a.url; im.loading='lazy'; im.alt='';
+        w.appendChild(im); return w;
+      };
+      const optGrid = () => {
+        const g=document.createElement('div'); g.className='optgrid';
+        optImgs.forEach(a=>{
+          const row=document.createElement('div'); row.className='optrow';
+          const b=document.createElement('b'); b.textContent=a.slot;
+          const im=document.createElement('img'); im.src=a.url; im.loading='lazy'; im.alt='';
+          row.appendChild(b); row.appendChild(im); g.appendChild(row);
+        });
+        return g;
+      };
+      const figs=[...stem.querySelectorAll('.fig')];
+      let si=0, gridPlaced=false;
+      figs.forEach(f=>{
+        if(si < stemImgs.length){ f.replaceWith(figImg(stemImgs[si++])); }
+        else if(optImgs.length && !gridPlaced){ f.replaceWith(optGrid()); gridPlaced=true; }
+        else f.remove();
+      });
+      // Anything already placed by data-asset is in the markup, so only append
+      // leftovers when the markup had no <img> of its own.
+      const placed = stem.querySelectorAll('img').length;
+      if(!placed){
+        while(si < stemImgs.length) stem.appendChild(figImg(stemImgs[si++]));
+        if(optImgs.length && !gridPlaced) stem.appendChild(optGrid());
+      }
+    }
+    el.appendChild(stem);
+
+    const opts=q.options||{};
+    if(!q.content_html && Object.keys(opts).length){
+      const ul=document.createElement('ul'); ul.className='opts';
+      ['A','B','C','D','E'].forEach(k=>{
+        if(opts[k]==null) return;
+        const li=document.createElement('li'); li.dataset.k=k;
+        li.innerHTML=`<span class="k">${k}</span><span>${esc(opts[k])}</span>`;
+        ul.appendChild(li);
+      });
+      el.appendChild(ul);
+    }
+
+    // ---- answer side: key, worked solution, and any ans-/sol- figures ----
+    const answerAssets = (q.assets||[]).filter(a => isAnswerSlot(a.slot));
+    const hasAnswer = q.answer_key || q.worked_solution || answerAssets.length;
+    if(hasAnswer){
+      const foot=document.createElement('div'); foot.className='qfoot';
+      const btn=document.createElement('button'); btn.className='reveal';
+      btn.textContent='Show answer';
+      const tag=document.createElement('span'); tag.className='ans-tag';
+      if(q.answer_key) tag.textContent='Answer: '+q.answer_key;
+
+      // built once, on first reveal
+      let body=null;
+      const buildBody = () => {
+        const d=document.createElement('div'); d.className='ws'; d.style.display='none';
+        if(q.worked_solution){
+          d.innerHTML=q.worked_solution;
+          resolveAssets(d, q.assets);
+          annotateParts(d, q);
+        }
+        // answer figures the markup didn't already place
+        const placed=new Set([...d.querySelectorAll('img')].map(i=>i.getAttribute('src')));
+        answerAssets.forEach(a=>{
+          if(placed.has(a.url)) return;
+          const im=document.createElement('img'); im.className='ws-fig';
+          im.src=a.url; im.loading='lazy'; im.alt='';
+          d.appendChild(im);
+        });
+        el.appendChild(d); return d;
+      };
+
+      btn.addEventListener('click',()=>{
+        const on = !(tag.style.display==='inline' || (body && body.style.display==='block'));
+        if(q.answer_key) tag.style.display = on?'inline':'none';
+        if(!body) body = buildBody();
+        body.style.display = on?'block':'none';
+        btn.textContent = on?'Hide answer':'Show answer';
+        if(!q.content_html) el.querySelectorAll('.opts li').forEach(li=>
+          li.classList.toggle('correct', on && li.dataset.k===q.answer_key));
+      });
+      foot.appendChild(btn); if(q.answer_key) foot.appendChild(tag);
+      el.appendChild(foot);
+    }
+    // flag control for everyone; tag editing for admins only
+    const tools=document.createElement('div');
+    tools.style.cssText='display:flex;align-items:center;gap:.4rem;margin-top:.5rem;';
+    tools.appendChild(flagButton(q));
+    el.appendChild(tools);
+    const chips=qtypeChips(q); if(chips && !ME.isAdmin) el.appendChild(chips);
+    if(ME.isAdmin){ el.appendChild(tagEditor(q)); el.appendChild(typeEditor(q)); }
+
+    return el;
+  }
+
+  sb.auth.onAuthStateChange((_e, session)=>{
+    if(!session){ showGate(); }
+    else if(!gate.classList.contains('hidden')){ enterApp(session); }  // just returned from Google
+  });
+
+  // ---------- admin panel ----------
+  async function loadFlags(){
+    const box=document.getElementById('flaglist');
+    const { data, error } = await sb.from('flags')
+      .select('id, question_id, note, created_at, flagged_by, questions ( question_number, section_label, papers ( paper_name, school, year ) )')
+      .eq('status','open').order('created_at',{ascending:false});
+    if(error){ box.innerHTML='<div class="muted-note">Could not load flags: '+esc(error.message)+'</div>'; return; }
+    document.getElementById('flagcount').textContent = data.length ? '('+data.length+')' : '(none)';
+    if(!data.length){ box.innerHTML='<div class="muted-note">Nothing flagged.</div>'; return; }
+    box.innerHTML='';
+    data.forEach(f=>{
+      const q=f.questions||{}, p=q.papers||{};
+      const row=document.createElement('div'); row.className='flagitem';
+      const body=document.createElement('div'); body.className='body';
+      const where=[p.school,p.year,p.paper_name,q.section_label,q.question_number].filter(Boolean).join(' ');
+      body.innerHTML='<div><b>'+esc(where||'question')+'</b></div>'+
+        '<div>'+esc(f.note||'(no note)')+'</div>'+
+        '<div class="meta">'+new Date(f.created_at).toLocaleString()+'</div>';
+      const done=document.createElement('button'); done.className='btn-mini'; done.textContent='Resolve';
+      done.addEventListener('click', async ()=>{
+        const { error:e2 } = await sb.from('flags')
+          .update({ status:'resolved', resolved_by: ME.id, resolved_at: new Date().toISOString() })
+          .eq('id', f.id);
+        if(e2) alert('Could not resolve: '+e2.message); else loadFlags();
+      });
+      row.appendChild(body); row.appendChild(done); box.appendChild(row);
+    });
+  }
+
+  async function loadAllowlist(){
+    const box=document.getElementById('allowlist');
+    const { data, error } = await sb.from('allowed_emails')
+      .select('email, note, added_at').order('email');
+    if(error){ box.innerHTML='<div class="muted-note">Could not load: '+esc(error.message)+'</div>'; return; }
+    box.innerHTML='';
+    (data||[]).forEach(a=>{
+      const row=document.createElement('div'); row.className='allowitem';
+      const body=document.createElement('div'); body.className='body';
+      body.innerHTML='<div>'+esc(a.email)+'</div>'+
+        (a.note?'<div class="meta">'+esc(a.note)+'</div>':'');
+      const del=document.createElement('button'); del.className='btn-mini btn-danger'; del.textContent='Remove';
+      del.addEventListener('click', async ()=>{
+        if(!confirm('Remove access for '+a.email+'?')) return;
+        const { error:e2 } = await sb.from('allowed_emails').delete().eq('email', a.email);
+        if(e2) alert('Could not remove: '+e2.message); else loadAllowlist();
+      });
+      row.appendChild(body); row.appendChild(del); box.appendChild(row);
+    });
+    if(!box.children.length) box.innerHTML='<div class="muted-note">Nobody listed yet.</div>';
+  }
+
+  document.getElementById('adminbtn').addEventListener('click', ()=>{
+    const p=document.getElementById('adminpanel');
+    const open=p.classList.contains('hidden');
+    p.classList.toggle('hidden', !open);
+    if(open){ loadFlags(); loadAllowlist(); }
+  });
+
+  document.getElementById('addemail').addEventListener('click', async ()=>{
+    const em=document.getElementById('newemail').value.trim().toLowerCase();
+    const nt=document.getElementById('newnote').value.trim();
+    if(!em){ alert('Enter an email address.'); return; }
+    const { error } = await sb.from('allowed_emails').insert({ email: em, note: nt||null });
+    if(error){ alert('Could not add: '+error.message); return; }
+    document.getElementById('newemail').value=''; document.getElementById('newnote').value='';
+    loadAllowlist();
+  });
+
+  boot();
+</script>
+</body>
+</html>

@@ -332,6 +332,10 @@
         <label for="topic">Topic</label>
         <select id="topic"><option value="">All topics</option></select>
       </div>
+      <div id="lowrap" class="hidden">
+        <label for="lo">Learning objective</label>
+        <select id="lo"><option value="">All objectives</option></select>
+      </div>
       <div class="count" id="count"></div>
     </aside>
     <section class="results" id="results">
@@ -429,7 +433,7 @@
                worked_solution,
                papers ( school, year, level, paper_number, paper_name, assessment_type, source_path ),
                question_assets ( storage_path, slot, ordinal ),
-               question_topics ( topics ( code, name, ordinal, syllabus ) ),
+               question_topics ( topics ( id, code, name, ordinal, syllabus ) ),
                question_los ( part_label, learning_objectives ( id, section_code, text, syllabus, topic_id ) ),
                question_question_types ( part_label, question_types ( id, code, name, area ) )`)
       .eq('status','approved')
@@ -464,7 +468,7 @@
       los_raw: (q.question_los||[]),
       qtypes: (q.question_question_types||[])
     }));
-    buildTopicFilter(); render();
+    buildTopicFilter(); buildLoFilter().then(render);
   }
   // A topic's code is only unique WITHIN a syllabus: H1 '3' is Theories of Acids and
   // Bases, H2 '3' is The Gaseous State. Keying on code alone made them collide and
@@ -479,9 +483,10 @@
     ALL.forEach(q => q.topics.forEach(t => {
       const k = topicKey(t);
       if(!g.has(k)) g.set(k, {key:k, name:t.name, ordinal:t.ordinal||0,
-                             syllabuses:new Set(), members:[]});
+                             syllabuses:new Set(), members:[], topicIds:new Set()});
       const e = g.get(k);
       e.syllabuses.add(t.syllabus);
+      if(t.id) e.topicIds.add(t.id);
       e.members.push({code:String(t.code), syllabus:t.syllabus});
       if(t.syllabus==='H2') e.name = t.name;          // prefer H2 wording where both exist
       e.ordinal = Math.min(e.ordinal || 99, t.ordinal || 99);
@@ -502,13 +507,44 @@
     sel.appendChild(ut);
   }
 
+  // ---------------- LO filter (depends on the chosen topic) ----------------
+  // Shows EVERY objective under the topic, not just those with questions: an empty
+  // option is a visible gap in the bank, the same reasoning as the untagged badge.
+  // A topic group can span H1 and H2, so byCode sorts syllabus first, then naturally.
+  async function buildLoFilter(){
+    const wrap = $('#lowrap'), sel = $('#lo'), tc = $('#topic').value;
+    sel.innerHTML = '<option value="">All objectives</option>';
+    const grp = TOPIC_GROUPS.get(tc);
+    if(!tc || tc==='__untagged__' || !grp || !grp.topicIds.size){
+      wrap.classList.add('hidden'); return;
+    }
+    let cat = [];
+    try { cat = await loadCatalogue(); }
+    catch(err){ console.warn('LO catalogue failed to load', err); wrap.classList.add('hidden'); return; }
+    const mine = cat.filter(lo => grp.topicIds.has(lo.topic_id)).sort(byCode);
+    if(!mine.length){ wrap.classList.add('hidden'); return; }
+    const multi = grp.syllabuses.size > 1;
+    mine.forEach(lo => {
+      const o = document.createElement('option');
+      o.value = lo.id;
+      const tag = multi ? `${lo.syllabus} ` : '';
+      const txt = String(lo.text||'').replace(/\s+/g,' ').trim();
+      o.textContent = `${tag}${lo.section_code||''} ${txt.length>78 ? txt.slice(0,78)+'…' : txt}`.trim();
+      o.title = txt;
+      sel.appendChild(o);
+    });
+    wrap.classList.remove('hidden');
+  }
+
   // ---------------- render + filter ----------------
   $('#kw').addEventListener('input', render);
-  $('#topic').addEventListener('change', render);
+  $('#topic').addEventListener('change', async ()=>{ await buildLoFilter(); render(); });
+  $('#lo').addEventListener('change', render);
 
   function render(){
     const kw = $('#kw').value.trim().toLowerCase();
     const tc = $('#topic').value;
+    const lo = $('#lo') ? $('#lo').value : '';
     const box = $('#results');
     if(!kw && !tc){                       // blank default: nothing until the user picks/searches
       $('#count').innerHTML = `<b>${ALL.length}</b> question${ALL.length===1?'':'s'} in the bank`;
@@ -519,6 +555,7 @@
     const shown = ALL.filter(q=>{
       if(tc==='__untagged__'){ if(q.topics.length) return false; }
       else if(tc && !q.topics.some(t=>topicKey(t)===tc)) return false;
+      if(lo && !(q.los||[]).some(l=>l && l.id===lo)) return false;
       if(!kw) return true;
       const hay = [
         q.content_text,

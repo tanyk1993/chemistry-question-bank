@@ -358,13 +358,18 @@
   const $ = s => document.querySelector(s);
   const gate = $('#gate'), app = $('#app');
   let ALL = [];  // loaded questions
+  // boot() and onAuthStateChange are independent entry points: the auth event can
+  // fire before boot's getSession() await resolves, so both reach enterApp and the
+  // whole question set is fetched twice (which duplicated the topic dropdown).
+  // Let the first one win; showGate() clears it so signing back in still works.
+  let ENTERED = false;
 
   // ---------------- auth ----------------
   async function boot(){
     const { data:{ session } } = await sb.auth.getSession();
     session ? enterApp(session) : showGate();
   }
-  function showGate(){ app.classList.add('hidden'); gate.classList.remove('hidden'); }
+  function showGate(){ app.classList.add('hidden'); gate.classList.remove('hidden'); ENTERED = false; }
   const ME = { id:null, email:null, isAdmin:false };
   let LO_CATALOGUE = [];        // [{id, section_code, text, topic_id, syllabus}]
   let MY_FLAGS = new Set();     // question ids this user has already flagged
@@ -406,6 +411,8 @@
   }
 
   async function enterApp(session){
+    if(ENTERED) return;
+    ENTERED = true;
     gate.classList.add('hidden'); app.classList.remove('hidden');
     await loadMe(session).catch(e=>console.warn('role lookup failed', e));
     $('#whoami').textContent = session.user.email || '';
@@ -493,6 +500,11 @@
     }));
     TOPIC_GROUPS = g;
     const sel = $('#topic');
+    // (regression-tested: calling this twice used to duplicate every option)
+    // Rebuild from scratch: this appended to whatever was already in the select,
+    // so a second call (see the enterApp guard) duplicated the whole topic list.
+    const keep = sel.value;
+    sel.innerHTML = '<option value="">All topics</option>';
     [...g.values()]
       .sort((a,b)=> a.name.localeCompare(b.name))
       .forEach(e=>{
@@ -505,6 +517,7 @@
     const ut=document.createElement('option');
     ut.value='__untagged__'; ut.textContent='— Untagged —';
     sel.appendChild(ut);
+    if(keep && [...sel.options].some(o=>o.value===keep)) sel.value = keep;
   }
 
   // ---------------- LO filter (depends on the chosen topic) ----------------

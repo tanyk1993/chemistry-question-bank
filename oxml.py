@@ -1,0 +1,278 @@
+"""Word run/paragraph -> inline HTML, including OMML maths.
+
+Design notes worth keeping:
+
+* Everything is built as a list of (text, style) tokens and only turned into
+  tags at the very end. That is what makes coalescing free -- Word splits a
+  single phrase across many runs, and emitting tags per run produces the
+  `<i>Data</i> <i>Booklet</i>` and 12-span-electron-configuration noise seen in
+  WA2's stored markup. Handoff SS7 asks for coalescing; doing it structurally
+  rather than with a post-hoc regex means it cannot be forgotten.
+
+* Unknown constructs RAISE. A silently skipped OMML fraction is precisely the
+  failure LibreOffice exhibits on this document (it drops every one), and it is
+  invisible in the rendered output. Loud failure is the whole point.
+"""
+from __future__ import annotations
+
+from lxml import etree
+
+from .symbols import sym_to_text
+
+W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+M = "http://schemas.openxmlformats.org/officeDocument/2006/math"
+NS = {"w": W, "m": M}
+Wq = "{%s}" % W
+Mq = "{%s}" % M
+
+
+def _esc(s: str) -> str:
+    return (s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
+
+
+class Style(frozenset):
+    """An immutable set of inline marks: 'b', 'i', 'u', 'sup', 'sub', 'el'."""
+
+    ORDER = ("b", "i", "el", "u", "sup", "sub")
+    TAG = {"b": "b", "i": "i", "u": "u", "sup": "sup", "sub": "sub",
+           "el": 'i class="el"'}
+
+    def open_tags(self) -> str:
+        return "".join("<%s>" % self.TAG[m] for m in self.ORDER if m in self)
+
+    def close_tags(self) -> str:
+        return "".join("</%s>" % self.TAG[m].split()[0]
+                       for m in reversed(self.ORDER) if m in self)
+
+
+EMPTY = Style()
+
+
+def _run_style(r) -> Style:
+    pr = r.find(Wq + "rPr")
+    marks = set()
+    if pr is not None:
+        for tag, mark in (("b", "b"), ("i", "i"), ("u", "u")):
+            el = pr.find(Wq + tag)
+            # <w:b/> means on; <w:b w:val="0"/> means off.
+            if el is not None and (el.get(Wq + "val") not in ("0", "false")):
+                marks.add(mark)
+        va = pr.find(Wq + "vertAlign")
+        if va is not None:
+            v = va.get(Wq + "val")
+            if v == "superscript":
+                marks.add("sup")
+            elif v == "subscript":
+                marks.add("sub")
+    return Style(marks)
+
+
+def _tokens_from_run(r, *, in_math: bool = False):
+    """Yield (text, Style) for one w:r / m:r."""
+    style = _run_style(r)
+    parts = []
+    for ch in r:
+        ln = etree.QName(ch).localname
+        if ln in ("t",):
+            parts.append(ch.text or "")
+        elif ln == "sym":
+            parts.append(sym_to_text(ch.get(Wq + "font"), ch.get(Wq + "char")))
+        elif ln == "tab":
+            parts.append(" ")
+        elif ln == "br":
+            # SS7: a w:br mid-sentence is a layout line-wrap, not a paragraph
+            # break. Represented as a sentinel and resolved by the caller.
+            parts.append("\x00BR\x00")
+        elif ln in ("drawing", "object", "pict"):
+            parts.append("\x00FIG\x00")
+        elif ln == "AlternateContent":
+            # Word wraps native shape drawings as Choice(<w:drawing> with real
+            # shapes) + Fallback(<w:pict> VML stand-in). Both describe ONE
+            # figure; counting both would shift every subsequent asset ordinal
+            # and silently rotate the figures (handoff SS7's costliest defect).
+            parts.append("\x00FIG\x00")
+        elif ln in ("rPr", "lastRenderedPageBreak", "noBreakHyphen",
+                    "softHyphen", "commentReference", "annotationRef",
+                    "footnoteReference", "endnoteReference", "fldChar",
+                    "instrText", "delText", "cr"):
+            if ln == "noBreakHyphen":
+                parts.append("‑")   # SS7 defect SS9: dropped -> "nitrogencontaining"
+            elif ln == "cr":
+                parts.append("\x00BR\x00")
+            # everything else here is deliberately non-rendering
+        else:
+            raise ValueError("unhandled run child <%s>" % ln)
+    text = "".join(parts)
+    if not text:
+        return
+
+    # SS7 / defect SS2: a run whose entire content is the element symbol l gets the
+    # serif face, so "AlCl3" does not read as "AICI3". Everything else italic
+    # (Data Booklet, k, Ea) stays in the body face.
+    if text.strip() == "l":
+        style = Style((style - {"i"}) | {"el"})
+    yield text, style, False
+
+
+# --------------------------------------------------------------------------
+# OMML
+# --------------------------------------------------------------------------
+
+def _omml_tokens(el):
+    """Flatten an OMML subtree into (text, Style) tokens.
+
+    Only the constructs actually present are implemented; anything else raises
+    so it gets looked at rather than dropped.
+    """
+    ln = etree.QName(el).localname
+
+    if ln == "r":
+        yield from _tokens_from_run(el, in_math=True)
+        return
+
+    if ln in ("oMath", "oMathPara", "num", "den", "e", "sup", "sub", "deg"):
+        for ch in el:
+            if etree.QName(ch).localname.endswith("Pr"):
+                continue
+            yield from _omml_tokens(ch)
+        return
+
+    if ln == "f":                                   # fraction
+        num = el.find(Mq + "num")
+        den = el.find(Mq + "den")
+        yield '<span class="frac"><span class="fnum">', EMPTY, True
+        if num is not None:
+            yield from _omml_tokens(num)
+        yield '</span><span class="fden">', EMPTY, True
+        if den is not None:
+            yield from _omml_tokens(den)
+        yield "</span></span>", EMPTY, True
+        return
+
+    if ln in ("sSub", "sSup", "sSubSup"):
+        base = el.find(Mq + "e")
+        if base is not None:
+            yield from _omml_tokens(base)
+        for child_tag, mark in (("sub", "sub"), ("sup", "sup")):
+            node = el.find(Mq + child_tag)
+            if node is None:
+                continue
+            for text, style, raw in _omml_tokens(node):
+                yield text, Style(set(style) | {mark}), raw
+        return
+
+    if ln == "d":                                   # delimiter
+        # SS7 / defect SS13: the REAL delimiters live in m:begChr/m:endChr.
+        # Hard-coding round brackets turns [.OH] into (.OH), which is a
+        # different chemical species.
+        pr = el.find(Mq + "dPr")
+        beg, end = "(", ")"
+        if pr is not None:
+            b = pr.find(Mq + "begChr")
+            e = pr.find(Mq + "endChr")
+            if b is not None:
+                beg = b.get(Mq + "val", "")
+            if e is not None:
+                end = e.get(Mq + "val", "")
+        yield beg, EMPTY, False
+        for ch in el.findall(Mq + "e"):
+            yield from _omml_tokens(ch)
+        yield end, EMPTY, False
+        return
+
+    if ln == "rad":                                 # radical
+        deg = el.find(Mq + "deg")
+        e = el.find(Mq + "e")
+        yield "√", EMPTY, False
+        if deg is not None and len(deg):
+            yield from _omml_tokens(deg)
+        yield "<span style=\"text-decoration:overline\">", EMPTY, True
+        if e is not None:
+            yield from _omml_tokens(e)
+        yield "</span>", EMPTY, True
+        return
+
+    if ln == "nary":                                # summation / integral
+        chr_el = el.find(Mq + "naryPr/" + Mq + "chr")
+        yield (chr_el.get(Mq + "val") if chr_el is not None else "∑"), EMPTY, False
+        for tag in ("sub", "sup", "e"):
+            node = el.find(Mq + tag)
+            if node is None:
+                continue
+            mark = {"sub": "sub", "sup": "sup"}.get(tag)
+            for text, style, raw in _omml_tokens(node):
+                yield text, (Style(set(style) | {mark}) if mark else style), raw
+        return
+
+    if ln.endswith("Pr") or ln in ("ctrlPr",):
+        return
+
+    raise ValueError("unhandled OMML element <m:%s>" % ln)
+
+
+# --------------------------------------------------------------------------
+# paragraph assembly
+# --------------------------------------------------------------------------
+
+def paragraph_tokens(p):
+    """Yield (text, Style) for a w:p, descending into any OMML."""
+    for child in p:
+        ln = etree.QName(child).localname
+        if ln == "r":
+            yield from _tokens_from_run(child)
+        elif ln in ("oMath", "oMathPara"):
+            yield from _omml_tokens(child)
+        elif ln in ("hyperlink", "smartTag", "sdt", "ins"):
+            for sub in child.iter():
+                if etree.QName(sub).localname == "r" and sub.getparent() is child:
+                    yield from _tokens_from_run(sub)
+        elif ln in ("pPr", "bookmarkStart", "bookmarkEnd", "proofErr",
+                    "commentRangeStart", "commentRangeEnd", "del"):
+            continue
+        elif ln in ("subDoc",):
+            continue
+        else:
+            # Unknown block-level child: surface it rather than dropping it.
+            raise ValueError("unhandled paragraph child <w:%s>" % ln)
+
+
+def tokens_to_html(tokens) -> str:
+    """Coalesce adjacent same-style tokens, then emit HTML."""
+    merged: list[list] = []
+    for text, style, raw in tokens:
+        if merged and merged[-1][1] == style and merged[-1][2] == raw:
+            merged[-1][0] += text
+        else:
+            merged.append([text, style, raw])
+
+    out = []
+    for text, style, raw in merged:
+        if not text:
+            continue
+        piece = text if raw else _esc(text)
+        out.append(style.open_tags() + piece + style.close_tags())
+    html = "".join(out)
+    # collapse whitespace but keep single spaces meaningful
+    html = html.replace("\x00BR\x00", "<br>")
+    return html
+
+
+CENTRE = "\x00C\x00"
+
+
+def paragraph_is_centred(p) -> bool:
+    """w:jc=center ONLY.
+
+    Handoff SS7: Word's 'distribute'/'both' is JUSTIFICATION (it is what dotted
+    answer lines use), not centring. Treating it as centring would centre most
+    of the document.
+    """
+    jc = p.find(Wq + "pPr/" + Wq + "jc")
+    return jc is not None and jc.get(Wq + "val") == "center"
+
+
+def paragraph_html(p) -> str:
+    html = tokens_to_html(paragraph_tokens(p))
+    if html.strip() and paragraph_is_centred(p):
+        return CENTRE + html
+    return html

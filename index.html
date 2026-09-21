@@ -103,12 +103,30 @@
     border-bottom:1px dotted var(--teal)}
   .source>a:hover{border-bottom-style:solid}
   .stem .figimg{margin:.6rem 0;text-align:center}
-  .stem .figimg img{max-width:min(100%,34em);border:1px solid var(--line);border-radius:8px;background:#fff;padding:6px}
+  /* Crops are rendered at 400dpi, so their intrinsic pixel size is enormous and
+     EVERY figure inflates to whatever the cap allows -- a single small skeletal
+     structure (Q23) filled as much screen as a full circuit diagram. Capping
+     height as well as width brings each one back to something like its size on
+     the paper. (The real fix is to carry the crop's size in POINTS through the
+     asset row and set the width from it; that needs a schema column.) */
+  .stem .figimg img{max-width:min(100%,34em);max-height:13em;width:auto;height:auto;
+    border:1px solid var(--line);border-radius:8px;background:#fff;padding:6px}
   .stem .optgrid{display:flex;flex-direction:column;gap:.5rem;margin:.5rem 0}
   .stem .optrow{display:flex;gap:.6rem;align-items:center;background:var(--paper);
     border-radius:8px;padding:.5rem .6rem}
   .stem .optrow b{font-family:"IBM Plex Mono";color:var(--muted);flex:none}
-  .stem .optrow img{max-width:100%;border:1px solid var(--line);border-radius:6px;background:#fff;padding:4px}
+  /* An option's figure and its caption are one unit: "constant V" means nothing
+     three options away from the graph it describes. Stacked in a column so the
+     caption sits under its own diagram. */
+  .stem .optbody{display:flex;flex-direction:column;align-items:center;gap:.15rem}
+  .stem .optcap{font-size:.88rem;color:var(--ink);text-align:center}
+  /* An option structure is read alongside three others, not studied on its own,
+     so it is capped by HEIGHT first: height is what makes one option dominate
+     the screen and push the rest below the fold. RI 2024 H2 P1 Q8, Q26 and Q29
+     each filled a screen per option before this. Width and height stay `auto`
+     so the aspect ratio is preserved by the caps alone. */
+  .stem .optrow img{max-width:min(100%,16em);max-height:8em;width:auto;height:auto;
+    border:1px solid var(--line);border-radius:6px;background:#fff;padding:4px}
   /* formatted display layer */
   .stem .el{font-family:"Times New Roman",Georgia,serif;font-style:italic}
   .stem .opts{list-style:none;margin:.5rem 0 0;padding:0;display:flex;flex-direction:column;gap:.35rem}
@@ -210,6 +228,33 @@
           text-align:center; line-height:1.15; margin:0 .18em; }
   .frac > .fnum { border-bottom:1px solid currentColor; padding:0 .35em; }
   .frac > .fden { padding:0 .35em; }
+  /* stacked super/subscript - nuclide notation and E-standard-cell.
+     `.stk` alone stacks BEFORE the symbol (mass number over proton number, as
+     in 234-over-90 Th); `.stk.post` stacks AFTER it (the standard-state sign
+     over "cell" in E-cell). Without this rule both collapse to a run-on
+     "23490Th", which is worse than the side-by-side they replace - so this
+     block must be live BEFORE the markup patch that introduces them.
+
+     A two-line box has no baseline worth aligning against: the browser takes
+     it from the LAST line (the proton number), so any `vertical-align:<length>`
+     offset is measured from the wrong place and pushes the whole pair below
+     the symbol. `middle` centres the box on the parent's midline instead,
+     which is what the notation wants and does not depend on which line the
+     browser picks. */
+  .stem .stk { display:inline-block; vertical-align:middle; position:relative;
+               top:-.06em; line-height:1; font-size:.72em; text-align:right;
+               margin-right:.08em; }
+  .stem .stk.post { text-align:left; margin:0 0 0 .08em; }
+  .stem .stk > span { display:block; }
+  /* A `qt` table that is a LAYOUT grid rather than a data table - Q25's four
+     candidate answers against three named columns. It is sized by its content
+     and centred, instead of stretched to the full column width, and the
+     structures inside it are capped the same way option structures are. */
+  table.qt.center { width:auto; max-width:100%; margin-left:auto; margin-right:auto; }
+  table.qt.center td { vertical-align:middle; }
+  table.qt td .figimg { margin:.3rem 0; }
+  table.qt td .figimg img { max-width:min(100%,16em); max-height:9em;
+                            width:auto; height:auto; }
   /* mark-scheme colours */
   .ws .ans { color:#0b57d0; }
   .ws .note, .ws .mark-note { color:#c5221f; }
@@ -909,13 +954,27 @@
         const im=document.createElement('img'); im.src=a.url; im.loading='lazy'; im.alt='';
         w.appendChild(im); return w;
       };
+      // A figure-only option carries the placeholder "[structure A]" in its
+      // options JSON so that content_search has something to index. That is a
+      // search token, not a caption, and must never be printed under the
+      // diagram it stands in for.
+      const isPlaceholderOpt = t => /^\[structure [A-E]\]$/.test((t||'').trim());
       const optGrid = () => {
         const g=document.createElement('div'); g.className='optgrid';
         optImgs.forEach(a=>{
           const row=document.createElement('div'); row.className='optrow';
           const b=document.createElement('b'); b.textContent=a.slot;
+          const body=document.createElement('div'); body.className='optbody';
           const im=document.createElement('img'); im.src=a.url; im.loading='lazy'; im.alt='';
-          row.appendChild(b); row.appendChild(im); g.appendChild(row);
+          body.appendChild(im);
+          // RI 2024 H2 P1 Q8 captions each graph "constant V" / "constant T",
+          // and those captions ARE the difference between the four options.
+          const cap=(q.options||{})[a.slot];
+          if(cap && !isPlaceholderOpt(cap)){
+            const c=document.createElement('div'); c.className='optcap';
+            c.textContent=cap; body.appendChild(c);
+          }
+          row.appendChild(b); row.appendChild(body); g.appendChild(row);
         });
         return g;
       };

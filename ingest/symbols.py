@@ -36,6 +36,17 @@ SYMBOL = {
     "F02D": "−",   # 0x2D minus                - ; "8e-" (true minus, not hyphen)
     "F0B0": "°",   # 0xB0 degree               ; "bond angle: 120"
     "F070": "π",   # 0x70 pi
+    "F073": "σ",   # 0x73 sigma; RI 2024 H2 P1 Q7 "There are 6 <s> and 2 <p>
+                        #   bonds present." Question paper only -- the answers
+                        #   family has no sigma.
+    "F044": "∆",   # 0x44 Delta -> U+2206 INCREMENT, not U+0394. Chosen on
+                        #   evidence, not inference: this same document also
+                        #   writes Delta as a literal character (8 occurrences,
+                        #   "<2206>H" in Q12/Q13), and its Word PDF extracts
+                        #   those as U+2206. Mapping the w:sym form to the same
+                        #   codepoint keeps the two character inventories
+                        #   comparable in the text gate. Adobe's own symbol.txt
+                        #   also gives 0x44 -> U+2206.
     "F05C": "∴",   # 0x5C therefore            ; ".'. reaction is first order"
     "F0B5": "∝",   # 0xB5 proportional         ; "k' [CH3CHO]"
 }

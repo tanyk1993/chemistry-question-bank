@@ -62,8 +62,24 @@ def classify(problems: list[str]) -> tuple[list[str], list[str]]:
     return real, expected
 
 
-def pdf_text(path) -> str:
-    out = subprocess.run(["pdftotext", "-layout", str(path), "-"],
+def pdf_text(path, first_page: int | None = None,
+             last_page: int | None = None) -> str:
+    """Text of the reference PDF, optionally restricted to a page range.
+
+    A question paper's cover page and running footer are not question content:
+    the cover's "Additional Materials:" and the footer's "(c) Raffles
+    Institution" are the only source of a colon and a copyright sign in the
+    whole document. Comparing against them would report two permanent failures
+    that are not defects -- and a gate that always fails gets ignored, which is
+    worse than no gate. Narrowing the reference is honest; adding them to
+    FIGURE_BORNE would not be, because they are neither figures nor expected.
+    """
+    cmd = ["pdftotext", "-layout"]
+    if first_page:
+        cmd += ["-f", str(first_page)]
+    if last_page:
+        cmd += ["-l", str(last_page)]
+    out = subprocess.run(cmd + [str(path), "-"],
                          capture_output=True, text=True, check=True)
     return out.stdout
 
@@ -111,7 +127,9 @@ def normalise(s: str) -> str:
 
 
 def charset_gate(extracted: str, reference_pdf,
-                 ignore_re: list[str] | None = None) -> list[str]:
+                 ignore_re: list[str] | None = None,
+                 first_page: int | None = None,
+                 last_page: int | None = None) -> list[str]:
     """Any character the PDF has and we do not is a candidate dropped glyph.
 
     This is the cheap, high-value half: it needs no knowledge of WHICH glyph to
@@ -119,7 +137,7 @@ def charset_gate(extracted: str, reference_pdf,
     lacked.
     """
     problems_pre = adobe_symbol.cross_check(SYMBOL, WINGDINGS)
-    ref = pdf_text(reference_pdf)
+    ref = pdf_text(reference_pdf, first_page, last_page)
     for pat in (ignore_re or []):
         ref = re.sub(pat, " ", ref)
     ref_n = normalise(ref)

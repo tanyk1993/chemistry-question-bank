@@ -46,6 +46,8 @@ class Figure:
     part: str | None = None    # owning part label, e.g. '(d)(i)'
     qnum: int | None = None
     anchored: bool = False     # wp:anchor -> XML position != visual position
+    cell: int | None = None    # id() of the containing w:tc, for shape merging
+    n_parts: int = 1           # native shapes merged into this one picture
 
 
 @dataclass

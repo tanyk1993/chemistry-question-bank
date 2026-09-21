@@ -153,12 +153,44 @@ def _omml_tokens(el):
         base = el.find(Mq + "e")
         if base is not None:
             yield from _omml_tokens(base)
-        for child_tag, mark in (("sub", "sub"), ("sup", "sup")):
-            node = el.find(Mq + child_tag)
+        sub = el.find(Mq + "sub")
+        sup = el.find(Mq + "sup")
+        if ln == "sSubSup" and sub is not None and sup is not None:
+            # BOTH at once stack, they do not queue: E-standard-state-cell is
+            # the plimsoll above and "cell" below, sharing one slot after the E.
+            # Run in sequence they read as "E to the power of plimsoll, then
+            # subscript cell", which is a different symbol.
+            yield '<span class="stk post"><span>', EMPTY, True
+            yield from _omml_tokens(sup)
+            yield '</span><span>', EMPTY, True
+            yield from _omml_tokens(sub)
+            yield "</span></span>", EMPTY, True
+            return
+        for node, mark in ((sub, "sub"), (sup, "sup")):
             if node is None:
                 continue
             for text, style, raw in _omml_tokens(node):
                 yield text, Style(set(style) | {mark}), raw
+        return
+
+    if ln == "sPre":                                # PRE-sub/superscript
+        # NUCLIDE NOTATION. The mass and atomic numbers sit one ABOVE the other
+        # in front of the symbol. Emitting <sup>234</sup><sub>90</sub> puts them
+        # side by side instead, which reads as a different quantity -- 234 then
+        # 90 rather than 234-over-90 -- so they are stacked, using the same
+        # inline-flex column the house `.frac` markup already uses.
+        yield '<span class="stk"><span>', EMPTY, True
+        sup = el.find(Mq + "sup")
+        if sup is not None:
+            yield from _omml_tokens(sup)
+        yield '</span><span>', EMPTY, True
+        sub = el.find(Mq + "sub")
+        if sub is not None:
+            yield from _omml_tokens(sub)
+        yield "</span></span>", EMPTY, True
+        base = el.find(Mq + "e")
+        if base is not None:
+            yield from _omml_tokens(base)
         return
 
     if ln == "d":                                   # delimiter

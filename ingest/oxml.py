@@ -31,11 +31,12 @@ def _esc(s: str) -> str:
 
 
 class Style(frozenset):
-    """An immutable set of inline marks: 'b', 'i', 'u', 'sup', 'sub', 'el'."""
+    """An immutable set of inline marks: 'b', 'i', 'u', 'sup', 'sub', 'el',
+    'sr'."""
 
-    ORDER = ("b", "i", "el", "u", "sup", "sub")
+    ORDER = ("b", "i", "el", "sr", "u", "sup", "sub")
     TAG = {"b": "b", "i": "i", "u": "u", "sup": "sup", "sub": "sub",
-           "el": 'i class="el"'}
+           "el": 'i class="el"', "sr": 'span class="sr"'}
 
     def open_tags(self) -> str:
         return "".join("<%s>" % self.TAG[m] for m in self.ORDER if m in self)
@@ -64,6 +65,29 @@ def _run_style(r) -> Style:
                 marks.add("sup")
             elif v == "subscript":
                 marks.add("sub")
+        # A run the DOCUMENT explicitly sets in Times New Roman. Until now
+        # <w:rFonts> was not read at all, so this override was dropped for
+        # every adapter -- and it is load-bearing: in the body sans face a
+        # capital I is a bare vertical stroke, so an oxidation state's "II"
+        # reads as "ll" or "||". Word is doing here exactly what the `el`
+        # mark below does for the element symbol l.
+        #
+        # On RI 2024 H2 P3 this fires on 9 runs out of 1898, and every one is
+        # an oxidation-state Roman numeral -- copper(II), lead(II), Cu(I) --
+        # with nothing else in the paper carrying the override. That is why
+        # it is safe to key on the font at all: if Word had scattered TNR
+        # through ordinary prose (which Word does do), this would wrap half
+        # the paper in serif spans and a narrower rule would be needed.
+        # CHECK THAT DISTRIBUTION ON A NEW PAPER before trusting this.
+        #
+        # Keyed on the font the document NAMES, never on a text pattern like
+        # r"\((I|V|X)+\)": the document is the authority on its own
+        # formatting, and a pattern would both miss cases and invent them.
+        rf = pr.find(Wq + "rFonts")
+        if rf is not None and "Times New Roman" in (
+                (rf.get(Wq + "ascii") or "") + "|"
+                + (rf.get(Wq + "hAnsi") or "")):
+            marks.add("sr")
     return Style(marks)
 
 
@@ -109,6 +133,14 @@ def _tokens_from_run(r, *, in_math: bool = False):
     # SS7 / defect SS2: a run whose entire content is the element symbol l gets the
     # serif face, so "AlCl3" does not read as "AICI3". Everything else italic
     # (Data Booklet, k, Ea) stays in the body face.
+    #
+    # This is a TEXT-pattern guess, unlike the `sr` mark above, which reads the
+    # document's own font override. The two may well be the same phenomenon --
+    # Word may set these l runs in Times New Roman too, which would make this
+    # hack redundant. NOT ESTABLISHED: RI 2024 H2 P3 contains no `l` runs at
+    # all, so it could not settle the question either way. Do not remove this
+    # on the assumption that `sr` covers it without checking a paper that
+    # actually has one.
     if text.strip() == "l":
         style = Style((style - {"i"}) | {"el"})
     yield text, style, False

@@ -111,6 +111,12 @@
      asset row and set the width from it; that needs a schema column.) */
   .stem .figimg img{max-width:min(100%,34em);max-height:13em;width:auto;height:auto;
     border:1px solid var(--line);border-radius:8px;background:#fff;padding:6px}
+  /* Per-file overrides for a diagram the shared 13em height cap renders too
+     small. Keyed to the exact storage_path, so ONLY the named figure changes --
+     every other figure, in this paper and all others, keeps the 13em default.
+     RI 2024 H2 P3 Fig 4.2 (the ZBFB schematic) is near-square, so the height
+     cap pins it narrow; 22em lets it fill the column like the wide diagrams. */
+  .stem .figimg img[data-fig="RI_H2_P3_Q4_ciii_2024.png"]{max-height:22em}
   .stem .optgrid{display:flex;flex-direction:column;gap:.5rem;margin:.5rem 0}
   .stem .optrow{display:flex;gap:.6rem;align-items:center;background:var(--paper);
     border-radius:8px;padding:.5rem .6rem}
@@ -129,6 +135,11 @@
     border:1px solid var(--line);border-radius:6px;background:#fff;padding:4px}
   /* formatted display layer */
   .stem .el{font-family:"Times New Roman",Georgia,serif;font-style:italic}
+  /* A run the source document explicitly sets in Times New Roman -- in
+     practice the Roman numeral of an oxidation state, lead(II)/copper(II).
+     Upright, unlike .el: an oxidation state is not a quantity symbol. The
+     serif face is what keeps "II" from reading as "ll" in the body sans. */
+  .stem .sr{font-family:"Times New Roman",Georgia,serif;font-style:normal}
   .stem .opts{list-style:none;margin:.5rem 0 0;padding:0;display:flex;flex-direction:column;gap:.35rem}
   .stem .opt{padding:.4rem .6rem;background:var(--paper);border-radius:7px;line-height:1.6}
   /* the card-level rule `.opts li{display:flex}` turns every child - including each
@@ -952,6 +963,10 @@
       const figImg = a => {
         const w=document.createElement('div'); w.className='figimg';
         const im=document.createElement('img'); im.src=a.url; im.loading='lazy'; im.alt='';
+        // Inert hook so a SINGLE figure can be given a per-file size override in
+        // CSS (the resolved src is a tokenised bucket URL, unusable as a
+        // selector). Sets no style itself; only the one rule below reads it.
+        if(a.storage_path) im.dataset.fig = a.storage_path;
         w.appendChild(im); return w;
       };
       // A figure-only option carries the placeholder "[structure A]" in its

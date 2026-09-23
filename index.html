@@ -121,25 +121,6 @@
      so the 13em height cap pins it even narrower than a square one; 28em
      brings it to a similar on-screen width as Fig 4.2. */
   .stem .figimg img[data-fig="RI_H2_P3_Q1_c_2024.png"]{max-height:28em}
-  /* RI 2024 H2 P2 -- per-figure size overrides, same pattern as the P3 ones
-     above (exact storage_path match via data-fig; touches only the named
-     file, on any paper). RI P2's diagrams run taller/denser on average than
-     P3's, so the shared 13em height cap crushed several of them well below
-     their real size -- worst case Fig 3.7 (Q3(c)(i)) at 0.46x, effectively
-     illegible. Each value below just raises the height cap enough that the
-     existing 34em WIDTH cap becomes the binding constraint again (34em ->
-     back to how these rendered before the P3 height-cap change existed),
-     except Q2(e) and Q3(b) which also get a smaller width cap: both are
-     simple enough content that filling the full column isn't needed. */
-  .stem .figimg img[data-fig="RI_H2_P2_Q3_ci_2024.png"]{max-height:28.3em}
-  .stem .figimg img[data-fig="RI_H2_P2_Q3_bii_2024.png"]{max-height:19.9em}
-  .stem .figimg img[data-fig="RI_H2_P2_Q3_aii_2024.png"]{max-height:20.1em}
-  .stem .figimg img[data-fig="RI_H2_P2_Q2_b_2024.png"]{max-height:22.7em}
-  .stem .figimg img[data-fig="RI_H2_P2_Q4_ai_2024.png"]{max-height:24.1em}
-  .stem .figimg img[data-fig="RI_H2_P2_Q4_aii_2024.png"]{max-height:24.1em}
-  .stem .figimg img[data-fig="RI_H2_P2_Q1_di2_2024.png"]{max-height:21.4em}
-  .stem .figimg img[data-fig="RI_H2_P2_Q2_e_2024.png"]{max-width:min(100%,25em);max-height:21.7em}
-  .stem .figimg img[data-fig="RI_H2_P2_Q3_b_2024.png"]{max-width:min(100%,28em);max-height:20.8em}
   .stem .optgrid{display:flex;flex-direction:column;gap:.5rem;margin:.5rem 0}
   .stem .optrow{display:flex;gap:.6rem;align-items:center;background:var(--paper);
     border-radius:8px;padding:.5rem .6rem}
@@ -366,7 +347,37 @@
   .ws p.mark-note { font-style:italic; margin:.3em 0; }
   .ws ul.marks { margin:.35em 0 .35em 1.2em; }
   .ws ul.marks li { margin:.2em 0; }
-  .ws .part { display:flex; gap:.7em; margin:.8em 0; }
+  /* Default flex behaviour (align-items:stretch) made .lab's box match
+     .body's full height, which broke two things at once: (1) the .has-lo
+     dotted underline below is a border-bottom on .lab, so it landed at the
+     BOTTOM of the whole row instead of hugging the label text -- worse the
+     taller .body got; (2) when .body's first line opens with a stacked
+     .frac (e.g. "Kc = <fraction>"), the fraction needs extra height ABOVE
+     the text baseline for its numerator, which pushes that baseline (and
+     the visible "Kc =") down -- while .lab's own text, unaffected, stayed
+     at the very top, so the two visibly misaligned. align-items:baseline
+     fixes both: .lab's own text baseline now aligns to .body's FIRST LINE
+     baseline, so it naturally sizes to (and sits beside) that first line
+     instead of stretching, and it tracks wherever that baseline actually
+     falls. The one case baseline alignment gets wrong: a .body whose first
+     paragraph is only image(s) (a `.ws-fig`) has no text baseline at all,
+     so the flex algorithm falls back to the image's BOTTOM margin edge --
+     which for a tall figure pushed the label absurdly out of position.
+     Checked against WA2's real rows too (not just RI's): `<ul class="marks">`
+     and `<table class="cmp">` as .body's first child have the SAME problem
+     as an image -- neither is a text line, so baseline alignment has
+     nothing to anchor to and the label ends up floating mid-block instead
+     of at the top (worse for `ul`: it landed near vertical-center of the
+     first bullet, not just off by a little). The :has() rules below cover
+     all three non-text-first shapes found so far (img anywhere in the
+     first child, or the first child itself being a list/table) and revert
+     just those parts to flex-start, where "top-align both boxes" is
+     unambiguous regardless of content. Plain-text and fraction-led `<p>`
+     first-children (the common case, and what this whole fix is for) still
+     get baseline alignment. */
+  .ws .part { display:flex; gap:.7em; margin:.8em 0; align-items:baseline; }
+  .ws .part:has(> .body > :first-child img),
+  .ws .part:has(> .body > :is(ul,ol,table):first-child) { align-items:flex-start; }
   .ws .part .lab { font-weight:700; min-width:3.6em; flex-shrink:0; }
   .ws .part .body { flex:1; }
   .ws .part .body > :first-child { margin-top:0; }

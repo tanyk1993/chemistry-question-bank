@@ -145,13 +145,26 @@
      included. Scoping the CSS to .stem only left it silently unstyled the
      first time a worked solution actually needed it: RI 2024 H2 P3's Q3(a)
      answer discusses CH3CHClCOOH, so its bare "l" runs (see oxml.py's
-     `text.strip() == "l"` check) got the .el class but no rule to apply it,
-     and fell back to the browser's default italic <i> -- which, in the body
-     sans face, renders a lone "l" as a bare slanted stroke easily misread as
-     "/" ("Cl" reading as "C/"). Found by rendering the worked-solution
-     preview and reading it, not by any gate (valid HTML, valid text -- no
-     check here compares rendered GLYPHS against the source). */
-  .stem .el, .ws .el{font-family:"Times New Roman",Georgia,serif;font-style:italic}
+     `text.strip() == "l"` check) got the .el class but no rule at all --
+     fixed by adding .ws alongside .stem below.
+     A SEPARATE bug, found after that one (RI 2024 H2 P1 Q27's
+     "CH3COCl" MCQ option, reported by the user as reading "CH3COC/"):
+     `font-style` here was ITALIC, which is backwards from oxml.py's own
+     documented intent. oxml.py's comment for this exact hack says "gets
+     the SERIF FACE, so AlCl3 does not read as AICI3" -- the fix was always
+     meant to be upright serif, distinguishing "l" from "I"/"1" by its
+     serif feet, not by slanting it -- and the code even strips the italic
+     style flag before applying "el" (`style - {"i"}`) to make sure of it.
+     Italic here fought that: a slanted lowercase "l", in ANY face (serif
+     or the body sans), is a bare diagonal stroke with nothing to
+     distinguish it from "/" -- confirmed by rendering Q27's actual stored
+     content_html both ways and comparing. Upright serif reads
+     unambiguously as "l" (the same reasoning as .sr below, which was
+     already upright for exactly this reason). Not a data or ingest bug --
+     Q27's content_html already has the "el" class on all four "l" runs
+     correctly; this was purely the CSS disagreeing with the code that
+     writes it. */
+  .stem .el, .ws .el{font-family:"Times New Roman",Georgia,serif;font-style:normal}
   /* A run the source document explicitly sets in Times New Roman -- in
      practice the Roman numeral of an oxidation state, lead(II)/copper(II).
      Upright, unlike .el: an oxidation state is not a quantity symbol. The
@@ -223,17 +236,49 @@
      siblings with no default block margin, so consecutive parts ran together
      ("squashed"). Give them the same vertical rhythm as stem paragraphs. */
   /* mark allocations e.g. [2] come from ingest as <span class="mk">, previously
-     unstyled so they landed wherever the surrounding markup left them. Standardise:
-     pin to the top-right corner of the part, muted, exam-style.
-     PREVIOUSLY float:right -- but .mk is the LAST child of .qpart, and a part
-     can hold several blocks (stem text, a table, a figure). A float only
-     places itself where it sits in the flow, so on any multi-block part the
-     mark landed at the BOTTOM-right, under the table/figure, instead of by
-     the part's own text. Pinning it absolutely to the part's own box fixes
-     that regardless of how much the part contains; padding-right reserves
-     room so the part's first line doesn't run under it. */
-  .stem .qpart { margin:.55em 0; position:relative; padding-right:2.6em; }
-  .stem .mk { position:absolute; top:0; right:0; font-weight:600; color:var(--muted); }
+     unstyled so they landed wherever the surrounding markup left them.
+     TWO WRONG APPROACHES tried before this one, each fixing one shape of
+     part while breaking another -- the actual bug was never the CSS, it was
+     WHERE ingest wrote the badge into the html:
+       1. float:right on a badge ingest always appended as .qpart's LAST
+          child. Fine for a single-paragraph part, but a part can hold
+          several blocks (stem text, a table, a figure) -- and the paper
+          itself can print "[n]" mid-part, with later paragraphs/a table
+          that are actually shared intro text for the NEXT part (RI 2024 H2
+          P3's Q2(b)(i) is exactly this: "...stating its units. [1]" is
+          followed by two more paragraphs and a table). A trailing badge
+          landed under that table, visibly detached from its own sentence.
+       2. position:absolute;top:0;right:0, pinning the same trailing badge
+          to the part's own top-right corner, "fixed" #1's table case -- but
+          it pins EVERY part's badge to the top line regardless of content,
+          so a plain part whose text simply WRAPS across several lines (no
+          table, nothing structural) got its badge stuck beside the FIRST
+          line instead of the last.
+     ingest.render_parts now writes the badge in place, at the exact point
+     in the html the paper itself prints "[n]" (parts.py's
+     INLINE_MARKS_HTML_RE substitutes the styled span in, chunk by chunk, as
+     each is emitted -- see that module for why). With the badge correctly
+     positioned in the MARKUP, a plain float:right on the badge itself is
+     now enough: it settles at the right margin of whatever line box it
+     occurs in, which is always its own sentence's last line, however many
+     paragraphs or tables come after it in the same part.
+     A THIRD failure mode, found after the above two: a badge that ends up
+     alone on its own line -- either a <p> holding nothing but the float
+     (a cell can carry the sentence and "[n]" as two separate paragraphs),
+     or ingest merging the badge directly onto a trailing </table> with no
+     enclosing <p> at all (RI 2024 H2 P3 Q2(a)(ii): its "[4]" prints on its
+     own line right after Table 2.1, not attached to any sentence) -- has no
+     normal-flow content of its own to sit beside. A float earns no height
+     in its parent unless the parent contains it, so with only `margin` on
+     .qpart the float fell out through the BOTTOM of its own part and
+     overlapped the next part's text instead of appearing where the paper
+     prints it, right after the table. `overflow:hidden` makes .qpart a
+     block formatting context, which contains (self-clears) any float
+     inside it, so the part's own box grows to include the badge instead of
+     leaking it into whatever comes next -- needed however ingest happens to
+     have placed the badge in the markup, not just the shapes above. */
+  .stem .qpart { margin:.55em 0; overflow:hidden; }
+  .stem .mk { float:right; font-weight:600; color:var(--muted); margin-left:.5em; }
   /* centred figure captions (data carries the .figcap hook) */
   .stem .figcap { text-align:center; color:var(--muted); font-size:.9rem;
     margin:.15rem 0 .5rem; }

@@ -117,6 +117,10 @@
      RI 2024 H2 P3 Fig 4.2 (the ZBFB schematic) is near-square, so the height
      cap pins it narrow; 22em lets it fill the column like the wide diagrams. */
   .stem .figimg img[data-fig="RI_H2_P3_Q4_ciii_2024.png"]{max-height:22em}
+  /* RI 2024 H2 P3 Fig 1.1 (the delta-G-vs-T chart) is portrait (1491x1527),
+     so the 13em height cap pins it even narrower than a square one; 28em
+     brings it to a similar on-screen width as Fig 4.2. */
+  .stem .figimg img[data-fig="RI_H2_P3_Q1_c_2024.png"]{max-height:28em}
   .stem .optgrid{display:flex;flex-direction:column;gap:.5rem;margin:.5rem 0}
   .stem .optrow{display:flex;gap:.6rem;align-items:center;background:var(--paper);
     border-radius:8px;padding:.5rem .6rem}
@@ -134,12 +138,25 @@
   .stem .optrow img{max-width:min(100%,16em);max-height:8em;width:auto;height:auto;
     border:1px solid var(--line);border-radius:6px;background:#fff;padding:4px}
   /* formatted display layer */
-  .stem .el{font-family:"Times New Roman",Georgia,serif;font-style:italic}
+  /* .ws (worked solutions) shares both rules with .stem (question text) --
+     oxml.py's run-level "el"/"sr" classification (SS7's AlCl3 fix, and the
+     rFonts-Times-New-Roman oxidation-state fix from parts-py-build-notes.md
+     #12) is shared code that runs on every document family, mark schemes
+     included. Scoping the CSS to .stem only left it silently unstyled the
+     first time a worked solution actually needed it: RI 2024 H2 P3's Q3(a)
+     answer discusses CH3CHClCOOH, so its bare "l" runs (see oxml.py's
+     `text.strip() == "l"` check) got the .el class but no rule to apply it,
+     and fell back to the browser's default italic <i> -- which, in the body
+     sans face, renders a lone "l" as a bare slanted stroke easily misread as
+     "/" ("Cl" reading as "C/"). Found by rendering the worked-solution
+     preview and reading it, not by any gate (valid HTML, valid text -- no
+     check here compares rendered GLYPHS against the source). */
+  .stem .el, .ws .el{font-family:"Times New Roman",Georgia,serif;font-style:italic}
   /* A run the source document explicitly sets in Times New Roman -- in
      practice the Roman numeral of an oxidation state, lead(II)/copper(II).
      Upright, unlike .el: an oxidation state is not a quantity symbol. The
      serif face is what keeps "II" from reading as "ll" in the body sans. */
-  .stem .sr{font-family:"Times New Roman",Georgia,serif;font-style:normal}
+  .stem .sr, .ws .sr{font-family:"Times New Roman",Georgia,serif;font-style:normal}
   .stem .opts{list-style:none;margin:.5rem 0 0;padding:0;display:flex;flex-direction:column;gap:.35rem}
   .stem .opt{padding:.4rem .6rem;background:var(--paper);border-radius:7px;line-height:1.6}
   /* the card-level rule `.opts li{display:flex}` turns every child - including each
@@ -205,18 +222,31 @@
   /* structured-question parts (from ingest.py) are stacked <div class="qpart">
      siblings with no default block margin, so consecutive parts ran together
      ("squashed"). Give them the same vertical rhythm as stem paragraphs. */
-  .stem .qpart { margin:.55em 0; }
   /* mark allocations e.g. [2] come from ingest as <span class="mk">, previously
      unstyled so they landed wherever the surrounding markup left them. Standardise:
-     push to the right margin of the part, muted monospace, exam-style. */
-  /* mark allocations render in the same typeface/size as the question text
-     (standardised), distinguished only by muting + right float, exam-style. */
-  .stem .mk { float:right; margin-left:.6em; font-weight:600; color:var(--muted); }
+     pin to the top-right corner of the part, muted, exam-style.
+     PREVIOUSLY float:right -- but .mk is the LAST child of .qpart, and a part
+     can hold several blocks (stem text, a table, a figure). A float only
+     places itself where it sits in the flow, so on any multi-block part the
+     mark landed at the BOTTOM-right, under the table/figure, instead of by
+     the part's own text. Pinning it absolutely to the part's own box fixes
+     that regardless of how much the part contains; padding-right reserves
+     room so the part's first line doesn't run under it. */
+  .stem .qpart { margin:.55em 0; position:relative; padding-right:2.6em; }
+  .stem .mk { position:absolute; top:0; right:0; font-weight:600; color:var(--muted); }
   /* centred figure captions (data carries the .figcap hook) */
   .stem .figcap { text-align:center; color:var(--muted); font-size:.9rem;
     margin:.15rem 0 .5rem; }
-  .stem .qpart::after { content:""; display:block; clear:both; }
   .stem p.c, .ws p.c { text-align:center; margin:1.1em 0; }
+  /* "equation 1" / "reaction 1" etc.: RI positions the label, formula and
+     (for equation 1) a trailing note with runs of literal spaces rather than
+     true centring -- the label sits at the same left indent as the rest of
+     the stem. Left-aligned by default already; this only stops the browser
+     collapsing those runs to a single space, so the columns stay visually
+     separated the way the source prints them. ingest tags the line with
+     class="eqn" (render_parts.py, EQN_LINE_RE) only when it opens with
+     "equation N" / "reaction N", so this cannot affect unrelated text. */
+  .stem p.eqn { white-space:pre-wrap; }
   .gap { display:inline-block; width:3em; }
   .stem ol.stmts, .ws ol.stmts,
   .stem ul.stmts, .ws ul.stmts { margin:.6em 0 .6em 1.5em; }

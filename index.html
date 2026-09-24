@@ -217,6 +217,14 @@
   .opts li .k{font-family:"IBM Plex Mono";font-weight:600;color:var(--muted);flex:none}
   .opts li.correct{background:var(--green-soft);border-color:var(--green)}
   .opts li.correct .k{color:var(--green)}
+  /* Show-answer highlight for questions that carry content_html. markOptions() stamps
+     data-k (the option letter) on each option element and the reveal button toggles
+     .correct on the keyed one. An inset box-shadow, not a border, so a highlighted
+     option does not move by a pixel when it is revealed. */
+  .stem .opt.correct,.stem .optrow.correct{background:var(--green-soft);box-shadow:inset 0 0 0 1px var(--green)}
+  .stem .opt.correct b,.stem .optrow.correct b{color:var(--green)}
+  .stem table.opts-table tr.correct td{background:var(--green-soft)}
+  .stem table.opts-table tr.correct td.ol{color:var(--green)}
   .qfoot{display:flex;align-items:center;gap:.6rem}
   .reveal{background:transparent;border:1px solid var(--line);border-radius:7px;
     padding:.35rem .65rem;font-size:.8rem;font-weight:500;color:var(--teal)}
@@ -793,6 +801,25 @@
     });
   }
 
+  // Stamp data-k (the option letter) on every option element in a stem, whichever
+  // markup the paper was ingested with, so Show answer can highlight the keyed one
+  // without caring which convention it is looking at:
+  //   div.opts > div.opt > b            plain options (HCI, RI H1)
+  //   table.opts-table > tr > td.ol     columnar options (RI H2 P1; HCI Q2, RI H1 Q17)
+  //   div.optgrid > div.optrow > b      figure options the renderer builds itself
+  // The legacy ul.opts list (content_html null) is built with data-k already.
+  // Must run AFTER the figure/option-grid placement, so the grid rows exist.
+  function markOptions(root){
+    const LETTER = /^[A-E]$/;
+    const stamp = (nodes, pick) => nodes.forEach(n => {
+      const t = (pick(n)?.textContent || '').trim();
+      if(LETTER.test(t)) n.dataset.k = t;
+    });
+    stamp(root.querySelectorAll('.opts > .opt'),         n => n.querySelector(':scope > b'));
+    stamp(root.querySelectorAll('table.opts-table tr'),  n => n.querySelector(':scope > td.ol'));
+    stamp(root.querySelectorAll('.optgrid > .optrow'),   n => n.querySelector(':scope > b'));
+  }
+
   // Part labels carry their own LO tags; show them on hover. Two markup shapes:
   // worked solutions use <div class="part"><span class="lab">, question stems use
   // <div class="qpart"><span class="pl"> (ingest.py). Both hold the same label text.
@@ -1132,6 +1159,7 @@
         if(optImgs.length && !gridPlaced) stem.appendChild(optGrid());
       }
     }
+    markOptions(stem);
     el.appendChild(stem);
 
     const opts=q.options||{};
@@ -1182,8 +1210,8 @@
         if(!body) body = buildBody();
         body.style.display = on?'block':'none';
         btn.textContent = on?'Hide answer':'Show answer';
-        if(!q.content_html) el.querySelectorAll('.opts li').forEach(li=>
-          li.classList.toggle('correct', on && li.dataset.k===q.answer_key));
+        el.querySelectorAll('[data-k]').forEach(n=>
+          n.classList.toggle('correct', on && n.dataset.k===q.answer_key));
       });
       foot.appendChild(btn); if(q.answer_key) foot.appendChild(tag);
       el.appendChild(foot);

@@ -121,6 +121,25 @@
      so the 13em height cap pins it even narrower than a square one; 28em
      brings it to a similar on-screen width as Fig 4.2. */
   .stem .figimg img[data-fig="RI_H2_P3_Q1_c_2024.png"]{max-height:28em}
+  /* RI 2024 H2 P2 -- per-figure size overrides, same pattern as the P3 ones
+     above (exact storage_path match via data-fig; touches only the named
+     file, on any paper). RI P2's diagrams run taller/denser on average than
+     P3's, so the shared 13em height cap crushed several of them well below
+     their real size -- worst case Fig 3.7 (Q3(c)(i)) at 0.46x, effectively
+     illegible. Each value below just raises the height cap enough that the
+     existing 34em WIDTH cap becomes the binding constraint again (34em ->
+     back to how these rendered before the P3 height-cap change existed),
+     except Q2(e) and Q3(b) which also get a smaller width cap: both are
+     simple enough content that filling the full column isn't needed. */
+  .stem .figimg img[data-fig="RI_H2_P2_Q3_ci_2024.png"]{max-height:28.3em}
+  .stem .figimg img[data-fig="RI_H2_P2_Q3_bii_2024.png"]{max-height:19.9em}
+  .stem .figimg img[data-fig="RI_H2_P2_Q3_aii_2024.png"]{max-height:20.1em}
+  .stem .figimg img[data-fig="RI_H2_P2_Q2_b_2024.png"]{max-height:22.7em}
+  .stem .figimg img[data-fig="RI_H2_P2_Q4_ai_2024.png"]{max-height:24.1em}
+  .stem .figimg img[data-fig="RI_H2_P2_Q4_aii_2024.png"]{max-height:24.1em}
+  .stem .figimg img[data-fig="RI_H2_P2_Q1_di2_2024.png"]{max-height:21.4em}
+  .stem .figimg img[data-fig="RI_H2_P2_Q2_e_2024.png"]{max-width:min(100%,25em);max-height:21.7em}
+  .stem .figimg img[data-fig="RI_H2_P2_Q3_b_2024.png"]{max-width:min(100%,28em);max-height:20.8em}
   .stem .optgrid{display:flex;flex-direction:column;gap:.5rem;margin:.5rem 0}
   .stem .optrow{display:flex;gap:.6rem;align-items:center;background:var(--paper);
     border-radius:8px;padding:.5rem .6rem}

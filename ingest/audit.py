@@ -30,7 +30,10 @@ import re
 import subprocess
 from collections import Counter
 
+from lxml import etree
+
 from . import adobe_symbol
+from .oxml import Wq
 from .symbols import DECORATIVE, SYMBOL, WINGDINGS, MT_EXTRA
 
 
@@ -224,4 +227,103 @@ def figure_gate(placements, expectations) -> list[str]:
             problems.append("%s renders %s, whose content %r does not contain "
                             "the expected %r" % (label, filename,
                                                  (ground_truth or "")[:60], want))
+    return problems
+
+
+# --------------------------------------------------------------------------
+# FORMATTING GATE -- whitespace / numPr, proactive rather than corrective
+# --------------------------------------------------------------------------
+#
+# Two unrelated defects have now each bitten more than one paper, and both
+# have the same shape: they look fine in the raw XML and only show up wrong
+# once rendered, so they were previously found by eye, after the fact.
+#
+#   TAB / MULTI-SPACE. A literal <w:tab/> or 2+ consecutive spaces inside a
+#   run's own text is how Word authors hand-align a trailing label into its
+#   own column -- RI 2024 H2 P3's "equation N" convention (repeated spaces)
+#   and EJC 2024 H2 P1's Q8/Q10/Q29 (real tab-stops). Both need deliberate
+#   handling (the `eqn` CSS class, style-guide.md) or the alignment is lost
+#   on render. Neither is wrong to HAVE -- the point is to catch a NEW one
+#   before it ships unhandled, not after.
+#
+#   numPr ADJACENT TO A TYPED CONTINUATION. Word's own `w:numPr` numbered-list
+#   paragraphs carry NO visible number in the extracted text at all -- Word
+#   supplies it at render time from the list definition. When a multi-
+#   statement item mixes a genuine numPr paragraph with typed "2 ...",
+#   "3 ..." continuations of the SAME list (questions_flow.py's
+#   _wrap_stmt_lists; EJC 2024 H2 P1 Q10), the adapter has to recognise and
+#   fold them together, or the numbered item silently loses its number. Every
+#   numPr paragraph is reported, and so is any paragraph immediately
+#   following one that starts with a digit -- a candidate continuation.
+#
+# This is a REPORT, not a hard gate: it does not know which hits are already
+# handled by a convention and which are new. It exists so a human spends
+# seconds confirming each candidate instead of finding the bug live.
+
+_MULTISPACE = re.compile(r"  +")
+_LEADING_DIGIT = re.compile(r"^\s*\d")
+
+
+def _para_raw(p) -> tuple[str, bool]:
+    """(text, has_tab) for one w:p -- w:t and w:tab only, in document order.
+
+    Deliberately shallow: no symbol-font decoding, no OMML descent. This is a
+    structural scan for a literal tab character and run-length of spaces, not
+    a renderer -- see oxml.py for the real thing.
+    """
+    parts = []
+    has_tab = False
+    for r in p.findall(".//" + Wq + "r"):
+        for ch in r:
+            ln = etree.QName(ch).localname
+            if ln == "t":
+                parts.append(ch.text or "")
+            elif ln == "tab":
+                parts.append("\t")
+                has_tab = True
+    return "".join(parts), has_tab
+
+
+def formatting_gate(document_xml_path) -> list[str]:
+    """Flag every paragraph carrying a tab, a double space, or a w:numPr --
+    plus any paragraph right after a numPr run that looks like it continues
+    it by hand. See the module comment above for why these three and not
+    something a rule could silently miss.
+
+    Walks EVERY w:p in the document (`.//`), table cells included, so it
+    works unchanged on both the table-shape (questions.py) and paragraph-flow
+    (questions_flow.py) adapters -- neither is assumed.
+    """
+    tree = etree.parse(str(document_xml_path))
+    paras = tree.getroot().findall(".//" + Wq + "p")
+
+    problems = []
+    in_numpr_run = False
+    for i, p in enumerate(paras):
+        raw, has_tab = _para_raw(p)
+        stripped = raw.strip()
+        has_numpr = p.find(".//" + Wq + "numPr") is not None
+
+        if has_tab:
+            problems.append("paragraph %d: literal tab -- %r" % (i, stripped[:70]))
+
+        m = _MULTISPACE.search(raw)
+        if m:
+            problems.append(
+                "paragraph %d: %d consecutive spaces -- %r"
+                % (i, len(m.group()), stripped[:70]))
+
+        if has_numpr:
+            if not in_numpr_run:
+                problems.append("paragraph %d: w:numPr -- %r" % (i, stripped[:70]))
+            in_numpr_run = True
+        else:
+            if in_numpr_run and stripped and _LEADING_DIGIT.match(raw):
+                problems.append(
+                    "paragraph %d: follows a w:numPr paragraph and starts with "
+                    "a digit -- %r (confirm this is meant to continue that "
+                    "list -- see questions_flow.py's _wrap_stmt_lists -- not a "
+                    "fresh item that silently lost its own number)"
+                    % (i, stripped[:70]))
+            in_numpr_run = False
     return problems

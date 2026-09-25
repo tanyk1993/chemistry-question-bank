@@ -329,15 +329,25 @@ def main(argv=None):
         ignore_re=[r"\u00a9\s*Raffles Institution\s*\d{4}", r"9729/01/S/\d+"],
         first_page=a.first_page, last_page=last)
     real, expected = audit.classify(problems)
+
+    # FORMATTING GATE -- proactive, not corrective: every literal tab, run of
+    # 2+ spaces, and w:numPr paragraph (plus any typed-digit paragraph right
+    # after one), printed so a human confirms each in seconds instead of
+    # finding it live the way EJC 2024 H2 P1's spacing/Q10 bugs were found.
+    # Runs over the WHOLE document, same reasoning as the text gate above.
+    formatting = audit.formatting_gate(unz / "word/document.xml")
+
     (out / "anomalies.txt").write_text(
         "\n".join(["== parser =="] + anomalies
                   + ["", "== text gate (real) =="] + real
-                  + ["", "== text gate (figure-borne, expected) =="] + expected),
+                  + ["", "== text gate (figure-borne, expected) =="] + expected
+                  + ["", "== formatting (whitespace / numPr) =="] + formatting),
         encoding="utf-8")
 
     print("questions %d | assets %d | crops %d" % (len(rows), len(plan_all), len(crops)))
-    print("parser anomalies %d | text-gate problems %d (%d expected)"
-          % (len(anomalies), len(real), len(expected)))
+    print("parser anomalies %d | text-gate problems %d (%d expected) | "
+          "formatting flags %d"
+          % (len(anomalies), len(real), len(expected), len(formatting)))
     return 0
 
 

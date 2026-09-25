@@ -22,7 +22,7 @@ from pathlib import Path
 import pymupdf
 
 from . import audit, corrections, question_figures as QF, render_questions as R
-from .questions import parse
+from .parse_dispatch import parse
 
 
 FIG_SENTINEL = "\x00FIG\x00"
@@ -38,6 +38,77 @@ def _matrix_shape(q):
     if ncols < 2:
         return None
     return len(rows), ncols
+
+
+def _opt_grid_shape(opt_cells: dict):
+    """(nrows, ncols) if the printed option letters form a genuine grid.
+
+    EJC 2024 H2 P1's Q13, Q14 and Q28 print their four options as a 2x2
+    grid, and whole-region clustering fuses each COLUMN into one image --
+    the same column-fusion bug `matrix_cells` exists to fix for a stem grid
+    (RI 2024 H2 P1 Q25), for the same reason: `merge_to` only ever merges,
+    it can never split a blob the raw clustering already fused. A single
+    row or single column is not this bug (`ncols`, from the first row's own
+    letter count, comes back 1 for a column and is rejected below), and
+    those layouts keep the whole-region approach in `_crop_question`.
+    """
+    if len(opt_cells) < 4:
+        return None
+    items = sorted(opt_cells.items(), key=lambda kv: (kv[1][0], kv[1][1].y0))
+    rows: list = []
+    for _letter, (pno, r) in items:
+        if rows and rows[-1][0] == pno and abs(rows[-1][1] - r.y0) < 6:
+            rows[-1][2] += 1
+        else:
+            rows.append([pno, r.y0, 1])
+    ncols = max(n for _p, _y, n in rows)
+    if len(rows) < 2 or ncols < 2:
+        return None
+    return len(rows), ncols
+
+
+#: A crop this short is not a structure or an equation, it is a bare fraction
+#: rule that slipped past crop_in's own size filter (the filter tests the
+#: PADDED box, not the tight one -- see figure_clusters). EJC 2024 H2 P1
+#: Q13's option C/D measured 0.1pt tall this way.
+MIN_OPT_H = 4.0
+
+
+def _crop_options_percell(doc, opt_cells: dict, opt_items: list):
+    """{slot: (page, Rect)}, cropping each option's own printed cell.
+
+    Used only for a genuine grid (column-fusion, above) or as RECOVERY when
+    whole-region clustering already returned the wrong count -- never as a
+    silent default, because it was tried and rejected for RI 2024 H2 P1's
+    single-column Q24/Q26 (a cell generous enough to catch a stroke whose
+    midpoint sits outside it also pulled in the option below). Confirmed
+    safe here on EJC 2024 H2 P1 Q23 (single column, 3 structures the
+    whole-region pass fuses into 1): its three cells came back as three
+    distinct, non-overlapping crops.
+
+    `crop_in`'s vector-only clustering is tried first; a cell whose crop
+    comes back missing or a sliver (Q13's Ka expressions, typeset almost
+    entirely in glyphs rather than paths) falls back to `crop_in_text`.
+    Returns None -- never a partial dict -- if any cell fails both, so the
+    caller can fall back to the whole-region approach instead of emitting a
+    wrong-shaped or degenerate crop.
+    """
+    out = {}
+    for item in opt_items:
+        letter = item["slot"]
+        cell = opt_cells.get(letter)
+        if cell is None:
+            return None
+        pno, rect = cell
+        got = QF.crop_in(doc, pno, rect, 1)
+        if len(got) == 1 and got[0][1].height >= MIN_OPT_H:
+            out[letter] = got[0]
+            continue
+        textrect = QF.crop_in_text(doc, pno, rect, letter=letter)
+        if textrect is None or textrect.height < MIN_OPT_H:
+            return None
+        out[letter] = (pno, textrect)
+    return out
 
 
 def _crop_question(doc, q, plan, spans, anomalies) -> list:
@@ -90,15 +161,30 @@ def _crop_question(doc, q, plan, spans, anomalies) -> list:
                 opt_spans.append((pno, y0, y1))
 
     if opt_items:
+        grid = _opt_grid_shape(opt_cells)
         rects = QF.crop_plan(doc, q.qnum, opt_spans, len(opt_items))
-        if len(rects) != len(opt_items):
-            anomalies.append("Q%d: %d option figures but %d crops"
-                             % (q.qnum, len(opt_items), len(rects)))
-        # Reading order and option order agree: the letters are laid out left
-        # to right then top to bottom, and so are their structures.
-        for item, (pno, rect) in zip(sorted(opt_items, key=lambda i: i["slot"]),
-                                     rects):
-            out.append((pno, rect, item["storage_path"]))
+        # A genuine grid is ALWAYS wrong under whole-region clustering (each
+        # column fuses into one blob), so it never gets a chance to look
+        # right by count alone -- go straight to per-cell. A single row or
+        # column is only rebanded when the whole-region count already came
+        # back wrong, since that layout's default is otherwise correct
+        # (RI 2024 H2 P1 Q24/Q26) and per-cell was rejected there before.
+        percell = None
+        if grid or len(rects) != len(opt_items):
+            percell = _crop_options_percell(doc, opt_cells, opt_items)
+        if percell:
+            for item in opt_items:
+                pno, rect = percell[item["slot"]]
+                out.append((pno, rect, item["storage_path"]))
+        else:
+            if len(rects) != len(opt_items):
+                anomalies.append("Q%d: %d option figures but %d crops"
+                                 % (q.qnum, len(opt_items), len(rects)))
+            # Reading order and option order agree: the letters are laid out
+            # left to right then top to bottom, and so are their structures.
+            for item, (pno, rect) in zip(
+                    sorted(opt_items, key=lambda i: i["slot"]), rects):
+                out.append((pno, rect, item["storage_path"]))
 
     shape = _matrix_shape(q)
     y_limit = min((r.y0 for _p, r in opt_cells.values()), default=None)
@@ -147,8 +233,9 @@ def main(argv=None):
     unz, out = Path(a.unz), Path(a.outdir)
     out.mkdir(parents=True, exist_ok=True)
 
-    questions, figures, anomalies = parse(unz / "word/document.xml",
-                                          unz / "word/_rels/document.xml.rels")
+    questions, figures, anomalies, shape = parse(
+        unz / "word/document.xml", unz / "word/_rels/document.xml.rels")
+    print("detected document shape: %s" % shape)
     doc = pymupdf.open(a.pdf)
     bands = QF.question_bands(doc, 1, max(q.qnum for q in questions))
     missing = [q.qnum for q in questions if q.qnum not in bands]
@@ -168,7 +255,11 @@ def main(argv=None):
     for q in questions:
         if q.qnum in skip:
             continue
-        kinds = R.figure_kinds(q)
+        frac_letters = corrections.frac_option_letters(
+            a.school, a.level, a.paper, a.year, q.qnum)
+        eqtext_map = corrections.eqtext_options(
+            a.school, a.level, a.paper, a.year, q.qnum)
+        kinds = R.figure_kinds(q, frac_letters, eqtext_map)
         spans = bands.get(q.qnum, [])
 
         # Fractions are READ from the PDF, not cropped -- see question_figures.
@@ -205,9 +296,9 @@ def main(argv=None):
             "question_number": q.qnum,
             "type": "mcq",
             "marks": 1,
-            "content_html": R.content_html(q, plan, fracs),
-            "content_text": R.content_text(q, fracs),
-            "options": R.options_json(q),
+            "content_html": R.content_html(q, plan, fracs, frac_letters, eqtext_map),
+            "content_text": R.content_text(q, fracs, frac_letters, eqtext_map),
+            "options": R.options_json(q, fracs, frac_letters, eqtext_map),
         })
         plan_all.extend(plan)
 
@@ -222,11 +313,15 @@ def main(argv=None):
     # The gate compares against the whole PDF, so it must see the whole paper
     # -- including skipped questions. Otherwise every glyph unique to a skipped
     # question reads as a dropped character and the gate cries wolf.
-    extracted = " ".join(
-        R.content_text(q, [(g["num"], g["den"])
-                           for g in QF.read_fraction(doc, bands.get(q.qnum, []))]
-                       if R.figure_kinds(q).count("frac") else None)
-        for q in questions)
+    def _gate_text(q):
+        fl = corrections.frac_option_letters(a.school, a.level, a.paper, a.year, q.qnum)
+        eq = corrections.eqtext_options(a.school, a.level, a.paper, a.year, q.qnum)
+        kinds = R.figure_kinds(q, fl, eq)
+        fracs = ([(g["num"], g["den"])
+                 for g in QF.read_fraction(doc, bands.get(q.qnum, []))]
+                if kinds.count("frac") else None)
+        return R.content_text(q, fracs, fl, eq)
+    extracted = " ".join(_gate_text(q) for q in questions)
     last = a.last_page or (len(doc) - 1)   # trailing blank page
     problems = audit.charset_gate(
         extracted, a.pdf,

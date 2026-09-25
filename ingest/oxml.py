@@ -91,18 +91,64 @@ def _run_style(r) -> Style:
     return Style(marks)
 
 
+def _symbol_font(r) -> str | None:
+    """The run's Symbol/Wingdings/MT Extra font name, or None.
+
+    Word can put a symbol glyph on the page two completely different ways
+    that look identical on screen: an explicit <w:sym w:font="Symbol"
+    w:char="F044"/> element (decoded by sym_to_text below), or by typing an
+    ORDINARY character while the run's own font happens to be set to one of
+    these symbol fonts -- which stores the literal character ("D") but
+    DISPLAYS as that font's private-encoding glyph for it (Delta). Nothing
+    before EJC 2024 H2 P1 needed the second form, so plain <w:t> text was
+    always read as-is; Q29's two free-energy deltas ("the DG of the
+    reaction") are typed exactly this way, confirmed against the doc's raw
+    XML (a literal "D" inside a run whose w:rFonts ascii is "Symbol").
+    """
+    pr = r.find(Wq + "rPr")
+    if pr is None:
+        return None
+    rf = pr.find(Wq + "rFonts")
+    if rf is None:
+        return None
+    name = ((rf.get(Wq + "ascii") or rf.get(Wq + "hAnsi") or "")
+            .strip().lower())
+    return name if name in ("symbol", "wingdings", "mt extra") else None
+
+
 def _tokens_from_run(r, *, in_math: bool = False):
     """Yield (text, Style) for one w:r / m:r."""
     style = _run_style(r)
+    font = _symbol_font(r)
     parts = []
     for ch in r:
         ln = etree.QName(ch).localname
         if ln in ("t",):
-            parts.append(ch.text or "")
+            txt = ch.text or ""
+            if font:
+                # Route through the SAME table <w:sym> uses, one character at
+                # a time: the run's raw text IS the symbol-font codepoint, in
+                # the same F0xx private-use range Word offsets w:sym into.
+                txt = "".join(
+                    sym_to_text(font, "%04X" % (0xF000 | ord(c))) for c in txt)
+            parts.append(txt)
         elif ln == "sym":
             parts.append(sym_to_text(ch.get(Wq + "font"), ch.get(Wq + "char")))
         elif ln == "tab":
-            parts.append(" ")
+            # A literal TAB character, not a space: unlike a space, nobody
+            # types a tab by accident, so its presence is always a deliberate
+            # Word tab-stop -- EJC 2024 H2 P1's "reaction 1  <equation>"/
+            # "<equation>  E<sup>-o-</sup> = ..." lines (Q8, Q10, Q29) use one
+            # to line up a trailing label in its own column, the same way
+            # RI 2024 H2 P3's "equation N" lines do with literal repeated
+            # spaces (see style-guide.md's `.eqn` convention). Kept distinct
+            # from an ordinary space here so the paragraph-building layer
+            # (render_questions.py's _para) can detect it structurally and
+            # tag the paragraph `eqn`, rather than guessing from a text
+            # pattern that would miss Q29 (a bare equation, no "reaction N"
+            # label at all). content_text/options collapse \s+ to one space
+            # regardless, so search/the text gate see no difference.
+            parts.append("\t")
         elif ln == "br":
             # SS7: a w:br mid-sentence is a layout line-wrap, not a paragraph
             # break. Represented as a sentinel and resolved by the caller.

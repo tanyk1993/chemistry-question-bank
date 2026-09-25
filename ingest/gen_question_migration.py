@@ -34,16 +34,28 @@ THE GUARDS, AND WHY EACH ONE IS THERE (handoff SS8, SS11)
   positive (handoff SS4), no table is created.
 
 Usage:
-  python3 -m ingest.gen_question_migration <outdir> <answer_key.json> <dest.sql>
+  python3 -m ingest.gen_question_migration <outdir> <answer_key.json> <dest.sql> \
+      [--school RI] [--year 2024] [--paper 1] [--level H2] [--assessment prelim]
+
+School/year/paper/level/assessment default to the values this script was
+originally written for (RI 2024 H2 P1) so an old invocation keeps working
+unchanged; a new paper passes its own values explicitly, following the same
+--school/--year/--level/--paper convention as gen_parts_answers_migration.py
+and its siblings, rather than a second hardcoded copy of this file.
+
+If `asset_plan.json` has no rows (figures not yet cropped -- diagrams is a
+separate phase from loading question text), the whole `question_assets`
+INSERT is omitted rather than emitted with an empty VALUES list, which is not
+valid SQL. A later migration attaches assets once they exist, the same way
+`gen_parts_answers_migration.py` attaches worked-solution figures after the
+fact.
 """
 from __future__ import annotations
 
+import argparse
 import json
-import sys
 from pathlib import Path
 
-SCHOOL, YEAR, PAPER, LEVEL = "RI", 2024, 1, "H2"
-ASSESSMENT = "prelim"
 TAG = "$qh$"
 
 
@@ -57,7 +69,10 @@ def _lit(s: str) -> str:
     return TAG + s + TAG
 
 
-def main(outdir: str, keyfile: str, dest: str):
+def main(outdir: str, keyfile: str, dest: str, *,
+        school: str = "RI", year: int = 2024, paper: int = 1, level: str = "H2",
+        assessment: str = "prelim"):
+    SCHOOL, YEAR, PAPER, LEVEL, ASSESSMENT = school, year, paper, level, assessment
     out = Path(outdir)
     rows = json.loads((out / "questions.json").read_text(encoding="utf-8"))
     plan = json.loads((out / "asset_plan.json").read_text(encoding="utf-8"))
@@ -87,8 +102,8 @@ def main(outdir: str, keyfile: str, dest: str):
     add("DECLARE n int;")
     add("BEGIN")
     add("  -- 1. this exact paper must not already be loaded. LEVEL is part of")
-    add("  --    the key: RI 2024 H1 Paper 1 is already live and shares school,")
-    add("  --    year and paper_number with this one.")
+    add("  --    the key: some schools' H1 paper of the same number shares")
+    add("  --    school, year and paper_number with this one (see guard 2).")
     add("  SELECT count(*) INTO n FROM papers")
     add("   WHERE school = %s AND year = %d AND paper_number = %d"
         % (_lit(SCHOOL), YEAR, PAPER))
@@ -105,7 +120,8 @@ def main(outdir: str, keyfile: str, dest: str):
     add("   WHERE school = %s AND year = %d AND paper_number = %d AND level = 'H1';"
         % (_lit(SCHOOL), YEAR, PAPER))
     add("  IF n <> 1 THEN")
-    add("    RAISE WARNING 'expected exactly 1 RI 2024 H1 P1 paper, found %', n;")
+    add("    RAISE WARNING 'expected exactly 1 %s %d H1 P%d paper, found %%', n;"
+        % (SCHOOL, YEAR, PAPER))
     add("  END IF;")
     add("END")
     add("$preflight$;")
@@ -122,7 +138,9 @@ def main(outdir: str, keyfile: str, dest: str):
     add("  VALUES (%s, %d, %d, '%s', NULL, true, '%s', 'approved', 'docx')"
         % (_lit(SCHOOL), YEAR, PAPER, LEVEL, ASSESSMENT))
     add("  RETURNING id")
-    add("), q AS (")
+    add(")")
+    if plan:
+        add(", q AS (")
     add("  INSERT INTO questions (paper_id, type, question_number, content_html,")
     add("                         content_text, options, answer_key, marks, status)")
     add("  SELECT p.id, 'mcq', v.qn, v.html, v.txt, v.opts::jsonb, v.akey, 1, 'approved'")
@@ -136,21 +154,32 @@ def main(outdir: str, keyfile: str, dest: str):
                        _lit(keys[str(qn)])))
     add(",\n".join(vals))
     add("    ) AS v(qn, html, txt, opts, akey)")
-    add("  RETURNING id, question_number")
-    add(")")
-    add("INSERT INTO question_assets (question_id, slot, storage_path, ordinal)")
-    add("SELECT q.id, a.slot, a.path, a.ord")
-    add("  FROM q JOIN (VALUES")
-    arows = []
-    for a in sorted(plan, key=lambda a: (a["question"], a["ordinal"])):
-        arows.append("    (%d, %s, %s, %d)"
-                     % (a["question"], _lit(a["slot"]),
-                        _lit(a["storage_path"]), a["ordinal"]))
-    add(",\n".join(arows))
-    add("  ) AS a(qn, slot, path, ord) ON a.qn = q.question_number")
-    add("RETURNING question_id, slot, storage_path, ordinal;")
+    if plan:
+        add("  RETURNING id, question_number")
+        add(")")
+        add("INSERT INTO question_assets (question_id, slot, storage_path, ordinal)")
+        add("SELECT q.id, a.slot, a.path, a.ord")
+        add("  FROM q JOIN (VALUES")
+        arows = []
+        for a in sorted(plan, key=lambda a: (a["question"], a["ordinal"])):
+            arows.append("    (%d, %s, %s, %d)"
+                         % (a["question"], _lit(a["slot"]),
+                            _lit(a["storage_path"]), a["ordinal"]))
+        add(",\n".join(arows))
+        add("  ) AS a(qn, slot, path, ord) ON a.qn = q.question_number")
+        add("RETURNING question_id, slot, storage_path, ordinal;")
+    else:
+        # No figures cropped yet -- diagrams is a separate phase (see module
+        # docstring). An INSERT with an empty VALUES list is not valid SQL, so
+        # the whole assets clause is omitted rather than emitted broken; a
+        # later migration attaches question_assets once the images exist.
+        add("  RETURNING id;")
     add("")
-    add("-- Expect %d asset rows returned." % len(plan))
+    if plan:
+        add("-- Expect %d asset rows returned." % len(plan))
+    else:
+        add("-- No question_assets inserted -- figures not yet cropped "
+            "(diagrams is a separate phase); a later migration attaches them.")
     add("")
     add("-- Flip to COMMIT when the above looks right.")
     add("ROLLBACK;")
@@ -167,13 +196,13 @@ def main(outdir: str, keyfile: str, dest: str):
     add("--   from questions q")
     add("--   left join question_assets a on a.question_id = q.id")
     add("--   join papers p on p.id = q.paper_id")
-    add("--  where p.school = 'RI' and p.year = 2024")
-    add("--    and p.paper_number = 1 and p.level = 'H2'")
+    add("--  where p.school = '%s' and p.year = %d" % (SCHOOL, YEAR))
+    add("--    and p.paper_number = %d and p.level = '%s'" % (PAPER, LEVEL))
     add("--  group by q.question_number, q.answer_key, q.marks,")
     add("--           q.content_html, q.content_text, q.content_search")
     add("--  order by q.question_number;")
-    add("-- Expect 30 rows, every searchable = true, %d assets in total."
-        % len(plan))
+    add("-- Expect %d rows, every searchable = true, %d assets in total."
+        % (len(rows), len(plan)))
 
     bad = [l for l in L if "%%" in l]
     if bad:
@@ -185,4 +214,15 @@ def main(outdir: str, keyfile: str, dest: str):
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:4])
+    ap = argparse.ArgumentParser()
+    ap.add_argument("outdir")
+    ap.add_argument("keyfile")
+    ap.add_argument("dest")
+    ap.add_argument("--school", default="RI")
+    ap.add_argument("--year", type=int, default=2024)
+    ap.add_argument("--paper", type=int, default=1)
+    ap.add_argument("--level", default="H2")
+    ap.add_argument("--assessment", default="prelim")
+    a = ap.parse_args()
+    main(a.outdir, a.keyfile, a.dest, school=a.school, year=a.year,
+        paper=a.paper, level=a.level, assessment=a.assessment)

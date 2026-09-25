@@ -49,6 +49,17 @@ ADOBE_WINGDINGS = {
     0xA1: "⦵",   # circle with horizontal bar -- standard-state symbol
 }
 
+# MT Extra -- NOT a standard Adobe encoding (unlike Symbol/Wingdings, MT Extra
+# has no published Adobe glyph list; it's a Microsoft Equation Editor 3.0
+# private font). Kept as its own table anyway, sourced independently from
+# symbols.MT_EXTRA's own reasoning -- reconstructed from where the glyph
+# appears in the document and cross-checked against the Word PDF's raw
+# codepoints, not copied from the extractor's table. See symbols.py for the
+# evidence.
+ADOBE_MT_EXTRA = {
+    0x83: "⇌",   # reversible-reaction harpoon arrow
+}
+
 
 def decode(cp: int) -> str | None:
     """Decode one private-use codepoint, or None if unknown."""
@@ -57,10 +68,13 @@ def decode(cp: int) -> str | None:
     low = cp & 0xFF
     if low in ADOBE_SYMBOL:
         return ADOBE_SYMBOL[low]
-    return ADOBE_WINGDINGS.get(low)
+    if low in ADOBE_WINGDINGS:
+        return ADOBE_WINGDINGS[low]
+    return ADOBE_MT_EXTRA.get(low)
 
 
-def cross_check(extractor_symbol: dict, extractor_wingdings: dict) -> list[str]:
+def cross_check(extractor_symbol: dict, extractor_wingdings: dict,
+                 extractor_mt_extra: dict | None = None) -> list[str]:
     """Report disagreements between the extractor's table and this one.
 
     A divergence means the extractor and its auditor have drifted apart, which
@@ -82,5 +96,13 @@ def cross_check(extractor_symbol: dict, extractor_wingdings: dict) -> list[str]:
                             "encoding has no entry for it" % key)
         elif got != want:
             problems.append("Wingdings %s: extractor=%r reference=%r"
+                            % (key, got, want))
+    for key, got in (extractor_mt_extra or {}).items():
+        want = ADOBE_MT_EXTRA.get(int(key[2:], 16))
+        if want is None:
+            problems.append("extractor maps MT Extra %s but the reference "
+                            "encoding has no entry for it" % key)
+        elif got != want:
+            problems.append("MT Extra %s: extractor=%r reference=%r"
                             % (key, got, want))
     return problems

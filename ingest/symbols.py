@@ -61,6 +61,26 @@ WINGDINGS = {
                         #   special-case it here.
 }
 
+# MT Extra -- a THIRD font family, first seen on EJC 2024 H2 P1. Legacy
+# Microsoft Equation Editor 3.0 documents encode some symbols in this font
+# rather than Symbol; RI's papers never hit it, so it wasn't in this table
+# until now.
+MT_EXTRA = {
+    "F083": "⇌",   # 0x83, the reversible-reaction harpoon arrow. Every one of
+                        #   11 occurrences in EJC P1 sits between reactants and
+                        #   products of a stated equilibrium: Q7's four AgCl/AgBr
+                        #   dissolution-and-complexation equilibria, Q8's
+                        #   photochromic reactions 1-3, Q10's Y(aq) <-> 2Z(aq),
+                        #   Q29's two half-cell reduction potentials. The Word
+                        #   PDF's own text layer extracts the SAME raw private-use
+                        #   codepoint () at each of those positions rather
+                        #   than resolving it -- i.e. pymupdf doesn't know this
+                        #   font either, so the position-and-context match across
+                        #   11 independent occurrences is the evidence, not a font
+                        #   spec. See adobe_symbol.ADOBE_MT_EXTRA for the
+                        #   independent cross-check entry.
+}
+
 #: Characters that are typographic scaffolding rather than content. The audit
 #: layer strips these from BOTH sides before comparing, so that a deliberate
 #: normalisation is never mistaken for a dropped glyph.
@@ -82,7 +102,8 @@ def sym_to_text(font: str, char: str) -> str:
     `char` is matched case-insensitively; Word writes uppercase hex but the
     spec does not require it.
     """
-    table = {"symbol": SYMBOL, "wingdings": WINGDINGS}.get((font or "").strip().lower())
+    table = {"symbol": SYMBOL, "wingdings": WINGDINGS,
+              "mt extra": MT_EXTRA}.get((font or "").strip().lower())
     if table is None:
         raise UnknownSymbol(f"unmapped w:sym font {font!r} (char {char!r})")
     key = (char or "").strip().upper()

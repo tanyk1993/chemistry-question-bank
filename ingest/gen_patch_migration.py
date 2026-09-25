@@ -17,6 +17,11 @@ protecting against, arrived at differently.
 `level` is part of the paper key because RI 2024 H1 P1 shares school, year and
 paper_number with the H2 paper.
 
+School/year/paper/level default to the values this script was originally
+written for (RI 2024 H2 P1) so an old invocation keeps working unchanged; a
+new paper passes its own values explicitly, same convention as
+gen_question_migration.py.
+
 `content_text` is updated alongside `content_html` whenever it changed:
 content_search is generated from content_text, so updating only the markup
 leaves search reflecting the old wording (handoff SS6D makes the same point
@@ -41,11 +46,10 @@ step -- the migration cannot reach the bucket.
 """
 from __future__ import annotations
 
+import argparse
 import json
-import sys
 from pathlib import Path
 
-SCHOOL, YEAR, PAPER, LEVEL = "RI", 2024, 1, "H2"
 TAG = "$qp$"
 
 
@@ -55,7 +59,9 @@ def _lit(s: str) -> str:
     return TAG + s + TAG
 
 
-def main(outdir: str, qnums: str, dest: str, prev: str | None = None):
+def main(outdir: str, qnums: str, dest: str, prev: str | None = None, *,
+        school: str = "RI", year: int = 2024, paper: int = 1, level: str = "H2"):
+    SCHOOL, YEAR, PAPER, LEVEL = school, year, paper, level
     rows = {r["question_number"]: r for r in json.loads(
         (Path(outdir) / "questions.json").read_text(encoding="utf-8"))}
     plan = json.loads(
@@ -169,4 +175,15 @@ def main(outdir: str, qnums: str, dest: str, prev: str | None = None):
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:5])
+    ap = argparse.ArgumentParser()
+    ap.add_argument("outdir")
+    ap.add_argument("qnums")
+    ap.add_argument("dest")
+    ap.add_argument("prev", nargs="?", default=None)
+    ap.add_argument("--school", default="RI")
+    ap.add_argument("--year", type=int, default=2024)
+    ap.add_argument("--paper", type=int, default=1)
+    ap.add_argument("--level", default="H2")
+    a = ap.parse_args()
+    main(a.outdir, a.qnums, a.dest, a.prev,
+        school=a.school, year=a.year, paper=a.paper, level=a.level)

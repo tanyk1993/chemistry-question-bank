@@ -31,7 +31,7 @@ import subprocess
 from collections import Counter
 
 from . import adobe_symbol
-from .symbols import DECORATIVE, SYMBOL, WINGDINGS
+from .symbols import DECORATIVE, SYMBOL, WINGDINGS, MT_EXTRA
 
 
 class GateFailure(AssertionError):
@@ -48,6 +48,31 @@ class GateFailure(AssertionError):
 FIGURE_BORNE = {
     "\u00bd": 'chart construction-line labels "1st t\u00bd" / "2nd t1/2"',
     "<": 'energy-profile diagram label "\u2206H < 0" (4(b)(ii))',
+    # EJC 2024 H2 P1 -- both are genuinely figure content, confirmed by
+    # tracing each codepoint to the one question it comes from, not assumed
+    # from the character alone:
+    "/": 'EJC P1 Q11\u2019s graph axis label "amount of A / mol" -- the axis '
+         'label is drawn as part of the native-shape graph, not extractable '
+         'text; the SAME question\u2019s stem prose never uses a bare slash',
+    "\uf05b": 'EJC P1 Q13\u2019s buffer-equation options -- Symbol-font '
+              'stretchy left-bracket piece from the embedded Equation.DSMT4 '
+              'objects (\u201c[H+] = Ka\u00d7[acid]/[salt]\u201d). Rendered '
+              'as house markup, not a cropped image (corrections.py\u2019s '
+              'EQUATION_OPTIONS_AS_TEXT), but with plain ASCII "[" "]" '
+              'standing in for MathType\u2019s own stretchy-bracket glyph -- '
+              'the PDF\u2019s own codepoint stays legitimately absent from '
+              'the extraction even though the bracket ITSELF is now real, '
+              'searchable text',
+    "\uf05d": 'EJC P1 Q13 -- the matching stretchy right-bracket piece, same '
+              'equation objects as \\uf05b above',
+    "\uf0e9": 'EJC P1 Q13 -- stretchy bracket CORNER piece (top), same '
+              'Equation.DSMT4 objects as \\uf05b above',
+    "\uf0eb": 'EJC P1 Q13 -- stretchy bracket CORNER piece (bottom), same '
+              'Equation.DSMT4 objects as \\uf05b above',
+    "\uf0f9": 'EJC P1 Q13 -- stretchy bracket CORNER piece (top, right side), '
+              'same Equation.DSMT4 objects as \\uf05b above',
+    "\uf0fb": 'EJC P1 Q13 -- stretchy bracket CORNER piece (bottom, right '
+              'side), same Equation.DSMT4 objects as \\uf05b above',
 }
 
 
@@ -136,7 +161,7 @@ def charset_gate(extracted: str, reference_pdf,
     worry about in advance, which is exactly the property the previous EMF check
     lacked.
     """
-    problems_pre = adobe_symbol.cross_check(SYMBOL, WINGDINGS)
+    problems_pre = adobe_symbol.cross_check(SYMBOL, WINGDINGS, MT_EXTRA)
     ref = pdf_text(reference_pdf, first_page, last_page)
     for pat in (ignore_re or []):
         ref = re.sub(pat, " ", ref)

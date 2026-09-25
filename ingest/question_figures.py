@@ -36,7 +36,12 @@ QNUM_RE = re.compile(r"^(\d{1,2})$")
 MARGIN_X = 130.0
 #: A fraction rule: thin, short, with digits above and below.
 RULE_MAX_H = 2.5
-RULE_MAX_W = 40.0
+#: RI's stem fractions are short numeric ratios ("1/2"), 40pt was plenty. EJC
+#: 2024 H2 P1 Q9's option fractions are algebraic ("(X + Y + Z) / W"), and the
+#: widest confirmed rule measures 68.0pt (direct inspection, get_drawings()) --
+#: raised with margin, not derived from a formula, because this is a proxy for
+#: "is this actually a fraction bar", not a real limit on expression length.
+RULE_MAX_W = 80.0
 
 
 def question_bands(doc, first=1, last=30) -> dict:
@@ -112,13 +117,41 @@ def clusters_for(doc, spans) -> list:
     return out
 
 
+def _join_words(ws) -> str:
+    """Left-to-right text of a word list, one word each side of a real gap.
+
+    EJC 2024 H2 P1 Q9's fractions are algebraic, and pymupdf's own word
+    segmentation splits "X+Y+Z" into five separate words ('X', '+', 'Y', '+',
+    'Z') at the operator glyphs even though there is no whitespace in the
+    source. Measured gaps between these came back inconsistent -- 1.8pt in
+    one place, 2.1-2.3pt a few glyphs later in the SAME expression -- so a
+    single tight/loose threshold reconstructed "X+ Y + Z" rather than
+    something uniform. A single space between every word, always, reads
+    correctly either way ("X + Y + Z") and never depends on that threshold;
+    RI's plain numeric fractions are already a single word each side, so this
+    never touches them at all.
+    """
+    ws = sorted(ws, key=lambda w: w[0])
+    out = " ".join(w[4] for w in ws)
+    return out.strip()
+
+
 def read_fraction(doc, spans) -> list:
     """Find stacked fractions in a band and return them as (num, den) strings.
 
-    Deliberately narrow: a short thin horizontal rule, with exactly one text
-    span centred above it and one below, both within its x-range. Anything
-    less clear-cut returns nothing, because a wrong coefficient is invisible in
-    the rendered output and changes the chemistry.
+    Deliberately narrow: a short thin horizontal rule, with text ABOVE and
+    BELOW it and none beside it (sharing its x-range, give or take a few
+    points). Anything less clear-cut returns nothing, because a wrong
+    coefficient is invisible in the rendered output and changes the chemistry.
+
+    The text on each side does not have to be a single word: RI's stem
+    fractions are one bare number each side, but EJC 2024 H2 P1 Q9's option
+    fractions are short algebraic expressions ("X + Y + Z"), which pymupdf's
+    own word segmentation already breaks into several word-tokens even with
+    no real gap between them (see _join_words). Requiring "exactly one word"
+    would silently return nothing for every one of those -- and this module's
+    own rule is that an unreadable fraction is reported empty, never guessed,
+    so under-matching here is exactly as costly a defect as over-matching.
     """
     found = []
     for pno, y0, y1 in spans:
@@ -142,12 +175,21 @@ def read_fraction(doc, spans) -> list:
             below = [w for w in words
                      if w[1] >= r.y1 - 1 and w[1] < r.y1 + 14
                      and w[0] >= r.x0 - 3 and w[2] <= r.x1 + 3]
-            if len(above) == 1 and len(below) == 1:
+            if above and below:
                 found.append({
-                    "page": pno, "y": r.y0,
-                    "num": above[0][4].strip(), "den": below[0][4].strip(),
+                    "page": pno, "y": r.y0, "x": r.x0,
+                    "num": _join_words(above), "den": _join_words(below),
                 })
-    found.sort(key=lambda f: (f["page"], f["y"]))
+    # READING order, not just top-to-bottom: EJC 2024 H2 P1 Q9 prints all four
+    # option fractions side by side on the SAME line, so their rule y0's
+    # differ only by sub-pixel rendering jitter (measured: 401.149... vs
+    # 401.552..., under half a point). Sorting on y alone let that jitter
+    # decide the order, which silently handed each option a DIFFERENT one's
+    # fraction (confirmed: Q9 came back C, D, A, B instead of A, B, C, D).
+    # Bucketing y to the nearest 3pt groups same-row rules together (real
+    # text rows are a full line height apart, 12pt or more) and x breaks the
+    # tie left-to-right, matching how a person reads the row.
+    found.sort(key=lambda f: (f["page"], round(f["y"] / 3.0), f["x"]))
     return found
 
 
@@ -215,9 +257,6 @@ def write_crops(doc, items, outdir: Path, dpi: int = 400) -> list:
 # column headings -- so the fix is to band by those, exactly as figures.py
 # bands the mark scheme by its part labels, and to cluster only inside a cell.
 
-OPT_RE = re.compile(r"^[A-E]$")
-
-
 def option_cells(doc, spans, letters="ABCD") -> dict:
     """{letter: (page, Rect)} for each printed option letter.
 
@@ -226,12 +265,26 @@ def option_cells(doc, spans, letters="ABCD") -> dict:
     letter across and to the next letter row down -- so Q8's crop includes the
     "constant V" caption under its graph, which is the only thing telling that
     option apart from the others.
+
+    Matched against `letters` itself, not a fixed A-E regex: EJC 2024 H2 P1
+    Q9's stem reads "...molecules with energy E for an uncatalysed
+    reaction...", and pymupdf's own word segmentation gives that italic
+    variable "E" as its own bare word -- indistinguishable from a genuine
+    option marker by shape alone once a regex allows E at all. A 4-option
+    MCQ (this paper, and every other one seen so far) never legitimately
+    prints a bare "E", so widening the match beyond the letters a question
+    actually has is exactly what let a stray physics variable invent a
+    5th option cell, which then dragged the STEM/options boundary
+    (`_crop_question`'s `first_opt`) up to the top of the page and swallowed
+    the whole stem into the options region -- the whole band clustered to 0
+    stem crops as a result. A paper that genuinely has 5 options passes its
+    own `letters` in.
     """
     found = []
     for pno, y0, y1 in spans:
         page = doc[pno]
         for w in page.get_text("words"):
-            if OPT_RE.match(w[4].strip()) and y0 <= w[1] <= y1 and w[0] < 470:
+            if w[4].strip() in letters and y0 <= w[1] <= y1 and w[0] < 470:
                 found.append((pno, w[1], w[0], w[4].strip()))
     if not found:
         return {}
@@ -246,13 +299,68 @@ def option_cells(doc, spans, letters="ABCD") -> dict:
     for r in rows:
         r[2].sort()
 
+    # ROW-TO-ROW BOUNDARIES, computed ONCE and shared by both rows either
+    # side of them -- a boundary used only as row i's bottom and never also
+    # as row i+1's top would leave a dead strip between the two cells,
+    # belonging to neither, and that strip is exactly where a tall
+    # structure's edge can fall (see below). `bounds[i]` is the boundary
+    # above row i; `bounds[i+1]` is the boundary below it.
+    bounds = [None] * (len(rows) + 1)
+    for i, (pno, y, cells) in enumerate(rows):
+        page = doc[pno]
+        if i == 0:
+            # THE FIRST ROW HAS NO ROW ABOVE IT TO SHARE A BOUNDARY WITH, but
+            # its own content can still reach above its letters the same way
+            # a lower row's can (EJC 2024 H2 P1 Q28's option A: its topmost
+            # C=O double-bond stroke sits 14.5pt above "letter y - 6", the
+            # naive default below, and was clipped there). Walk up from the
+            # row and take the NEAREST blank strip -- whatever the actual gap
+            # to "above" turns out to be, not a fixed lookback -- the same
+            # `_ink_gaps` snap as the row-to-row case, just open-ended
+            # upward instead of bounded by a known next row.
+            x0f = min(x for x, _L in cells) - 8
+            x1f = page.rect.x1 - 20
+            top_lookback = 150.0
+            above = max((y0 for p, y0, _y1 in spans if p == pno and y0 < y),
+                       default=y - top_lookback)
+            gaps = _ink_gaps(page, x0f, x1f, max(above, y - top_lookback), y,
+                             min_gap=4.0)
+            if gaps:
+                bounds[0] = max(gaps, key=lambda ab: ab[1])
+                bounds[0] = (bounds[0][0] + bounds[0][1]) / 2
+        nxt = next((j for j in range(i + 1, len(rows)) if rows[j][0] == pno),
+                   None)
+        if nxt is None:
+            continue
+        below = rows[nxt][1]
+        naive = below - 4
+        # A ROW BOUNDARY DERIVED FROM THE LETTERS' OWN Y IS A MIDPOINT GUESS,
+        # and a tall enough structure reaches past it: EJC 2024 H2 P1 Q28
+        # prints each option's amino acid diagram centred on its own letter,
+        # and the diagram is taller than the 71pt gap between rows, so its
+        # edge sat 26pt past "next row's letter - 4" and was clustered into
+        # the row on the wrong side of that boundary (that row's crop showed
+        # an unexplained fragment of the structure next to it). The same fix
+        # as `_snap_rows` (RI 2024 H2 P1 Q25): the page itself shows a
+        # genuine blank strip between the rows' real content, so snap the
+        # boundary there instead of trusting the labels' midpoint. Scoped to
+        # exactly this row-to-row gap (not the whole grid, unlike
+        # `_snap_rows`), so any gap found here is between two known adjacent
+        # rows and safe to use without a tolerance check.
+        x0 = min(x for x, _L in cells) - 8
+        x1 = page.rect.x1 - 20
+        gaps = _ink_gaps(page, x0, x1, y, below, min_gap=4.0)
+        bounds[i + 1] = (min(((a + z) / 2 for a, z in gaps),
+                             key=lambda m: abs(m - naive))
+                         if gaps else naive)
+
     out = {}
     for i, (pno, y, cells) in enumerate(rows):
         page = doc[pno]
-        # bottom: the next letter row on this page, else the span's end
-        below = next((r[1] for r in rows[i + 1:] if r[0] == pno), None)
-        if below is None:
-            below = max((y1 for p, _y0, y1 in spans if p == pno),
+        top = bounds[i] if bounds[i] is not None else y - 6
+        bottom = bounds[i + 1]
+        if bottom is None:
+            bottom = max((y1 for p, _y0, y1 in spans if p == pno),
                         default=page.rect.y1)
         for j, (x, L) in enumerate(cells):
             right = cells[j + 1][0] - 4 if j + 1 < len(cells) else page.rect.x1
@@ -262,7 +370,7 @@ def option_cells(doc, spans, letters="ABCD") -> dict:
             # edge reaches back past the letter, and the top above it, because
             # artwork is drawn beside and below the letter, never on it.
             left = x - 8
-            out[L] = (pno, pymupdf.Rect(left, y - 6, right, below - 4))
+            out[L] = (pno, pymupdf.Rect(left, top, right, bottom))
     return out
 
 
@@ -370,13 +478,86 @@ def matrix_cells(doc, spans, nrows: int, ncols: int, row_labels=None,
 
 
 def crop_in(doc, pno, rect, n_wanted: int) -> list:
-    """Cluster inside one cell and merge down to `n_wanted` pictures."""
+    """Cluster inside one cell and merge down to `n_wanted` pictures.
+
+    A stroke is selected by its CENTRE (figure_clusters), so its own tight box
+    can still reach past the cell that picked it -- and merge_to's union then
+    carries that overhang into the crop. EJC 2024 H2 P1 Q28's option A
+    measured 3.5pt into option C's row this way, printing the top of C's
+    structure as an unexplained fragment under A's. Clipping back to the cell
+    is safe: option_cells already sizes a cell generously past its own letter
+    on every side specifically so a real stroke is never dropped, so anything
+    still outside it belongs to a neighbour, not to this cell.
+    """
     page = doc[pno]
     cl = figure_clusters(page, rect, reject_underlines=False,
                          min_w=10.0, min_h=6.0)
     if not cl:
         return []
-    return [(pno, r) for r in merge_to(cl, n_wanted)]
+    return [(pno, r & rect) for r in merge_to(cl, n_wanted)]
+
+
+def crop_in_text(doc, pno, rect, letter: str | None = None,
+                 window: float = 24.0) -> pymupdf.Rect | None:
+    """Bounding box of every glyph AND drawing inside `rect` -- for content
+    built from literal characters rather than real vector art or images.
+
+    `figure_clusters` (crop_in's own clustering) only looks at
+    `get_drawings()`/`get_images()`, and MathType's stretchy two-piece bracket
+    glyphs render as TEXT (see `audit.FIGURE_BORNE`, `corrections.py`'s
+    EQUATION_OPTIONS_AS_FRACTIONS), not paths -- so `crop_in` sees nothing of
+    EJC 2024 H2 P1 Q13's Ka expressions but their single fraction rule,
+    coming back as a sub-point-tall sliver rather than the whole equation.
+
+    Narrowed to a window around the thinnest drawing found (the fraction
+    rule, if there is one) rather than the whole cell: an option in the
+    BOTTOM row of a grid has no next-letter row below it to bound its cell,
+    so the cell runs to the bottom of the page and would otherwise sweep up
+    this paper's running footer ("EJC", "9729/01/J2PE/24"), which repeats
+    there. Returns None when nothing at all is found in the (possibly
+    narrowed) window.
+
+    `letter` excludes that option's own printed marker from the union: the
+    app draws the "A"/"B"/"C"/"D" label itself, beside the image
+    (`index.html`'s optGrid), and index.html's own image ends up without one
+    only because `crop_in`'s vector-only pass never sees the letter (it is
+    text, not a drawing) -- baking it into the image here, as the letter is
+    the FIRST word this cell's own search finds, would print it twice.
+    """
+    page = doc[pno]
+
+    def _center(r: pymupdf.Rect) -> pymupdf.Point:
+        return pymupdf.Point((r.x0 + r.x1) / 2, (r.y0 + r.y1) / 2)
+
+    drawings = [pymupdf.Rect(dr["rect"]) for dr in page.get_drawings()
+                if pymupdf.Rect(dr["rect"]).is_valid]
+    drawings = [r for r in drawings if rect.contains(_center(r))]
+    thin = [r for r in drawings if r.height <= RULE_MAX_H and r.width >= 4]
+    search = rect
+    if thin:
+        anchor = min(r.y0 for r in thin)
+        search = pymupdf.Rect(rect.x0, max(rect.y0, anchor - window),
+                              rect.x1, min(rect.y1, anchor + window))
+
+    words = [w for w in page.get_text("words")
+             if search.contains(_center(pymupdf.Rect(w[:4])))]
+    if letter is not None:
+        words = [w for w in words
+                 if not (w[4].strip() == letter and w[0] - rect.x0 < 15)]
+
+    boxes = [r for r in drawings if search.contains(_center(r))]
+    boxes += [pymupdf.Rect(w[:4]) for w in words]
+    for im in page.get_images(full=True):
+        for r in page.get_image_rects(im[0]):
+            r = pymupdf.Rect(r)
+            if search.contains(_center(r)):
+                boxes.append(r)
+    if not boxes:
+        return None
+    out = boxes[0]
+    for b in boxes[1:]:
+        out |= b
+    return out
 
 
 def options_table_top(doc, pno, letter_y: float, lookback: float = 90.0,

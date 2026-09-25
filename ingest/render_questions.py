@@ -106,6 +106,19 @@ def _strip_tags(s: str) -> str:
     # someone would search for them.
     s = re.sub(r"(?<=\d)<sup>([+-]?\d+[+-]?)</sup>", r"^\1", s)
     s = re.sub(r"<br ?/?>", " ", s)
+    # Two adjacent BLOCK elements with nothing textual between their tags --
+    # "<li>A</li><li>B</li>", "<p>A</p><p>B</p>" -- must not glue into one
+    # word once the tags themselves are dropped below. A <p> already gets a
+    # separating "\n" from how _blocks() joins lines (collapsed to a space by
+    # the final \s+ pass at the end of this function), but an <ol class=
+    # "stmts">'s <li>s sit on a single line with no separator of their own --
+    # confirmed live on Q7's four numbered relationships, content_text reading
+    # "...(∆G3 + ∆G4)∆G2 = ∆G4..." with no space at the join, and reproduced
+    # (worse: two whole sentences fused) once Q10's typed statements 2 and 3
+    # were folded into its <ol> alongside statement 1 (questions_flow.py's
+    # _wrap_stmt_lists). The trailing space this adds is harmless everywhere
+    # else -- the final \s+ collapse below absorbs it.
+    s = re.sub(r"</(li|p|tr|div)>", r"</\1> ", s)
     s = re.sub(r"<[^>]+>", "", s)
     s = html.unescape(s)
     return re.sub(r"\s+", " ", s).strip()
@@ -119,9 +132,26 @@ def _para(h: str) -> str:
     own width, so keeping the source's wrap points would break sentences at
     arbitrary places -- Q9 wraps between "across" and "Period 3".
     """
-    if h.startswith(CENTRE):
-        return '<p class="c">%s</p>' % re.sub(r"<br ?/?>", " ", h[len(CENTRE):])
-    return '<p class="qstem">%s</p>' % re.sub(r"<br ?/?>", " ", h)
+    h = re.sub(r"<br ?/?>", " ", h)
+    centred = h.startswith(CENTRE)
+    body = h[len(CENTRE):] if centred else h
+    # A LEADING tab is pure indentation styling, not a value with anything to
+    # line up against -- Q19's "\tWhich statement is correct?" and Q23's
+    # "\tWhich compound will produce..." both open with one. It already
+    # renders invisibly today (collapsed like any other whitespace), so drop
+    # it rather than let the eqn/pre-wrap treatment below turn it into an
+    # unexplained gap before the question text.
+    body = re.sub(r"^\t+", "", body)
+    if centred:
+        return '<p class="c">%s</p>' % body
+    # oxml.py preserves a genuine Word tab as a literal "\t" (never emitted
+    # for anything but a real <w:tab/>, so its presence is always deliberate
+    # column alignment, not an accident). `eqn` + index.html's
+    # `white-space:pre-wrap`+`tab-size` reproduces that column instead of
+    # collapsing it to nothing -- EJC 2024 H2 P1 Q8's "reaction 1  <eqn>",
+    # Q10's "reaction 1:  <eqn>  ∆H = ...", Q29's bare "<eqn>  E-o- = ...".
+    cls = "qstem eqn" if "\t" in body else "qstem"
+    return '<p class="%s">%s</p>' % (cls, body)
 
 
 def _next_sub(state) -> str:
@@ -216,6 +246,29 @@ def _blocks(chunk: str, state=None) -> list:
             out.append(re.sub(r"<td>(.*?)</td>", _cell, line, flags=re.S)
                        .replace(CENTRE, ""))
             continue
+        if line.lstrip().startswith(("<ol", "<ul")):
+            # A pre-built numbered/bulleted statement list (style-guide.md
+            # section 2: "Numbered statements -- emit ol.stmts", "Bullets --
+            # emit ul.stmts"). Built by the caller as a single already-complete
+            # <ol class="stmts">...</ol> or <ul class="stmts">...</ul> line, so
+            # it must pass through whole -- wrapping it in <p class="qstem">
+            # like ordinary prose would nest a list inside a paragraph, which
+            # is invalid and which browsers "fix" by hoisting the list out,
+            # silently splitting it from the sentence introducing it.
+            # Same mid-sentence-<br>-is-not-content reasoning as _para()
+            # above applies here too -- exposed by Q10's statement 3 (a
+            # genuine w:br in the source) once _wrap_stmt_lists folds it
+            # into this <ol> instead of leaving it as its own <p>, which
+            # used to run it through _para()'s stripping.
+            line = re.sub(r"<br ?/?>", " ", line)
+            def _li(m):
+                inner = m.group(1)
+                if FIG_SENTINEL not in inner:
+                    return m.group(0)
+                return "<li>%s</li>" % _sub_cell(inner, state)
+            out.append(re.sub(r"<li>(.*?)</li>", _li, line, flags=re.S)
+                       .replace(CENTRE, ""))
+            continue
         if FIG_SENTINEL in line:
             if _strip_tags(line.replace(FIG_SENTINEL, "")):
                 out.extend(_mixed_para(line, state))
@@ -296,17 +349,53 @@ def _extra_table(rows: list, state=None) -> list:
     return ['<table class="qt center">%s</table>' % "".join(trs)]
 
 
-def figure_kinds(q) -> list:
-    """['block'|'frac'|'option'] for each of q.figures, in document order.
+def figure_kinds(q, frac_letters=frozenset(), eqtext_map=None) -> list:
+    """['block'|'frac'|'option'|'eqtext'] for each of q.figures, in document order.
 
     Decided from the figure itself, not from the layout around it: an
     Equation.DSMT4 object is maths, a ChemDraw object or native shape is a
     picture. See questions.py for why the ProgID is the right evidence.
+
+    An OPTION-position figure is the one exception, and only when explicitly
+    told to be: an Equation.DSMT4 object sitting in an option is "option", the
+    same as a picture, UNLESS its letter is in `frac_letters`
+    (corrections.frac_option_letters) -- a per-question, per-letter allowlist,
+    populated only once someone has actually looked at the PDF and confirmed
+    it prints a plain, single-rule numerator/denominator fraction that
+    `question_figures.read_fraction` can read cleanly.
+
+    This is NOT decidable from kind alone. EJC 2024 H2 P1's Q9 and Q13 are
+    both option-position Equation.DSMT4 objects, and they are NOT the same
+    kind of content: Q9 is a clean fraction, e.g. "(X + Y + Z) / W" -- one
+    hairline rule, one line of PDF text above it, one below, all inside
+    `RULE_MAX_W`'s (widened) budget. Q13 is a Ka expression with concentration
+    brackets built from MathType's stretchy two-piece glyphs (confirmed by
+    direct inspection: U+F0E9/F0EB/F0F9/F0FB, already in `audit.FIGURE_BORNE`
+    as figure-borne from the SAME investigation) -- there is no clean
+    numerator/denominator split to read, and text-decoding it would silently
+    mangle the expression. Defaulting every option-position equation to
+    "frac" once produced exactly that: Q13 handed to `read_fraction` found
+    nothing.
+
+    Q13's four options ARE hand-reconstructable as markup, though -- just not
+    by `read_fraction`'s simple one-rule reader -- so `corrections.py`'s
+    `eqtext_options` (`eqtext_map` here) carries them pre-built. Checked
+    BEFORE `frac_letters`: a letter in `eqtext_map` gets "eqtext" regardless
+    of what `frac_letters` says, since the two are alternative treatments for
+    the same underlying problem (an option too complex for `read_fraction`)
+    and a question should only ever be in one of the two registries.
     """
+    eqtext_map = eqtext_map or {}
     out = []
     for f in q.figures:
         if f.part.startswith("option"):
-            out.append("option")
+            letter = f.part.split(":", 1)[1]
+            if letter in eqtext_map:
+                out.append("eqtext")
+            elif f.kind == "equation" and letter in frac_letters:
+                out.append("frac")
+            else:
+                out.append("option")
         elif f.kind == "equation":
             out.append("frac")
         else:
@@ -319,10 +408,13 @@ def asset_plan(q, school="RI", level="H2", paper="P1", year=2024) -> list:
 
     Fractions get NO asset -- they are rendered as `span.frac` markup, the same
     house style WA2 and RI P2 use, so there is nothing to upload and nothing to
-    crop. `storage_path` is a BARE FILENAME (SS8), named
+    crop. An "eqtext" option (corrections.eqtext_options) gets none either,
+    for the same reason. `storage_path` is a BARE FILENAME (SS8), named
     SCHOOL_LEVEL_PAPER_Qn_SLOT_YEAR.png.
     """
-    kinds = figure_kinds(q)
+    frac_letters = corrections.frac_option_letters(school, level, paper, year, q.qnum)
+    eqtext_map = corrections.eqtext_options(school, level, paper, year, q.qnum)
+    kinds = figure_kinds(q, frac_letters, eqtext_map)
     dropped = corrections.dropped_blocks(school, level, paper, year, q.qnum)
     plan, nb, nseen = [], 0, 0
     for i, kind in enumerate(kinds):
@@ -361,7 +453,8 @@ def _frac(num: str, den: str) -> str:
             '<span class="fden">%s</span></span>' % (num, den))
 
 
-def _subs(q, plan, fractions, frac_fmt, block, drop) -> list:
+def _subs(q, plan, fractions, frac_fmt, block, drop, frac_letters=frozenset(),
+         eqtext_map=None) -> list:
     """One substitution per non-option figure, in document order.
 
     Both renderers go through here, and that is the point. content_text used to
@@ -375,8 +468,14 @@ def _subs(q, plan, fractions, frac_fmt, block, drop) -> list:
     A block figure that is not in `plan` was dropped on purpose
     (corrections.DROPPED_FIGURES) and substitutes to `drop`. Passing plan=None
     means "assume every figure is placed".
+
+    `frac_letters` is `corrections.frac_option_letters` -- see figure_kinds.
+    `eqtext_map` is `corrections.eqtext_options` -- an "eqtext" option, like an
+    "option" (picture) one, gets nothing from this sequential walk; its fixed
+    per-letter value is looked up directly by the caller instead (see
+    `_consume_option_fracs`), so it is skipped here the same way.
     """
-    kinds = figure_kinds(q)
+    kinds = figure_kinds(q, frac_letters, eqtext_map)
     # `plan is None` means "unknown, assume all placed"; an EMPTY plan means
     # nothing is placed. Conflating the two is what left Q12's dropped figure
     # still printing a div.fig after the asset itself was gone.
@@ -385,7 +484,7 @@ def _subs(q, plan, fractions, frac_fmt, block, drop) -> list:
     fracs = list(fractions or [])
     out = []
     for i, k in enumerate(kinds):
-        if k == "option":
+        if k in ("option", "eqtext"):
             continue
         if k == "frac":
             n, d = fracs.pop(0) if fracs else ("", "")
@@ -397,16 +496,56 @@ def _subs(q, plan, fractions, frac_fmt, block, drop) -> list:
     return out
 
 
-def content_html(q, plan=None, fractions=None) -> str:
+def _consume_option_fracs(q, kinds, subs_iter, from_start: bool = False) -> dict:
+    """{letter: value} for OPTION-position figures classified 'frac'.
+
+    `_subs()` no longer skips these (figure_kinds gives them 'frac', not
+    'option'), so its returned list already carries one entry for each, in
+    the SAME relative document order as `q.figures` -- just interleaved with
+    every stem/extra entry that comes before them.
+
+    `from_start=False` (content_html, content_text): the caller has ALREADY
+    walked every sentinel in `q.stem_html`/`q.extra_html` on this SAME
+    iterator (via `_blocks`/`_extra_table`/`fx`), which -- because a
+    question's stem always precedes its options -- has already advanced
+    `subs_iter` past everything ahead of the first option-frac entry. This
+    then only has to pick those out in order, never re-consuming anything the
+    caller already took.
+
+    `from_start=True` (options_json): no stem walk happens at all, so this
+    has to burn through every OTHER non-option entry itself first (`_subs()`
+    still emitted a value for it, just not one this function keeps) or the
+    first option-frac would wrongly take a value meant for the stem.
+    """
+    out = {}
+    for i, f in enumerate(q.figures):
+        is_opt_frac = kinds[i] == "frac" and f.part.startswith("option:")
+        if not from_start and not is_opt_frac:
+            continue           # caller already consumed this one itself
+        if kinds[i] in ("option", "eqtext"):
+            continue            # _subs() never emitted anything for these
+        val = next(subs_iter, "")
+        if is_opt_frac:
+            out[f.part.split(":", 1)[1]] = val
+    return out
+
+
+def content_html(q, plan=None, fractions=None, frac_letters=frozenset(),
+                 eqtext_map=None) -> str:
     """Render the question.
 
     `fractions` is [(num, den), ...] for this question's Equation objects, in
     document order, read from the Word PDF by question_figures.read_fraction.
     Without it the fraction is emitted as an empty `span.frac`, which is
     visibly wrong rather than quietly wrong.
+
+    `frac_letters` is `corrections.frac_option_letters` -- see figure_kinds.
+    `eqtext_map` is `corrections.eqtext_options` -- see figure_kinds.
     """
-    kinds = figure_kinds(q)
-    state = {"subs": iter(_subs(q, plan, fractions, _frac, FIG_DIV, ""))}
+    eqtext_map = eqtext_map or {}
+    kinds = figure_kinds(q, frac_letters, eqtext_map)
+    state = {"subs": iter(_subs(q, plan, fractions, _frac, FIG_DIV, "",
+                                frac_letters, eqtext_map))}
 
     parts: list = []
     parts.extend(_blocks(q.stem_html, state))
@@ -432,14 +571,32 @@ def content_html(q, plan=None, fractions=None) -> str:
     # so emitting a table of the same four strings below the grid repeats every
     # one of them and separates the caption from the graph it describes -- the
     # detached 2x2 table this was meant to fix, in a new position.
+    #
+    # Scoped to kind == "option" ONLY: a "frac" option (EJC Q9/Q13's stacked
+    # fractions, see figure_kinds) has no image at all -- there is nothing for
+    # the frontend's asset grid to show under a caption, so it must fall
+    # through to the ordinary options table below instead, where the fraction
+    # itself gets substituted in.
     letters = sorted(q.options)
-    fig_letters = {f.part.split(":", 1)[1] for f in q.figures
-                   if f.part.startswith("option:")}
+    fig_letters = {f.part.split(":", 1)[1] for i, f in enumerate(q.figures)
+                   if f.part.startswith("option:") and kinds[i] == "option"}
     captioned = bool(letters) and set(letters) <= fig_letters and all(
         len(_strip_tags("".join(q.options[L]))) <= 40 for L in letters)
     if captioned:
         letters = []
-    if letters and any(_strip_tags("".join(v)) for v in q.options.values()):
+    # Pulled from the SAME iterator content_html's stem/extra rendering just
+    # walked -- must happen after that (a question's stem always precedes its
+    # options) and before the options are built, so each frac substitutes into
+    # the right letter's cell. See _consume_option_fracs.
+    frac_subs = _consume_option_fracs(q, kinds, state["subs"])
+    # An "eqtext" letter's markup is a fixed lookup, not pulled from the subs
+    # iterator (see _subs) -- merged in here so the table-cell substitution
+    # below (originally built for "frac" alone) handles both the same way.
+    # The two registries are mutually exclusive per letter (figure_kinds), so
+    # this merge can never silently drop one in favour of the other.
+    combined_subs = {**frac_subs, **{L: html for L, (html, _t) in eqtext_map.items()}}
+    if letters and any(_strip_tags("".join(v)) or FIG_SENTINEL in "".join(v)
+                       for v in q.options.values()):
         # Trim trailing empty columns before deciding the width -- one stray
         # blank cell in the source otherwise adds a phantom column to every row.
         body = [list(q.options[L]) or [""] for L in letters]
@@ -457,7 +614,8 @@ def content_html(q, plan=None, fractions=None) -> str:
             trs.append('<tr><td class="ol"></td>%s</tr>' % hdr)
         for L, vals in zip(letters, body):
             vals = list(vals) + [""] * (ncol - len(vals))
-            tds = "".join("<td>%s</td>" % _inline(v) for v in vals)
+            tds = "".join("<td>%s</td>" % _inline(v, combined_subs.get(L, ""))
+                         for v in vals)
             trs.append('<tr><td class="ol">%s</td>%s</tr>' % (L, tds))
         parts.append('<table class="opts-table">%s</table>' % "".join(trs))
     return _stack_adjacent("\n".join(parts))
@@ -467,14 +625,30 @@ def _strip_hdr(h: str) -> str:
     return h.replace(CENTRE, "").replace("\n", " ").strip()
 
 
-def _inline(v: str) -> str:
-    return v.replace(CENTRE, "").replace(FIG_SENTINEL, "").replace("\n", " ").strip()
+def _inline(v: str, sub: str = "") -> str:
+    """One options-table cell, with any figure sentinel replaced by `sub`.
+
+    `sub` defaults to "" -- dropping the sentinel entirely -- which is right
+    for a real picture option: the image itself is inserted separately by the
+    frontend's own asset-grid build, matched by slot letter, never by this
+    text substitution (see the module docstring's rule 2). A "frac" option
+    (EJC Q9/Q13) has no separate image at all, so its caller passes the
+    already-rendered `<span class="frac">` markup here instead.
+    """
+    return v.replace(CENTRE, "").replace(FIG_SENTINEL, sub).replace("\n", " ").strip()
 
 
-def content_text(q, fractions=None) -> str:
-    """Plain text for search. MUST be non-null -- see the module docstring."""
+def content_text(q, fractions=None, frac_letters=frozenset(), eqtext_map=None) -> str:
+    """Plain text for search. MUST be non-null -- see the module docstring.
+
+    `frac_letters` is `corrections.frac_option_letters` -- see figure_kinds.
+    `eqtext_map` is `corrections.eqtext_options` -- see figure_kinds.
+    """
+    eqtext_map = eqtext_map or {}
+    kinds = figure_kinds(q, frac_letters, eqtext_map)
     subs = iter(_subs(q, None, fractions,
-                      lambda n, d: "(%s)/(%s) " % (n, d), " ", " "))
+                      lambda n, d: "(%s)/(%s) " % (n, d), " ", " ",
+                      frac_letters, eqtext_map))
     def fx(h):
         out = h
         while FIG_SENTINEL in out:
@@ -485,17 +659,39 @@ def content_text(q, fractions=None) -> str:
         bits.extend(_strip_tags(fx(c)) for c in row)
     if q.opt_headers:
         bits.append(" | ".join(_strip_tags(h) for h in q.opt_headers))
+    # Pulled from the SAME iterator the stem/extra walk above just advanced --
+    # see _consume_option_fracs.
+    frac_subs = _consume_option_fracs(q, kinds, subs)
+    combined_subs = {**frac_subs, **{L: t for L, (_h, t) in eqtext_map.items()}}
     for L in sorted(q.options):
-        val = " | ".join(_strip_tags(v) for v in q.options[L])
+        val = " | ".join(
+            _strip_tags(v.replace(FIG_SENTINEL, combined_subs.get(L, "")))
+            for v in q.options[L])
         bits.append("%s %s" % (L, val) if val else L)
     return re.sub(r"\s+", " ", " ".join(b for b in bits if b)).strip()
 
 
-def options_json(q) -> dict:
-    """{'A': 'text', ...} -- feeds chem_search_doc, so plain text only."""
+def options_json(q, fractions=None, frac_letters=frozenset(), eqtext_map=None) -> dict:
+    """{'A': 'text', ...} -- feeds chem_search_doc, so plain text only.
+
+    `frac_letters` is `corrections.frac_option_letters` -- see figure_kinds.
+    `eqtext_map` is `corrections.eqtext_options` -- see figure_kinds.
+    """
+    eqtext_map = eqtext_map or {}
+    kinds = figure_kinds(q, frac_letters, eqtext_map)
+    subs = iter(_subs(q, None, fractions,
+                      lambda n, d: "(%s)/(%s)" % (n, d), " ", " ",
+                      frac_letters, eqtext_map))
+    # No stem to walk here (options_json never touches q.stem_html), so this
+    # has to burn through every earlier non-option entry itself -- see
+    # _consume_option_fracs's from_start note.
+    frac_subs = _consume_option_fracs(q, kinds, subs, from_start=True)
+    combined_subs = {**frac_subs, **{L: t for L, (_h, t) in eqtext_map.items()}}
     out = {}
     for L in sorted(q.options):
-        txt = " | ".join(t for t in (_strip_tags(v) for v in q.options[L]) if t)
+        txt = " | ".join(
+            t for t in (_strip_tags(v.replace(FIG_SENTINEL, combined_subs.get(L, "")))
+                       for v in q.options[L]) if t)
         if not txt and any(f.part == "option:" + L for f in q.figures):
             txt = "[structure %s]" % L
         out[L] = txt

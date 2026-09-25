@@ -14,6 +14,16 @@ reports fewer rows than expected, and nobody notices which question lost its
 tag. So the exact expected count is asserted after the insert, and the
 transaction aborts if it is short.
 
+SECOND FAILURE THIS GUARDS AGAINST (found on RI 2024 H2 P1, HANDOFF.md SS13):
+`question_topics` LOOKS like it should be derived by the database from
+`question_los`, but it isn't -- it's a separate table the FRONTEND keeps in
+step via `syncTopics()` (index.html), which only runs after a tag edit made
+in the UI. A SQL migration bypasses that silently: the tags land in
+`question_los`, but every question shows its LO chip and an UNTAGGED badge at
+the same time, and sorts/filters into no topic at all. So this generator
+rebuilds `question_topics` itself (delete + reinsert, scoped to this paper)
+right after the tags insert, and asserts no tagged question is left topic-less.
+
 Other conventions carried over (handoff SS8, SS11):
 
 * The question join pins `q.type = 'mcq'`. MCQ and structured share
@@ -30,20 +40,25 @@ Other conventions carried over (handoff SS8, SS11):
   becomes untrustworthy the moment anyone checks that column.
 
 Usage:
-  python3 -m ingest.gen_tag_migration <tags.json> <dest.sql>
+  python3 -m ingest.gen_tag_migration <tags.json> <dest.sql> [--school ..] [...]
 
 tags.json: {"<question_number>": ["7(f)(i)", ...], ...}
+
+School/year/paper/level/syllabus default to the values this script was
+originally written for (RI 2024 H2 P1), so an old invocation keeps working
+unchanged -- same convention as gen_question_migration.py and
+gen_patch_migration.py.
 """
 from __future__ import annotations
 
+import argparse
 import json
-import sys
 from pathlib import Path
 
-SCHOOL, YEAR, PAPER, LEVEL, SYLLABUS = "RI", 2024, 1, "H2", "H2"
 
-
-def main(tagfile: str, dest: str):
+def main(tagfile: str, dest: str, *, school: str = "RI", year: int = 2024,
+        paper: int = 1, level: str = "H2", syllabus: str = "H2"):
+    SCHOOL, YEAR, PAPER, LEVEL, SYLLABUS = school, year, paper, level, syllabus
     tags = json.loads(Path(tagfile).read_text(encoding="utf-8"))
     pairs = sorted(((int(q), c) for q, cs in tags.items() for c in cs))
     n = len(pairs)
@@ -114,6 +129,41 @@ def main(tagfile: str, dest: str):
     add("END")
     add("$check$;")
     add("")
+    add("-- ---------------------------------------------------------------")
+    add("-- question_topics is DERIVED from question_los, but only the FRONTEND")
+    add("-- keeps it in step (syncTopics() in index.html, run after a UI tag edit).")
+    add("-- This SQL insert bypasses that entirely, so every tagged question would")
+    add("-- otherwise show its LO chip and an UNTAGGED badge at once, and sort into")
+    add("-- no topic. Rebuilt here, scoped to this paper's questions only.")
+    add("-- ---------------------------------------------------------------")
+    add("DELETE FROM question_topics qt")
+    add(" USING questions q, papers p")
+    add(" WHERE qt.question_id = q.id AND q.paper_id = p.id AND %s;" % where)
+    add("")
+    add("INSERT INTO question_topics (question_id, topic_id)")
+    add("SELECT DISTINCT l.question_id, lo.topic_id")
+    add("  FROM question_los l")
+    add("  JOIN questions q ON q.id = l.question_id")
+    add("  JOIN papers p ON p.id = q.paper_id")
+    add("  JOIN learning_objectives lo ON lo.id = l.lo_id")
+    add(" WHERE %s AND lo.topic_id IS NOT NULL;" % where)
+    add("")
+    add("DO $topics_check$")
+    add("DECLARE orphans int;")
+    add("BEGIN")
+    add("  SELECT count(*) INTO orphans FROM (")
+    add("    SELECT DISTINCT l.question_id FROM question_los l")
+    add("      JOIN questions q ON q.id = l.question_id")
+    add("      JOIN papers p ON p.id = q.paper_id")
+    add("     WHERE %s" % where)
+    add("  ) tagged")
+    add("  WHERE NOT EXISTS (SELECT 1 FROM question_topics qt WHERE qt.question_id = tagged.question_id);")
+    add("  IF orphans <> 0 THEN")
+    add("    RAISE EXCEPTION '% tagged question(s) have no topic row -- their LO(s) likely have a NULL topic_id', orphans;")
+    add("  END IF;")
+    add("END")
+    add("$topics_check$;")
+    add("")
     add("-- These tags are the user's own, made by hand. classified_by defaults")
     add("-- to 'ai', which would misreport the provenance of every one of them.")
     add("UPDATE questions q SET classified_by = 'human'")
@@ -149,4 +199,14 @@ def main(tagfile: str, dest: str):
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:3])
+    ap = argparse.ArgumentParser()
+    ap.add_argument("tagfile")
+    ap.add_argument("dest")
+    ap.add_argument("--school", default="RI")
+    ap.add_argument("--year", type=int, default=2024)
+    ap.add_argument("--paper", type=int, default=1)
+    ap.add_argument("--level", default="H2")
+    ap.add_argument("--syllabus", default="H2")
+    a = ap.parse_args()
+    main(a.tagfile, a.dest, school=a.school, year=a.year, paper=a.paper,
+        level=a.level, syllabus=a.syllabus)

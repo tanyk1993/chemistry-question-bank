@@ -149,12 +149,29 @@
      caption sits under its own diagram. */
   .stem .optbody{display:flex;flex-direction:column;align-items:center;gap:.15rem}
   .stem .optcap{font-size:.88rem;color:var(--ink);text-align:center}
+  /* A text-only option sitting next to figure options (see optGrid's
+     textLetters) -- same white-card weight as .optrow img's border/radius/
+     background so the option set reads as one list, not diagrams-plus-text. */
+  .stem .opttext{border:1px solid var(--line);border-radius:6px;background:#fff;
+    padding:.5em .9em;font-size:1.05rem}
   /* An option structure is read alongside three others, not studied on its own,
      so it is capped by HEIGHT first: height is what makes one option dominate
      the screen and push the rest below the fold. RI 2024 H2 P1 Q8, Q26 and Q29
      each filled a screen per option before this. Width and height stay `auto`
-     so the aspect ratio is preserved by the caps alone. */
-  .stem .optrow img{max-width:min(100%,16em);max-height:8em;width:auto;height:auto;
+     so the aspect ratio is preserved by the caps alone.
+     max-width is a PLAIN length, not min(100%, 16em): a percentage inside
+     min() can't be resolved during the flex intrinsic-sizing pass (the
+     containing block's width isn't known yet, since it's what we're trying
+     to compute), so browsers fall back to treating the whole max-width as
+     unconstrained for that pass -- the flex item's hypothetical size is then
+     based on the image's RAW intrinsic width instead of its true rendered
+     width. For a tall/square image the two are close enough to look right by
+     accident; for a wide one (EJC 2024 H2 P1 Q23 option B, a near-flat
+     dibromide chain, 482x115) it left a ~120px gap before the diagram
+     instead of hugging the option letter like every other option does. 16em
+     is already small enough (well under any real viewport) that the 100%
+     safety clause was never doing useful work, only causing this. */
+  .stem .optrow img{max-width:16em;max-height:8em;width:auto;height:auto;
     border:1px solid var(--line);border-radius:6px;background:#fff;padding:4px}
   /* formatted display layer */
   /* .ws (worked solutions) shares both rules with .stem (question text) --
@@ -317,7 +334,15 @@
      collapsing those runs to a single space, so the columns stay visually
      separated the way the source prints them. ingest tags the line with
      class="eqn" (render_parts.py, EQN_LINE_RE) only when it opens with
-     "equation N" / "reaction N", so this cannot affect unrelated text. */
+     "equation N" / "reaction N", so this cannot affect unrelated text.
+     EJC 2024 H2 P1 (render_questions.py's _para(), the MCQ pipeline) reaches
+     the same class a second way: it prints a genuine Word tab-stop, not
+     repeated spaces, to line up "reaction 1"/a bare equation with its own
+     trailing E-o-/DeltaH label (Q7, Q8, Q10, Q29) or a numbered statement's
+     digit from its own sentence (Q6, Q17, Q25). pre-wrap preserves that
+     literal "\t" too, and the browser's default tab-size (8) already lines
+     the columns up the way the paper's own exported PDF does -- checked with
+     Playwright against every affected question, no override needed. */
   .stem p.eqn { white-space:pre-wrap; }
   .gap { display:inline-block; width:3em; }
   .stem ol.stmts, .ws ol.stmts,
@@ -341,6 +366,16 @@
           text-align:center; line-height:1.15; margin:0 .18em; }
   .frac > .fnum { border-bottom:1px solid currentColor; padding:0 .35em; }
   .frac > .fden { padding:0 .35em; }
+  /* square-root radical - same one-off convention as .frac (bare, no .stem/
+     .ws scoping needed), for an option equation reconstructed as markup
+     instead of cropped (corrections.py's EQUATION_OPTIONS_AS_TEXT, e.g. EJC
+     2024 H2 P1 Q13's "[H+] = sqrt(Ka x [acid])"). The hook is a literal "√"
+     via ::before - no image, no inline style - and .rad carries the overline
+     as its own border-top, so the bar's width tracks whatever it wraps
+     rather than being a fixed-width image. */
+  .sqrt { white-space:nowrap; }
+  .sqrt::before { content:"\221A"; margin-right:1px; }
+  .sqrt > .rad { border-top:1.3px solid currentColor; padding:1px .06em 0 .05em; }
   /* stacked super/subscript - nuclide notation and E-standard-cell.
      `.stk` alone stacks BEFORE the symbol (mass number over proton number, as
      in 234-over-90 Th); `.stk.post` stacks AFTER it (the standard-state sign
@@ -1125,20 +1160,55 @@
       // search token, not a caption, and must never be printed under the
       // diagram it stands in for.
       const isPlaceholderOpt = t => /^\[structure [A-E]\]$/.test((t||'').trim());
+      // A sibling option with no figure of its own -- EJC 2024 H2 P1 Q23's
+      // bromoethane, printed in the source as a bare formula because it's too
+      // simple to warrant a drawing, sitting next to three that ARE drawn --
+      // used to appear only in the plain summary table below, orphaned from
+      // the diagram cards its neighbours sit in. Given its own card in the
+      // SAME grid, same slot letter, same box styling, so the option set
+      // reads as one list rather than diagrams-plus-an-afterthought. No new
+      // content: reuses the already-parsed opts-table cell's HTML (real
+      // subscripts, italic Mr) rather than the plain-text options JSON, so
+      // CH3CH2Br renders as CH<sub>3</sub>CH<sub>2</sub>Br, not bare digits.
+      // Untouched when there's no opts-table (nothing to source the markup
+      // from) or no image options at all (a purely-text option set already
+      // has its own, unrelated rendering path).
+      const optsTable = stem.querySelector('table.opts-table');
+      const cellHtmlFor = L => {
+        const tr = optsTable && [...optsTable.querySelectorAll('tr')].find(
+          r => ((r.querySelector(':scope > td.ol')||{}).textContent||'').trim() === L);
+        const td = tr && tr.querySelectorAll(':scope > td')[1];
+        return td ? td.innerHTML : '';
+      };
+      const imgLetters = new Set(optImgs.map(a=>a.slot));
+      const textLetters = (optImgs.length && optsTable)
+        ? [...optsTable.querySelectorAll('tr')]
+            .map(tr => ((tr.querySelector(':scope > td.ol')||{}).textContent||'').trim())
+            .filter(L => L && !imgLetters.has(L)
+                       && !isPlaceholderOpt((q.options||{})[L]))
+        : [];
       const optGrid = () => {
         const g=document.createElement('div'); g.className='optgrid';
-        optImgs.forEach(a=>{
+        const rows = [...optImgs.map(a=>({slot:a.slot, img:a})),
+                      ...textLetters.map(L=>({slot:L}))]
+          .sort((x,y)=> x.slot>y.slot?1:-1);
+        rows.forEach(r=>{
           const row=document.createElement('div'); row.className='optrow';
-          const b=document.createElement('b'); b.textContent=a.slot;
+          const b=document.createElement('b'); b.textContent=r.slot;
           const body=document.createElement('div'); body.className='optbody';
-          const im=document.createElement('img'); im.src=a.url; im.loading='lazy'; im.alt='';
-          body.appendChild(im);
-          // RI 2024 H2 P1 Q8 captions each graph "constant V" / "constant T",
-          // and those captions ARE the difference between the four options.
-          const cap=(q.options||{})[a.slot];
-          if(cap && !isPlaceholderOpt(cap)){
-            const c=document.createElement('div'); c.className='optcap';
-            c.textContent=cap; body.appendChild(c);
+          if(r.img){
+            const im=document.createElement('img'); im.src=r.img.url; im.loading='lazy'; im.alt='';
+            body.appendChild(im);
+            // RI 2024 H2 P1 Q8 captions each graph "constant V" / "constant T",
+            // and those captions ARE the difference between the four options.
+            const cap=(q.options||{})[r.slot];
+            if(cap && !isPlaceholderOpt(cap)){
+              const c=document.createElement('div'); c.className='optcap';
+              c.textContent=cap; body.appendChild(c);
+            }
+          } else {
+            const t=document.createElement('div'); t.className='opttext';
+            t.innerHTML=cellHtmlFor(r.slot); body.appendChild(t);
           }
           row.appendChild(b); row.appendChild(body); g.appendChild(row);
         });

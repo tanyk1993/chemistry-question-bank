@@ -104,6 +104,13 @@ SUBSTITUTED_CHARS = {
               "in a normal web font. oxml.py substitutes the real CIRCLE "
               "WITH HORIZONTAL BAR character (⦵), raised, wherever it "
               "occurs.",
+    "•": "a hand-typed bullet introducing a criteria/statement list (e.g. "
+         "EJC 2024 H2 P3 Q1(a)(iii)'s two-item criteria list, Q2(a)(v)'s "
+         "three-item effects list) -- house style renders these as "
+         "`<ul class=\"stmts\"><li>...</li></ul>` (style-guide.md SS2), not a "
+         "literal bullet glyph in a `<p>`; the list marker is drawn by CSS. "
+         "The information -- and the list structure -- is present, just "
+         "re-rendered as markup rather than the source character.",
 }
 
 

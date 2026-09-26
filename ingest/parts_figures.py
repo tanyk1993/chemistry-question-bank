@@ -66,6 +66,32 @@ ROMAN_RE = re.compile(r"^\(([ivx]{1,4})\)$")
 QNUM_X = 55.0
 LETTER_X = (55.0, 80.0)
 ROMAN_X = (80.0, 115.0)
+
+#: These three x-offsets are a fact about a SCHOOL'S DOCX TEMPLATE (its own
+#: tab-stop/indent settings), not a universal constant -- confirmed by direct
+#: measurement (`doc[p].get_text("words")`) on EJC 2024 H2 P3, whose left
+#: margin sits ~17-27pt further right than RI's at every one of the three
+#: levels (qnum 72 vs 55, letter 86 vs 55-80, roman 107 vs 80-115), but is
+#: internally CONSISTENT across the whole document (checked on all 5
+#: questions, all 3 levels, before trusting it) -- exactly the same
+#: per-school-template-not-per-paper relationship `corrections.py`'s tables
+#: already assume for other departures. Keyed on school alone, not
+#: (school, level, paper, year), on the same reasoning: a school's Word
+#: template does not change paper to paper. Add a new entry here, by the same
+#: direct-measurement method, before trusting this module on a fourth school.
+LAYOUT_OVERRIDES = {
+    "EJC": {"QNUM_X": 80.0, "LETTER_X": (80.0, 100.0), "ROMAN_X": (100.0, 130.0)},
+}
+
+
+def _layout(scope):
+    """(QNUM_X, LETTER_X, ROMAN_X) for this paper's school, RI's own values
+    (the module's original, still-default constants) if no override is on
+    file."""
+    school = scope[0] if scope else None
+    ov = LAYOUT_OVERRIDES.get(school, {})
+    return (ov.get("QNUM_X", QNUM_X), ov.get("LETTER_X", LETTER_X),
+            ov.get("ROMAN_X", ROMAN_X))
 #: The running header and page number sit above this; they are not content.
 HEADER_Y = 50.0
 #: Body text starts at the left text margin. Artwork and figure-internal
@@ -83,13 +109,17 @@ PROSE_X_MAX = 125.0
 PROSE_MIN_W = 200.0
 
 
-def landmarks(doc) -> list:
+def landmarks(doc, scope=None) -> list:
     """[(label, page, y)] for every printed part label, in document order.
 
     A letter and a roman numeral printed on the SAME line are one landmark
     ("3(f)(i)"), matching `parts.py`, which creates no bare-letter Part when a
     row carries both.
+
+    `scope` (school, level, paper, year) selects the school's own margin
+    geometry via `_layout()` -- see `LAYOUT_OVERRIDES` above.
     """
+    qnum_x, letter_x, roman_x = _layout(scope)
     marks = []
     for pno in range(len(doc)):
         for w in doc[pno].get_text("words"):
@@ -97,13 +127,22 @@ def landmarks(doc) -> list:
             x, y = w[0], w[1]
             if y < HEADER_Y:
                 continue
-            if QNUM_RE.match(t) and x < QNUM_X:
+            if QNUM_RE.match(t) and x < qnum_x:
                 marks.append((pno, round(y, 1), "q", t))
-            elif LETTER_RE.match(t) and LETTER_X[0] <= x < LETTER_X[1]:
+            elif LETTER_RE.match(t) and letter_x[0] <= x < letter_x[1]:
                 marks.append((pno, round(y, 1), "l", t))
-            elif ROMAN_RE.match(t) and ROMAN_X[0] <= x < ROMAN_X[1]:
+            elif ROMAN_RE.match(t) and roman_x[0] <= x < roman_x[1]:
                 marks.append((pno, round(y, 1), "r", t))
-    marks.sort()
+    # Sort by kind EXPLICITLY (q, then l, then r), not alphabetically by the
+    # kind letter -- plain tuple sort puts "l" ('l' < 'q') before "q" on a
+    # line that prints a question number and its first part-letter together
+    # ("2 (a) The industrial synthesis..." -- EJC's own convention, one
+    # printed line, unlike RI's which never puts a qnum and a letter on the
+    # same line). That misattributed the letter to the PREVIOUS question
+    # (rendered as "1(a)" on the page that actually opens Q2), before `seq`
+    # ever saw the qnum bump. Found on EJC 2024 H2 P3 Q2's opening line.
+    _KIND_ORDER = {"q": 0, "l": 1, "r": 2}
+    marks.sort(key=lambda m: (m[0], m[1], _KIND_ORDER[m[2]], m[3]))
 
     joined, i = [], 0
     while i < len(marks):
@@ -342,24 +381,156 @@ def _clip_prose(page, union) -> tuple:
     return out, True
 
 
-def crop_all(doc, owners) -> tuple:
+#: How close two artwork rects' y-ranges must sit to count as pieces of the
+#: SAME printed picture (a chart's base image plus the shapes drawn over it,
+#: a structure's ring plus its separately-clustered substituent). Verified
+#: against EJC 2024 H2 P3's 5(b) (three rects 0pt apart forming one picture,
+#: an unrelated fourth 122pt below it) and 2(b) (two rects 56pt apart, two
+#: separate pictures) -- real gaps between distinct figures in this family
+#: run 55pt+; real gaps within one figure's own clustered pieces run close to
+#: 0. 30pt sits well inside that margin either way.
+FIGURE_GROUP_GAP = 30.0
+
+
+def _group_by_gap(rects, gap=FIGURE_GROUP_GAP) -> list:
+    """Partition same-page rects into top-to-bottom groups, merging any two
+    whose y-ranges sit within `gap` of each other (or overlap)."""
+    order = sorted(rects, key=lambda r: r.y0)
+    groups = [[order[0]]]
+    bottom = order[0].y1
+    for r in order[1:]:
+        if r.y0 - bottom <= gap:
+            groups[-1].append(r)
+            bottom = max(bottom, r.y1)
+        else:
+            groups.append([r])
+            bottom = r.y1
+    return groups
+
+
+def _union_group(page, rects) -> tuple:
+    """(Rect, leftover_prose_flag) -- one grown, prose-clipped crop for a
+    group of same-page rects. Shared by `crop_owner()`'s single-picture path
+    and `crop_owner_multi()`'s several-pictures path so both grow/clip the
+    same way."""
+    union = pymupdf.Rect(rects[0])
+    for r in rects[1:]:
+        union |= r
+    union = _grow_to_labels(page, union)
+    return _clip_prose(page, union)
+
+
+def crop_owner_multi(doc, spans, expected_count: int) -> tuple:
+    """([(page, Rect)], [anomaly]) -- `expected_count` DISTINCT pictures in
+    this band, in document (top-to-bottom / page) order.
+
+    `expected_count == 1` is the ordinary case and defers to `crop_owner()`
+    unchanged -- nothing about a single-figure owner's behaviour changes.
+    For `expected_count > 1` (style-guide.md SS5: "one owner can print more
+    than one genuinely distinct picture"), the split is found two ways, tried
+    in order:
+
+      1. ONE FIGURE PER PAGE, if the band's artwork spans exactly as many
+         pages as figures expected -- EJC 2024 H2 P3's 1(c)(ii) shape (a
+         by-product structure on one page, Fig. 1.2 on the next). This
+         replaces `crop_owner()`'s own "cropped the largest page, dropped the
+         rest" fallback, which is exactly wrong here: neither page is a
+         mistake to discard.
+      2. A Y-GAP SPLIT on a single page, when the artwork clusters into
+         exactly `expected_count` groups by `_group_by_gap()` -- EJC 2024 H2
+         P3's 2(b) and 5(b) shape (two distinct drawings separated by more
+         than a text line's height, on the same page). This is the same
+         signal `split_risk()` already uses to FLAG the risk; here it is
+         used to act on it, not just report it.
+
+    Either heuristic failing to produce exactly `expected_count` groups falls
+    back to the old single-union behaviour (logged loudly) rather than
+    guessing -- under-cropping is a visible, reviewable defect; a wrong guess
+    at which pixels belong to which figure is not.
+    """
+    cl = clusters_in(doc, spans)
+    if not cl:
+        return [], ["no artwork found in band"]
+    by_page: dict = {}
+    for p, r in cl:
+        by_page.setdefault(p, []).append(r)
+
+    if expected_count <= 1:
+        got, note = crop_owner(doc, spans)
+        return ([got] if got else []), ([note] if note else [])
+
+    anomalies = []
+    if len(by_page) == expected_count:
+        results = []
+        for pno in sorted(by_page):
+            union, left_in = _union_group(doc[pno], by_page[pno])
+            if left_in:
+                anomalies.append("page %d: crop still contains a line of "
+                                 "body prose" % pno)
+            results.append((pno, union))
+        return results, anomalies
+
+    if len(by_page) == 1:
+        pno = next(iter(by_page))
+        groups = _group_by_gap(by_page[pno])
+        if len(groups) == expected_count:
+            results = []
+            for grp in groups:
+                union, left_in = _union_group(doc[pno], grp)
+                if left_in:
+                    anomalies.append("page %d: crop still contains a line "
+                                     "of body prose" % pno)
+                results.append((pno, union))
+            return results, anomalies
+        anomalies.append(
+            "expected %d distinct figures but grouped into %d on page %d "
+            "by Y-gap -- falling back to one union crop"
+            % (expected_count, len(groups), pno))
+    else:
+        anomalies.append(
+            "expected %d distinct figures across %d pages -- ambiguous, "
+            "falling back to one union crop" % (expected_count, len(by_page)))
+
+    got, note = crop_owner(doc, spans)
+    if note:
+        anomalies.append(note)
+    return ([got] if got else []), anomalies
+
+
+def crop_all(doc, owners, scope=None) -> tuple:
     """owners is [(label, storage_path)]; returns (items, anomalies).
 
     `items` is [(page, Rect, storage_path)], ready for
-    `question_figures.write_crops`.
+    `question_figures.write_crops`. `scope` is forwarded to `landmarks()` --
+    see `LAYOUT_OVERRIDES` above.
+
+    `owners` may repeat the SAME label with different storage_paths -- that
+    is exactly how `render_parts.asset_plan()` now reports a multi-figure
+    owner (style-guide.md SS5), one entry per surviving figure, slot/slot2/...
+    All paths for one label are grouped here and handed to
+    `crop_owner_multi()` together, in the order given, so its "how many
+    pictures does this band actually print" logic sees the true expected
+    count instead of being asked once per path independently.
     """
-    seq = landmarks(doc)
+    seq = landmarks(doc, scope)
     bd = bands(doc, seq)
-    items, anomalies = [], []
+    by_label: dict = {}
     for lab, path in owners:
+        by_label.setdefault(lab, []).append(path)
+
+    items, anomalies = [], []
+    for lab, paths in by_label.items():
         spans = bd.get(lab)
         if not spans:
             anomalies.append("%s: no printed label found in the PDF" % lab)
             continue
-        got, note = crop_owner(doc, spans)
-        if note:
+        crops, notes = crop_owner_multi(doc, spans, len(paths))
+        for note in notes:
             anomalies.append("%s: %s" % (lab, note))
-        if got is None:
-            continue
-        items.append((got[0], got[1], path))
+        if len(crops) < len(paths):
+            anomalies.append("%s: expected %d figure(s), only %d cropped -- "
+                             "every later ordinal in this question would "
+                             "shift" % (lab, len(paths), len(crops)))
+        for (pno, rect), path in zip(crops, paths):
+            items.append((pno, rect, path))
     return items, anomalies

@@ -24,7 +24,8 @@ from pathlib import Path
 import pymupdf
 
 from . import audit, corrections, parts_figures as PF, render_parts as R
-from .parts import parse
+from .parts import FIG_SENTINEL
+from .parts_dispatch import parse as dispatch_parse
 from .question_figures import write_crops
 
 
@@ -48,14 +49,37 @@ def main(argv=None):
     scope = (a.school, a.level, a.paper, a.year)
 
     numbering_path = unz / "word/numbering.xml"
-    questions, figures, anomalies = parse(
+    questions, figures, anomalies, shape = dispatch_parse(
         unz / "word/document.xml", unz / "word/_rels/document.xml.rels",
-        numbering_path if numbering_path.exists() else None)
+        numbering_path if numbering_path.exists() else None, scope=scope)
+    print("container shape:", shape)
+
+    # --- dropped PART figures (structured-paper sibling of dropped_blocks) -
+    # A whole part's worth of parsed figures with no printed counterpart at
+    # all (corrections.DROPPED_PART_FIGURES) -- strip the sentinel(s) and the
+    # Figure objects together so neither reconcile() nor asset_plan() ever
+    # sees them. Must run before reconcile()/asset_plan(), for the same
+    # renumbering reason dropped_blocks() must run before the MCQ side plans
+    # its assets.
+    correction_log = []
+    for q in questions:
+        reason = corrections.dropped_part_figures(*scope, q.qnum, None)
+        if reason and q.intro_figures:
+            correction_log.append("Q%d intro: dropped %d figure(s) -- %s"
+                                  % (q.qnum, len(q.intro_figures), reason))
+            q.intro_html = q.intro_html.replace(FIG_SENTINEL, "")
+            q.intro_figures = []
+        for p in q.parts:
+            reason = corrections.dropped_part_figures(*scope, q.qnum, p.label)
+            if reason and p.figures:
+                correction_log.append("Q%d%s: dropped %d figure(s) -- %s"
+                                      % (q.qnum, p.label, len(p.figures), reason))
+                p.html = p.html.replace(FIG_SENTINEL, "")
+                p.figures = []
 
     # --- recorded source corrections, BEFORE anything reads the figures ----
     # One of them removes placeholders (1(c)'s radical dots), so it has to run
     # before the collapse decides which placeholder is the picture.
-    correction_log = []
     for q in questions:
         q.intro_html, log = corrections.apply(q.intro_html, scope)
         correction_log += ["Q%d intro: %s" % (q.qnum, x) for x in log]
@@ -80,7 +104,7 @@ def main(argv=None):
             owners.append((label, item["storage_path"]))
         plan_all.extend(plan)
 
-    crops, crop_anoms = PF.crop_all(doc, owners)
+    crops, crop_anoms = PF.crop_all(doc, owners, scope=scope)
     anomalies += crop_anoms
     if len(crops) != len(plan_all):
         anomalies.append("%d assets planned but %d cropped -- every later "
@@ -124,12 +148,24 @@ def main(argv=None):
     # --- text gate: our extraction vs the Word PDF, an independent renderer -
     extracted = " ".join(R.content_text(q) for q in questions)
     last = a.last_page or (len(doc) - 1)
+    # Page furniture is a fact about a SCHOOL'S OWN printed footer, not a
+    # universal pattern -- RI's copyright line and paper code look nothing
+    # like EJC's (confirmed by direct comparison of both reference PDFs'
+    # footers). Both live here rather than in a table keyed only by school,
+    # because unlike LAYOUT_OVERRIDES above, harmlessly including a pattern
+    # that never matches costs nothing: `re.sub` on a non-matching pattern is
+    # a no-op, so every school's own footer pattern can simply be listed.
+    # `\d{1,2}` alone on its own printed line is the running PAGE NUMBER
+    # (confirmed on EJC 2024 H2 P3: "6", "16", "26", each followed by the
+    # next page's own body text with pdftotext's page break folded in) --
+    # never real content, since this paper never prints a bare 1-2 digit
+    # number alone on its own line anywhere else.
     problems = audit.charset_gate(
         extracted, a.pdf,
-        # Page furniture, and the dotted answer rules, which are deliberately
-        # not extracted -- excluded explicitly so the exclusion stays visible.
         ignore_re=[r"©\s*Raffles Institution\s*\d{4}",
-                   r"9729/0\d/S/\d+", r"…+"],
+                   r"9729/0\d/S/\d+",
+                   r"©\s*EJC", r"9729/0\d/J\dPE/\d+", r"\[Turn Over",
+                   r"(?m)^\s*\d{1,2}\s*$", r"…+"],
         first_page=a.first_page, last_page=last)
     real, expected = audit.classify(problems)
 

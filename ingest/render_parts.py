@@ -67,38 +67,56 @@ def _strip(s: str) -> str:
 
 
 def reconcile(html: str) -> str:
-    """Collapse an owner's html to ONE figure placeholder, and tidy up.
+    """Collapse ADJACENT duplicate figure placeholders, keep DISTINCT ones,
+    and tidy up. Three things, the first now shape-aware:
 
-    Three things, all of them consequences of what Word stored rather than
-    what the paper prints:
-
-      1. Several placeholders for one printed picture -> keep the FIRST and
-         drop the rest. First, not last, because the paper prints the picture
-         where the picture starts; 1(c)'s trailing pair belongs to a
-         duplicate chart insertion that sits hidden behind the real one.
-      2. A caption repeated verbatim -> keep one. Same duplicate insertion:
-         RI's file carries "Fig. 1.1" twice, the first of them invisible
-         behind the chart graphic, and rendering both would print it twice in
-         the app where the paper shows it once.
+      1. Several placeholders for the SAME printed picture -> keep the FIRST
+         and drop the rest. First, not last, because the paper prints the
+         picture where the picture starts; RI 2024 H2 P3's 1(c) has a
+         trailing pair that belongs to a duplicate chart insertion sitting
+         hidden behind the real one. "Same picture" is decided the way
+         style-guide.md SS5 says every multi-figure owner is decided: by
+         ADJACENCY in the rendered text, never by "same owner" alone -- a
+         sentinel is a duplicate only if NO real content (prose beyond a
+         repeated caption) has appeared since the last one KEPT. EJC 2024 H2
+         P3's 1(c)(ii), 2(b) and 5(b) each print TWO genuinely distinct
+         drawings under one part/owner, with a real sentence between them
+         ("The student then changed M to Q...", "3-bromomandelic acid can be
+         formed from benzaldehyde in 3 steps.") -- collapsing those to one
+         placeholder would silently lose the second figure and shift every
+         later asset in the question, exactly the SS7 defect class this
+         module exists to prevent. Both are kept, and `asset_plan()` below
+         plans one asset per SURVIVING sentinel, not one per owner.
+      2. A caption repeated verbatim -> keep one. Same duplicate-insertion
+         case as (1); a caption does not itself count as "real content" for
+         the adjacency test, so two distinct figures each captioned "Fig.
+         X.Y" are unaffected by this rule.
       3. An all-empty layout table -> drop it.
     """
     lines = html.split("\n")
-    out, seen_fig, last_caption = [], False, None
+    out = []
+    seen_any_fig = False
+    content_since_last_fig = False
+    last_caption = None
     for line in lines:
         centred = line.startswith(CENTRE)
         body = line[len(CENTRE):] if centred else line
 
         body = _EMPTY_TABLE_RE.sub("", body)
+        has_fig = FIG_SENTINEL in body
 
-        if FIG_SENTINEL in body:
-            if seen_fig:
+        if has_fig:
+            if seen_any_fig and not content_since_last_fig:
+                # Adjacent to the last KEPT figure (nothing but maybe a
+                # caption between them) -- the same duplicate-insertion
+                # case (1) describes. Drop it.
                 body = body.replace(FIG_SENTINEL, "")
+                has_fig = False
             else:
-                first = body.index(FIG_SENTINEL)
-                body = (body[:first + len(FIG_SENTINEL)]
-                        + body[first + len(FIG_SENTINEL):].replace(
-                            FIG_SENTINEL, ""))
-                seen_fig = True
+                # First figure in this owner, or real content intervened
+                # since the last one kept -- a genuinely distinct figure.
+                seen_any_fig = True
+                content_since_last_fig = False
 
         plain = _strip(body)
         if plain and CAPTION_RE.match(plain):
@@ -107,47 +125,59 @@ def reconcile(html: str) -> str:
             last_caption = plain
         elif plain:
             last_caption = None
+            if not has_fig:
+                content_since_last_fig = True
 
-        if not plain and FIG_SENTINEL not in body:
+        if not plain and not has_fig:
             continue
         out.append((CENTRE if centred else "") + body)
     return "\n".join(out)
 
 
-def slot_for(label: str | None) -> str:
-    """The asset slot for an owner: 'intro', or the part label without its
-    brackets ('c', 'ciii'). Bare and filename-safe, per handoff SS8."""
-    if not label:
-        return "intro"
-    return label.replace("(", "").replace(")", "")
+def slot_for(label: str | None, i: int = 0) -> str:
+    """The asset slot for an owner's i-th (0-based) DISTINCT figure: 'intro'
+    or the part label without its brackets ('c', 'ciii') for the first, with
+    a numeric suffix for the 2nd+ ('intro2', 'ciii2') -- one owner CAN print
+    more than one genuinely distinct picture (style-guide.md SS5; confirmed on
+    EJC 2024 H2 P2 Q4 and EJC 2024 H2 P3's 1(c)(ii)/2(b)/5(b)). Bare and
+    filename-safe, per handoff SS8."""
+    base = "intro" if not label else label.replace("(", "").replace(")", "")
+    return base if i == 0 else "%s%d" % (base, i + 1)
 
 
 def asset_plan(q, school="RI", level="H2", paper="P3", year=2024,
                start_ordinal=1) -> list:
-    """One asset per OWNER that prints a figure, in document order.
+    """One asset per SURVIVING figure placeholder, in document order.
 
-    Ordinal order must equal DOM order of the placeholders, because that is
-    how the frontend pairs them. Both are built from the same walk here, so
-    they cannot disagree.
+    Counted from the owner's html AFTER `reconcile()` has run (the caller
+    always calls reconcile() first -- see extract_parts.py), not from the raw
+    `.figures` list length: `reconcile()` may have collapsed adjacent
+    duplicates (RI's case) or kept several distinct ones (EJC's), and the
+    asset plan must match what `content_html()`/`_render_owner()` actually
+    place, not what the docx originally stored. Ordinal order must equal DOM
+    order of the placeholders, because that is how the frontend pairs them --
+    both are built from the same walk here, so they cannot disagree.
     """
     plan = []
     n = start_ordinal
-    owners = [(None, q.intro_html, q.intro_figures)]
-    owners += [(p.label, p.html, p.figures) for p in q.parts]
-    for label, html, figs in owners:
-        if not figs:
+    owners = [(None, q.intro_html)]
+    owners += [(p.label, p.html) for p in q.parts]
+    for label, html in owners:
+        n_figs = html.count(FIG_SENTINEL)
+        if not n_figs:
             continue
-        slot = slot_for(label)
-        plan.append({
-            "question": q.qnum,
-            "part": label,
-            "slot": slot,
-            "ordinal": n,
-            "storage_path": "%s_%s_%s_Q%d_%s_%d.png"
-                            % (school, level, paper, q.qnum, slot, year),
-            "n_refs": len(figs),
-        })
-        n += 1
+        for i in range(n_figs):
+            slot = slot_for(label, i)
+            plan.append({
+                "question": q.qnum,
+                "part": label,
+                "slot": slot,
+                "ordinal": n,
+                "storage_path": "%s_%s_%s_Q%d_%s_%d.png"
+                                % (school, level, paper, q.qnum, slot, year),
+                "n_refs": n_figs,
+            })
+            n += 1
     return plan
 
 

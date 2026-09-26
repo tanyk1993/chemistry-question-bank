@@ -58,6 +58,44 @@ def dropped_blocks(school, level, paper, year, qnum) -> dict:
     return DROPPED_FIGURES.get((school, level, paper, year, qnum), {})
 
 
+# DROPPED PART FIGURES (structured papers)
+# -----------------------------------------
+# The same principle as DROPPED_FIGURES above, for the parts_flow.py /
+# render_parts.py (P2/P3) pipeline, which has no ordinal-in-question concept
+# to key on -- a structured paper's parser already gives every figure a part
+# label, so this is keyed by (school, level, paper, year, qnum, part_label)
+# directly, dropping every figure parts_flow.py found under that ONE part.
+# (Never wired up before this paper: `dropped_blocks()` above is imported
+# only by extract_questions.py/render_questions.py, the MCQ side -- no
+# structured paper had needed a drop until now.)
+#
+# EJC 2024 H2 P3 Q2(a)(vi) parses one native Word `shape` figure with no
+# printed counterpart at all: the PDF's own artwork search for that part's
+# band comes back completely empty (confirmed directly, not inferred --
+# `parts_figures.crop_owner()` reports "no artwork found in band"), and nor
+# does a read of the printed page show anything there -- just prose and the
+# usual dotted answer lines. Most likely a leftover, invisible drawing
+# object in EJC's own Word template rather than anything the paper intends
+# to show.
+DROPPED_PART_FIGURES = {
+    ("EJC", "H2", "P3", 2024, 2, "(a)(vi)"):
+        "One native Word shape parses here with no target file and no "
+        "printed counterpart -- the PDF's own artwork search for this "
+        "part's band is empty, and the printed page shows only prose and "
+        "answer-space dots. Not a real figure; almost certainly a leftover "
+        "invisible drawing object in EJC's template.",
+}
+
+
+def dropped_part_figures(school, level, paper, year, qnum, part_label) -> str | None:
+    """Reason string if EVERY figure parsed under this part should be
+    dropped (no printed counterpart), else None -- see DROPPED_PART_FIGURES
+    above. `part_label` is `None` for a question's own intro (not yet
+    needed by any entry, but accepted for symmetry with `asset_plan()`'s own
+    owner list)."""
+    return DROPPED_PART_FIGURES.get((school, level, paper, year, qnum, part_label))
+
+
 # COMBINED FIGURES
 # ----------------
 # The opposite deliberate departure: several of the document's OWN distinct

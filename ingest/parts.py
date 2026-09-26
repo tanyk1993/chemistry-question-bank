@@ -63,12 +63,21 @@ from dataclasses import dataclass, field
 
 from lxml import etree
 
-from .oxml import NS, Wq, paragraph_html
+from .oxml import (CENTRE, NS, Wq, load_bullet_numids, paragraph_html,
+                    paragraph_numid)
 from .answers import _classify_drawing, _load_rels, Figure
 
 WPD = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
 
 FIG_SENTINEL = "\x00FIG\x00"
+
+#: numIds that are bullet lists, for the current document only. Populated by
+#: `parse()` (from word/numbering.xml, when given) before any cell is
+#: walked, and read by `_cell_html()`. Module-level rather than threaded
+#: through `_row_cells` -> `_cell_html` -> `_table_html` -> `_cell_html`,
+#: matching CENTRE/FIG_SENTINEL's existing style of assembly-time signals in
+#: this single-document, single-pass batch script.
+_BULLET_NUMIDS: set[str] = set()
 
 #: A bare question number cell: "1".."99".
 QNUM_RE = re.compile(r"^\s*(\d{1,2})\s*$")
@@ -83,7 +92,37 @@ _ROMAN_SEQ = ("i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x")
 ROMAN_RE = re.compile(r"^\s*\((%s)\)\s*$" % "|".join(_ROMAN_SEQ))
 
 #: Marks printed inline at the end of a part's own text: "...[1]", "...[3]".
+#: A figure caption ("Fig. 3.1") or table caption ("Table 2.2"), alone on a
+#: line apart from optional bold markup. Anchored whole-line on purpose: a
+#: SENTENCE that merely opens with the same words -- "Fig. 2.1 shows the mole
+#: fractions of..." -- is prose, not a caption, and this paper has one of
+#: those for nearly every figure it prints.
+CAPTION_RE = re.compile(
+    r"^(?:<b>\s*)?(Fig\.|Table)\s*\d+\.\d+\s*(?:</b>\s*)?$")
+#: A figure placeholder with its caption glued to the same line. Word keeps
+#: the drawing and its caption in ONE paragraph, so they arrive inseparable.
+FIG_CAPTION_RE = re.compile(
+    r"^((?:%s\s*)+)((?:<b>\s*)?(?:Fig\.|Table)\s*\d+\.\d+(?:\s*</b>)?)\s*$"
+    % re.escape(FIG_SENTINEL))
+
 INLINE_MARKS_RE = re.compile(r"\[(\d+)\]\s*$")
+#: The same allocation as INLINE_MARKS_RE, matched in the HTML so it can be
+#: REPLACED, in place, by the styled badge once its value is safely in
+#: Part.marks. Group 1 is the digits, group 2 keeps any close tags that
+#: trail it, so the substitution cannot unbalance the markup.
+#:
+#: Replaced IN PLACE, not stripped -- see the "one value, one place" comment
+#: at the call site below for why an earlier version of this stripped the
+#: allocation and re-appended a synthesized badge at the very end of the
+#: PART instead: that put the badge after every later paragraph and table
+#: too, which is wrong whenever the paper prints "[n]" mid-part (RI 2024 H2
+#: P3's own Q2(b)(i): "...stating its units. [1]" is followed by two more
+#: paragraphs and a table that are actually shared intro for part (ii), not
+#: more of (i)'s own content -- confirmed against the Word-exported PDF,
+#: which prints the "[1]" in exactly that spot, well before the table).
+#: Substituting in place, chunk by chunk as each is emitted, keeps the badge
+#: exactly where the paper itself prints it, however many chunks follow.
+INLINE_MARKS_HTML_RE = re.compile(r"\[(\d+)\]\s*((?:</[a-z]+>\s*)*)$")
 #: The question's running total, its own row: "[Total: 20]".
 TOTAL_MARKS_RE = re.compile(r"^\s*\[Total:\s*(\d+)\]\s*$", re.I)
 
@@ -160,7 +199,19 @@ def _table_html(tbl) -> str:
     for tr in tbl.findall(Wq + "tr"):
         cells = []
         for tc in tr.findall(Wq + "tc"):
-            cells.append("<td>%s</td>" % _cell_html(tc))
+            # The CENTRE sentinel is dropped HERE, and only here. A `table.qt
+            # td` is already text-align:center by the existing CSS, so inside
+            # a data cell the sentinel says nothing and would render as a
+            # literal stray "C" (its surrounding U+0000 bytes are invisible,
+            # the letter between them is not).
+            #
+            # It must NOT be stripped in `_cell_html` itself: that runs for
+            # EVERY cell, including the wide content cell a question's prose
+            # lives in, where centring is real information. This paper centres
+            # all 15 of its "Fig. n.n" / "Table n.n" captions with a direct
+            # <w:jc w:val="center">, and stripping there silently left-aligned
+            # every one of them.
+            cells.append("<td>%s</td>" % _cell_html(tc).replace(CENTRE, ""))
         if cells:
             rows.append("<tr>%s</tr>" % "".join(cells))
     if not rows:
@@ -169,17 +220,105 @@ def _table_html(tbl) -> str:
 
 
 def _cell_html(tc) -> str:
+    """HTML for one cell's contents, CENTRE sentinels intact.
+
+    Centring is preserved here deliberately: this runs for the wide content
+    cell a question's prose lives in, where a centred paragraph is real
+    information (every "Fig. n.n" / "Table n.n" caption in this paper is
+    centred). Only `_table_html`, building a `<td>`, drops the sentinel --
+    see the note there.
+
+    Consecutive numPr paragraphs whose numId is a bullet (`_BULLET_NUMIDS`)
+    are grouped into ONE `<ul class="stmts">`, not one `<p>` each: every list
+    this pipeline has seen sits entirely inside a single cell (survey: RI
+    2024 H2 P3's four multi-item lists, three numId changes mid-list among
+    them -- Word starts a fresh <w:num> per list even within one cell), so
+    grouping at cell level, flushed whenever a non-list paragraph or a
+    nested table is hit, is enough; it does not need to reach across cells.
+    """
     out = []
+    buf: list[str] = []
+
+    def _flush():
+        if buf:
+            # Joined with a literal space, not "": a browser ignores it
+            # between block-level <li>s, but `_strip()` (content_text, the
+            # search index) only removes tags, not text -- an empty join
+            # would run "C8H14O6" straight into "hot acidic" with no word
+            # boundary. The block must stay ONE line (no "\n"): reconcile()
+            # and _render_owner() split html on "\n" and treat each line as
+            # a unit, same as an already-one-line <table> block.
+            out.append('<ul class="stmts">%s</ul>' % " ".join(buf))
+            buf.clear()
+
     for child in tc:
         ln = etree.QName(child).localname
         if ln == "p":
+            numid = paragraph_numid(child)
+            if numid is not None and numid in _BULLET_NUMIDS:
+                h = paragraph_html(child)
+                if h.startswith(CENTRE):
+                    h = h[len(CENTRE):]
+                if h.strip():
+                    buf.append("<li>%s</li>" % h)
+                continue
+            _flush()
             h = paragraph_html(child)
             if h.strip():
                 out.append(h)
         elif ln == "tbl":
+            _flush()
             h = _table_html(child)
             if h:
                 out.append(h)
+    _flush()
+    return "\n".join(out)
+
+
+def _split_captions(html: str) -> str:
+    """Put every "Fig. n.n" / "Table n.n" caption on its own centred line.
+
+    A figure and its caption are SEPARATE paragraphs in Word -- both centred
+    -- but they arrive glued onto one line, because a row's content cells are
+    joined without a break. The giveaway is a CENTRE sentinel sitting in the
+    MIDDLE of a line: CENTRE is a paragraph-level marker, so one appearing
+    anywhere but the start means two paragraphs were run together. That is
+    the general rule this function restores, and on this paper it fires on
+    exactly the 9 figure-caption lines and nothing else out of 144.
+
+    Why it matters: a figure placeholder is an inline box, so a caption left
+    on the same line renders BESIDE the figure rather than beneath it, which
+    is not where the paper prints it.
+
+    Captions are then centred unconditionally. Most carry a direct
+    <w:jc w:val="center"> already; Fig. 5.2's is additionally pushed across
+    with literal spaces, which mean nothing in HTML, so the padding is
+    dropped in favour of real centring.
+
+    Nothing is REORDERED. A Fig caption already sits after its figure and a
+    Table caption before its table in this document; this only breaks the
+    line between them. Sentinel count and order are untouched, so the
+    placeholder/figure consistency check downstream still holds.
+    """
+    out = []
+    for line in html.split("\n"):
+        # Un-glue run-together paragraphs first, so a caption that was
+        # carrying its own CENTRE marker mid-line becomes a line of its own.
+        lead, *rest = line.split(CENTRE)
+        segments = ([lead] if lead.strip() else []) \
+            + [CENTRE + s for s in rest if s.strip()]
+        for seg in (segments or [line]):
+            centred = seg.startswith(CENTRE)
+            body = seg[len(CENTRE):] if centred else seg
+            m = FIG_CAPTION_RE.match(body)
+            if m:
+                # Still glued (one paragraph really did hold both).
+                out.append((CENTRE if centred else "") + m.group(1).rstrip())
+                out.append(CENTRE + m.group(2).strip())
+            elif CAPTION_RE.match(body.strip()):
+                out.append(CENTRE + body.strip())
+            else:
+                out.append(seg)
     return "\n".join(out)
 
 
@@ -290,10 +429,19 @@ def _classify(cells, w0, w1, w2, anomalies=None):
     return qnum, letter, roman, cells[i:]
 
 
-def parse(document_xml, rels_xml):
+def parse(document_xml, rels_xml, numbering_xml=None):
     """Return (questions, figures, anomalies) for a structured question-paper
     docx (P2/P3 shape). `figures` is in document order -- handoff SS7:
-    ordinal MUST follow DOM order, the frontend zips positionally."""
+    ordinal MUST follow DOM order, the frontend zips positionally.
+
+    `numbering_xml` (word/numbering.xml) is optional so existing callers
+    keep working unchanged; without it, numPr paragraphs (bullet/numbered
+    lists) fall back to one plain <p> per line, as before -- the list
+    STRUCTURE is lost but no text is. Pass it to get grouped <ul> lists.
+    """
+    global _BULLET_NUMIDS
+    _BULLET_NUMIDS = load_bullet_numids(numbering_xml)
+
     rels = _load_rels(rels_xml)
     tree = etree.parse(str(document_xml))
     body = tree.getroot().find("w:body", NS)
@@ -419,13 +567,90 @@ def parse(document_xml, rels_xml):
                         cur_q.parts.append(cur_part)
 
                 # --- content, and any inline mark allocation it carries ---
-                if content_html.strip() or FIG_SENTINEL in content_html:
-                    _emit(content_html)
+                #
+                # Marks are read BEFORE the content is emitted, because the
+                # printed "[n]" is replaced by its styled badge IN PLACE, on
+                # the way past -- not stripped for a badge to be re-appended
+                # later at the end of the whole part (see INLINE_MARKS_HTML_RE's
+                # own comment for why that was wrong: the paper can print
+                # "[n]" mid-part, with more paragraphs/a table genuinely
+                # belonging to the NEXT part following it in the same cell).
+                # We also keep the numeric value in Part.marks, for the
+                # marks-total check and for anything else that needs the
+                # number without re-parsing the badge back out of the html --
+                # but the badge itself is written exactly once, exactly
+                # where the paper prints it. One value, one rendering.
                 mm = INLINE_MARKS_RE.search(content_text)
-                if mm:
-                    target = cur_part if cur_part is not None else None
-                    if target is not None:
-                        target.marks = int(mm.group(1))
+                # Whatever precedes the match (INLINE_MARKS_RE is anchored to
+                # the end of content_text) is empty once stripped -- i.e. the
+                # WHOLE chunk is the mark allocation and nothing else. Compare
+                # against the prefix, not against mm.group(0) itself: the
+                # regex's own trailing \s* means group(0) can carry trailing
+                # whitespace content_text.strip() has already dropped, which
+                # made a naive equality check here false even for a genuine
+                # mark-only chunk.
+                mark_only = bool(mm) and not content_text[:mm.start()].strip()
+                if mm and cur_part is not None:
+                    cur_part.marks = int(mm.group(1))
+                    # Anchored to the END of the content, never global: these
+                    # papers use square brackets mid-text for real content --
+                    # 1(a)(iii) carries "[1 MPa = 10^6 Pa]" immediately before
+                    # its "[1]" allocation -- and a global strip would eat
+                    # data. Trailing close-tags are preserved (moved after the
+                    # badge) in case the allocation sits inside an inline
+                    # element.
+                    content_html = INLINE_MARKS_HTML_RE.sub(
+                        r'<span class="mk">[\1]</span>\2', content_html).rstrip()
+                    # The row's OWN cell can carry the sentence and the mark
+                    # as two separate paragraphs (RI 2024 H2 P3 1(e)(i): one
+                    # paragraph "...applied.", a second paragraph holding
+                    # only "[1]") -- content_html for the whole row already
+                    # has BOTH, joined with "\n" from the cell's own multi-
+                    # paragraph text. If that leaves the badge alone on the
+                    # LAST line, merge it onto the previous line with a
+                    # space instead of a newline: left as two lines,
+                    # _render_owner/_para would wrap the badge in its own
+                    # <p>, and an otherwise-empty paragraph holding only a
+                    # float collapses to zero height, so the badge visually
+                    # drifts down to wherever the NEXT part's content starts
+                    # (found by rendering and looking, not by any gate).
+                    lines = content_html.split("\n")
+                    if len(lines) > 1 and re.fullmatch(
+                            r'\s*<span class="mk">\[\d+\]</span>\s*',
+                            lines[-1]):
+                        content_html = "\n".join(lines[:-2]
+                            + [lines[-2].rstrip() + " " + lines[-1].strip()]) \
+                            if len(lines) > 2 else \
+                            lines[0].rstrip() + " " + lines[-1].strip()
+                elif mm:
+                    # Never silent: an allocation we can see but cannot attach
+                    # is a mark that will go missing from the marks total.
+                    anomalies.append(
+                        "Q%s: inline marks %s with no part open -- not "
+                        "captured, and left in the content"
+                        % (cur_q.qnum if cur_q else "?", mm.group(0)))
+                if mark_only and cur_part is not None and cur_part.html:
+                    # The paper sometimes prints "[n]" as its OWN row/cell,
+                    # separate from the sentence it belongs to (RI 2024 H2 P3
+                    # 1(e)(i): "...applied." is one chunk, "[1]" arrives as
+                    # the NEXT one). The normal _emit() path joins chunks with
+                    # "\n", which _render_owner/_paragraphs turns into a
+                    # fresh <p> -- so the badge would land alone in its own
+                    # paragraph, containing nothing but a float. An empty
+                    # paragraph holding only a float has no normal-flow
+                    # content to give it height, so it collapses to zero and
+                    # the badge visually drifts down to wherever the NEXT
+                    # part's content happens to start (found by rendering and
+                    # looking -- 1(e)(i)'s "[1]" appeared beside 1(e)(ii)'s
+                    # "[2]" instead of by its own sentence). Appended directly
+                    # onto the end of the part's existing html with a plain
+                    # space instead, it stays inline content of the LAST
+                    # paragraph already there, so float:right resolves against
+                    # a paragraph that has real text height.
+                    cur_part.html = (cur_part.html.rstrip()
+                                     + " " + content_html.strip())
+                elif content_html.strip() or FIG_SENTINEL in content_html:
+                    _emit(content_html)
 
     # --- figures, in true document order, attributed to question + part ---
     figures: list[Figure] = []
@@ -555,6 +780,18 @@ def parse(document_xml, rels_xml):
     figures = ordered_figures
     for n, f in enumerate(figures):
         f.index = n
+
+    # Captions onto their own centred lines. Deliberately AFTER figure
+    # merging: `_merge_owner` decides what is one picture by looking at the
+    # whitespace between placeholders in this very html, so reformatting it
+    # first would change that judgement. Safe to run after the placeholder
+    # counts are taken because it only breaks a line -- it never adds,
+    # removes or reorders a sentinel -- so those counts still describe this
+    # html, and the consistency check below still means what it says.
+    for q in questions:
+        q.intro_html = _split_captions(q.intro_html)
+        for p in q.parts:
+            p.html = _split_captions(p.html)
 
     # --- placeholder/figure consistency, per handoff SS7's costliest defect
     # class: a mismatch here means every later ordinal would rotate. ---

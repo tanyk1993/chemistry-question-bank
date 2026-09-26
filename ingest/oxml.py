@@ -386,3 +386,58 @@ def paragraph_html(p) -> str:
     if html.strip() and paragraph_is_centred(p):
         return CENTRE + html
     return html
+
+
+def paragraph_numid(p) -> str | None:
+    """This paragraph's w:numPr numId, or None if it isn't a list item.
+
+    `paragraph_tokens()` skips <w:pPr> outright (it is run/text assembly
+    only), so list membership -- a paragraph-level property -- has to be
+    read separately. This is the read; deciding whether that numId is a
+    BULLET list is `load_bullet_numids()`, below, since that needs the
+    numbering part, not the paragraph.
+    """
+    numpr = p.find(Wq + "pPr/" + Wq + "numPr")
+    if numpr is None:
+        return None
+    numid = numpr.find(Wq + "numId")
+    return numid.get(Wq + "val") if numid is not None else None
+
+
+def load_bullet_numids(numbering_xml) -> set[str]:
+    """numIds whose ilvl-0 list format is "bullet", from word/numbering.xml.
+
+    numId -> format is two hops from the paragraph: <w:num numId="X"> names
+    an <w:abstractNumId>, and THAT abstractNum's <w:lvl ilvl="0"><w:numFmt>
+    carries the actual format. Both hops are read here so callers only ever
+    handle a flat numId -> "is this a bullet?" check.
+
+    Only ilvl 0 is read: every numPr list surveyed so far (RI 2024 H2 P3, six
+    lists) is single-level; nesting is not handled. A numId whose ilvl-0
+    format is something other than "bullet" (decimal, lowerLetter, ...) is
+    deliberately left OUT of the returned set, so a future paper's genuine
+    numbered list renders as a plain paragraph -- visibly wrong in the
+    preview -- rather than being silently relabelled as a bullet. Re-survey
+    and extend the caller (parts.py's list-grouping) if that turns up.
+    """
+    if numbering_xml is None:
+        return set()
+    root = etree.parse(str(numbering_xml)).getroot()
+    abs_fmt: dict[str, str] = {}
+    for absnum in root.findall(Wq + "abstractNum"):
+        absid = absnum.get(Wq + "abstractNumId")
+        for lvl in absnum.findall(Wq + "lvl"):
+            if lvl.get(Wq + "ilvl") != "0":
+                continue
+            fmt = lvl.find(Wq + "numFmt")
+            if fmt is not None:
+                abs_fmt[absid] = fmt.get(Wq + "val")
+            break
+    out: set[str] = set()
+    for num in root.findall(Wq + "num"):
+        numid = num.get(Wq + "numId")
+        absid_el = num.find(Wq + "abstractNumId")
+        absid = absid_el.get(Wq + "val") if absid_el is not None else None
+        if abs_fmt.get(absid) == "bullet":
+            out.add(numid)
+    return out

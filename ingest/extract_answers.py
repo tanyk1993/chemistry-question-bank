@@ -90,7 +90,8 @@ def main(unz: str, ref_pdf: str, outdir: str):
     # --- recorded source corrections -------------------------------------
     correction_log = []
     for q in list(html_by_q):
-        html_by_q[q], log = corrections.apply(html_by_q[q])
+        html_by_q[q], log = corrections.apply(html_by_q[q],
+                                              (SCHOOL, LEVEL, PAPER, YEAR))
         correction_log += ["Q%d: %s" % (q, x) for x in log]
 
     # --- text gate -------------------------------------------------------

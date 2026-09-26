@@ -1,0 +1,256 @@
+#!/usr/bin/env python3
+"""Emit the question_los migration for a tagged STRUCTURED paper (part-level
+tags), the flow/table-shape sibling of `gen_tag_migration.py` (which is
+hardcoded to `q.type = 'mcq'` and inserts `part_label = NULL`, since an MCQ
+question has no parts).
+
+Recreated 2026-09-26 for EJC 2024 H2 P2 -- the original (built and validated
+2026-09-23 for RI 2024 H2 P3, per claude/ri-2024-h2-p3-tags.md) never made it
+into a git commit before that session ended, so it isn't on disk this
+session. Rebuilt from that doc's description of its own behaviour, not
+copied from a surviving file.
+
+INPUT SHAPE
+-----------
+tags.json: {"<full part label>": ["<code>", ...], ...}, e.g.
+  {"1(a)(i)": ["12(h)"], "1(c)(ii)": ["11.6(c)", "11.6(b)"], ...}
+Keys carry the QUESTION NUMBER PREFIX ("1(a)(i)", not "(a)(i)") -- confirmed
+against index.html's own annotateParts(), which strips the leading digit off
+the STORED part_label to match a question-scoped DOM node, proving the
+stored `question_los.part_label` value itself already carries the question
+number. So the full key is both (a) how question_number is resolved for the
+join, and (b) the exact value written to part_label -- no reformatting.
+A part with no clean LO (a "gap") simply has no key; nothing is inserted for
+it, by omission, not by an explicit NULL/empty-list row.
+
+Primary vs secondary is not preserved as a column -- `question_los` has no
+such distinction (confirmed on RI P3: "no primary/secondary column ... once
+agreed they are equal rows either way"). All codes for a part are inserted as
+equal rows.
+
+THE FAILURE THIS GUARDS AGAINST
+-------------------------------
+Tags are inserted by JOINING on `learning_objectives.section_code`. A code
+that does not exist -- a typo, or a 9729 code 9476 dropped -- matches no row,
+so the join produces nothing and the tag is SILENTLY DROPPED. The insert
+succeeds, reports fewer rows than expected, and nobody notices which part
+lost its tag. So the exact expected count is asserted after the insert.
+
+SECOND FAILURE THIS GUARDS AGAINST (HANDOFF.md SS13, hit on RI 2024 H2 P1):
+`question_topics` LOOKS like it should be derived by the database from
+`question_los`, but it isn't -- it's a separate table the FRONTEND keeps in
+step via `syncTopics()` (index.html), which runs only after a tag edit made
+in the UI. A SQL migration bypasses that silently: the tags land in
+`question_los`, but every question shows its LO chip and an UNTAGGED badge
+at the same time, and sorts/filters into no topic at all. So this generator
+rebuilds `question_topics` itself (delete + reinsert, scoped to this paper)
+right after the tags insert, and asserts no tagged question is left topic-less.
+
+Other conventions carried over from the MCQ generator (handoff SS8, SS11):
+
+* The question join pins `q.type = 'structured'`. MCQ and structured share
+  question_number, so a join on number alone can attach a structured
+  question's tags to an MCQ of the same number in another paper.
+
+* `question_los` IS uniqueness-protected, but by a STANDALONE INDEX
+  (question_los_uniq on (question_id, lo_id, COALESCE(part_label,''))), not a
+  constraint -- `pg_constraint` does not list it. ON CONFLICT against an
+  expression index is fragile, so a re-run is refused by pre-flight instead.
+
+* `classified_by` defaults to 'ai'. These tags are the user's own, made by
+  hand (blind-classify-then-discuss), so it is set to 'human'.
+
+Usage:
+  python3 -m ingest.gen_parts_tag_migration <tags.json> <dest.sql> \\
+      [--school EJC --year 2024 --paper 2 --level H2 --syllabus H2]
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import re
+from pathlib import Path
+
+LEADING_QN_RE = re.compile(r"^(\d+)")
+
+
+def main(tagfile: str, dest: str, *, school: str = "RI", year: int = 2024,
+        paper: int = 1, level: str = "H2", syllabus: str = "H2"):
+    SCHOOL, YEAR, PAPER, LEVEL, SYLLABUS = school, year, paper, level, syllabus
+    tags = json.loads(Path(tagfile).read_text(encoding="utf-8"))
+
+    pairs: list[tuple[int, str, str]] = []  # (question_number, part_label, code)
+    qnums: set[int] = set()
+    for label, codes in tags.items():
+        m = LEADING_QN_RE.match(label)
+        if not m:
+            raise SystemExit("part label %r has no leading question number" % label)
+        qn = int(m.group(1))
+        qnums.add(qn)
+        for c in codes:
+            pairs.append((qn, label, c))
+    n = len(pairs)
+    if len({(qn, lab, c) for qn, lab, c in pairs}) != n:
+        raise SystemExit("duplicate (part_label, code) pairs in the tag file")
+
+    want = sorted(qnums)
+    where = ("p.school = '%s' AND p.year = %d AND p.paper_number = %d "
+             "AND p.level = '%s'" % (SCHOOL, YEAR, PAPER, LEVEL))
+
+    L: list = []
+    add = L.append
+    add("-- %s %d %s P%d -- question_los for %d question(s), %d part(s), %d tag row(s)"
+        % (SCHOOL, YEAR, LEVEL, PAPER, len(want), len(tags), n))
+    add("-- Generated by gen_parts_tag_migration.py. DRY RUN: ends in ROLLBACK.")
+    add("-- Run the content/answer migrations first; this one needs the questions.")
+    add("")
+    add("BEGIN;")
+    add("")
+    add("DO $preflight$")
+    add("DECLARE n int;")
+    add("BEGIN")
+    add("  SELECT count(*) INTO n FROM questions q JOIN papers p ON p.id = q.paper_id")
+    add("   WHERE %s AND q.type = 'structured'" % where)
+    add("     AND q.question_number IN (%s);" % ", ".join(str(q) for q in want))
+    add("  IF n <> %d THEN" % len(want))
+    add("    RAISE EXCEPTION 'expected %d structured question(s), found %%', n;"
+        % len(want))
+    add("  END IF;")
+    add("")
+    add("  -- already tagged? a re-run would add a second copy of every tag that")
+    add("  -- differs from an existing one, and be refused for the rest.")
+    add("  SELECT count(*) INTO n FROM question_los l")
+    add("    JOIN questions q ON q.id = l.question_id")
+    add("    JOIN papers p ON p.id = q.paper_id")
+    add("   WHERE %s AND q.type = 'structured'" % where)
+    add("     AND q.question_number IN (%s);" % ", ".join(str(q) for q in want))
+    add("  IF n <> 0 THEN")
+    add("    RAISE EXCEPTION 'this paper already has % question_los row(s)', n;")
+    add("  END IF;")
+    add("END")
+    add("$preflight$;")
+    add("")
+    add("-- ---------------------------------------------------------------")
+    add("-- Insert. An unresolvable section_code joins to nothing and vanishes,")
+    add("-- so the count is asserted immediately afterwards.")
+    add("-- ---------------------------------------------------------------")
+    add("INSERT INTO question_los (question_id, lo_id, part_label)")
+    add("SELECT q.id, lo.id, t.label")
+    add("  FROM (VALUES")
+    add(",\n".join("    (%d, '%s', '%s')" % (qn, lab, c) for qn, lab, c in pairs))
+    add("  ) AS t(qn, label, code)")
+    add("  JOIN papers p ON %s" % where)
+    add("  JOIN questions q ON q.paper_id = p.id AND q.question_number = t.qn")
+    add("                  AND q.type = 'structured'")
+    add("  JOIN learning_objectives lo ON lo.section_code = t.code")
+    add("                             AND lo.syllabus = '%s'" % SYLLABUS)
+    add("RETURNING question_id, lo_id, part_label;")
+    add("")
+    add("DO $check$")
+    add("DECLARE n int;")
+    add("BEGIN")
+    add("  SELECT count(*) INTO n FROM question_los l")
+    add("    JOIN questions q ON q.id = l.question_id")
+    add("    JOIN papers p ON p.id = q.paper_id")
+    add("   WHERE %s AND q.type = 'structured'" % where)
+    add("     AND q.question_number IN (%s);" % ", ".join(str(q) for q in want))
+    add("  IF n <> %d THEN" % n)
+    add("    RAISE EXCEPTION 'inserted %% tag rows, expected %d -- a section_code "
+        "did not resolve against learning_objectives and was dropped silently', n;"
+        % n)
+    add("  END IF;")
+    add("END")
+    add("$check$;")
+    add("")
+    add("-- ---------------------------------------------------------------")
+    add("-- question_topics is DERIVED from question_los, but only the FRONTEND")
+    add("-- keeps it in step (syncTopics() in index.html, run after a UI tag edit).")
+    add("-- This SQL insert bypasses that entirely, so every tagged question would")
+    add("-- otherwise show its LO chip and an UNTAGGED badge at once, and sort into")
+    add("-- no topic. Rebuilt here, scoped to this paper's structured questions only.")
+    add("-- ---------------------------------------------------------------")
+    add("DELETE FROM question_topics qt")
+    add(" USING questions q, papers p")
+    add(" WHERE qt.question_id = q.id AND q.paper_id = p.id AND %s" % where)
+    add("   AND q.type = 'structured' AND q.question_number IN (%s);"
+        % ", ".join(str(q) for q in want))
+    add("")
+    add("INSERT INTO question_topics (question_id, topic_id)")
+    add("SELECT DISTINCT l.question_id, lo.topic_id")
+    add("  FROM question_los l")
+    add("  JOIN questions q ON q.id = l.question_id")
+    add("  JOIN papers p ON p.id = q.paper_id")
+    add("  JOIN learning_objectives lo ON lo.id = l.lo_id")
+    add(" WHERE %s AND q.type = 'structured'" % where)
+    add("   AND q.question_number IN (%s) AND lo.topic_id IS NOT NULL;"
+        % ", ".join(str(q) for q in want))
+    add("")
+    add("DO $topics_check$")
+    add("DECLARE orphans int;")
+    add("BEGIN")
+    add("  SELECT count(*) INTO orphans FROM (")
+    add("    SELECT DISTINCT l.question_id FROM question_los l")
+    add("      JOIN questions q ON q.id = l.question_id")
+    add("      JOIN papers p ON p.id = q.paper_id")
+    add("     WHERE %s AND q.type = 'structured'" % where)
+    add("       AND q.question_number IN (%s)" % ", ".join(str(q) for q in want))
+    add("  ) tagged")
+    add("  WHERE NOT EXISTS (SELECT 1 FROM question_topics qt WHERE qt.question_id = tagged.question_id);")
+    add("  IF orphans <> 0 THEN")
+    add("    RAISE EXCEPTION '% tagged question(s) have no topic row -- their LO(s) likely have a NULL topic_id', orphans;")
+    add("  END IF;")
+    add("END")
+    add("$topics_check$;")
+    add("")
+    add("-- These tags are the user's own, made by hand (blind-classify-then-")
+    add("-- discuss). classified_by defaults to 'ai', which would misreport the")
+    add("-- provenance of every one of them.")
+    add("UPDATE questions q SET classified_by = 'human'")
+    add("  FROM papers p")
+    add(" WHERE p.id = q.paper_id AND %s AND q.type = 'structured'" % where)
+    add("   AND q.question_number IN (%s)" % ", ".join(str(q) for q in want))
+    add(" RETURNING q.question_number, q.classified_by;")
+    add("")
+    add("-- Flip to COMMIT when the above looks right.")
+    add("ROLLBACK;")
+    add("")
+    add("-- ---------------------------------------------------------------")
+    add("-- VERIFICATION -- run SEPARATELY, after COMMIT.")
+    add("-- ---------------------------------------------------------------")
+    add("-- select q.question_number,")
+    add("--        count(*) as tag_rows,")
+    add("--        string_agg(l.part_label || ':' || lo.section_code, ', '")
+    add("--          order by l.part_label) as los")
+    add("--   from question_los l")
+    add("--   join questions q on q.id = l.question_id")
+    add("--   join papers p on p.id = q.paper_id")
+    add("--   join learning_objectives lo on lo.id = l.lo_id")
+    add("--  where %s and q.type = 'structured'" % where)
+    add("--    and q.question_number in (%s)" % ", ".join(str(q) for q in want))
+    add("--  group by q.question_number order by q.question_number;")
+    add("-- Expect %d rows totalling %d tags." % (len(want), n))
+
+    bad = [l for l in L if "%%" in l]
+    if bad:
+        raise SystemExit(
+            "emitted SQL contains a literal %%%% outside a RAISE -- in PL/pgSQL "
+            "that is an escaped percent, not a placeholder, so RAISE gets one "
+            "argument too many and the whole transaction aborts:\n  "
+            + "\n  ".join(bad))
+    Path(dest).write_text("\n".join(L) + "\n", encoding="utf-8")
+    print("wrote", dest)
+    print("  %d question(s), %d part(s), %d tag rows" % (len(want), len(tags), n))
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("tagfile")
+    ap.add_argument("dest")
+    ap.add_argument("--school", default="EJC")
+    ap.add_argument("--year", type=int, default=2024)
+    ap.add_argument("--paper", type=int, default=2)
+    ap.add_argument("--level", default="H2")
+    ap.add_argument("--syllabus", default="H2")
+    a = ap.parse_args()
+    main(a.tagfile, a.dest, school=a.school, year=a.year, paper=a.paper,
+        level=a.level, syllabus=a.syllabus)

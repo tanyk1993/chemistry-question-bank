@@ -11,7 +11,17 @@ question paper. Schools' mark schemes contain ordinary human errors, and quietly
 reproducing them into a revision tool is not fidelity, it is a bug with a
 pedigree. But neither should they be changed without a trace.
 
-Each entry is (pattern, replacement, reason, approved_by).
+Each entry is (scope, pattern, replacement, reason, approved_by), where scope
+is (school, level, paper, year) or None for a rewrite safe on every paper.
+
+SCOPING IS NOT OPTIONAL. The RI "Fig. 3.1" -> "Fig. 4.1" entry below is a fix
+for one specific mistake in RI's OWN 2024 H2 P2 mark scheme. RI's 2024 H2 P3
+prints a perfectly correct "Fig. 3.1" for an unrelated question -- left
+unscoped, this same regex would silently rename that real figure the moment
+P3's answers were ingested, and the text gate could not have seen the damage,
+because the rewrite runs before the comparison, so both sides would agree on
+the (now wrong) text. `apply(html, scope)` skips any entry whose scope
+differs from the caller's; an entry with scope=None always runs.
 
 DROPPED FIGURES
 ---------------
@@ -46,6 +56,71 @@ DROPPED_FIGURES = {
 def dropped_blocks(school, level, paper, year, qnum) -> dict:
     """{block ordinal: reason} for figures deliberately not placed."""
     return DROPPED_FIGURES.get((school, level, paper, year, qnum), {})
+
+
+# COMBINED FIGURES
+# ----------------
+# The opposite deliberate departure: several of the document's OWN distinct
+# drawings, printed under one part, collapsed into ONE cropped image instead
+# of one per drawing. Default behaviour (`parts_flow.merge_owner_figures`)
+# only merges drawings that sit with nothing between them -- correctly
+# leaving two diagrams separated by real body text (a sentence, a second
+# "conditions:" label) as two separate crops, because that is usually a
+# genuine pair of pictures. Sometimes it isn't: EJC 2024 H2 P2 Q3(d) prints
+# two small Latimer diagrams ("Acidic conditions:" / "Basic conditions:")
+# that the user chose to snip as one combined image rather than two (user,
+# 2026-09-26: "yes please combine them into the image"). Keyed by (school,
+# level, paper, year, qnum, part) -> reason; an unlisted part is unaffected.
+COMBINED_FIGURES = {
+    ("EJC", "H2", "P2", 2024, 3, "(d)"):
+        "Two Latimer diagrams (acidic conditions, basic conditions), "
+        "separated only by the 'Basic conditions:' label -- user chose to "
+        "snip them as one combined image rather than crop each separately.",
+}
+
+
+def combined_figures_reason(school, level, paper, year, qnum, part) -> str | None:
+    """Reason string if this part's figures should be combined into ONE
+    image, else None -- see COMBINED_FIGURES above."""
+    return COMBINED_FIGURES.get((school, level, paper, year, qnum, part))
+
+
+# ASSET FILENAME OVERRIDES
+# ------------------------
+# `render_parts.asset_plan()`'s own naming convention
+# (`SCHOOL_LEVEL_PAPER_Q<n>_<slot>_<year>.png`) is a DEFAULT, not a promise:
+# the user is free to save a crop under a different filename, and once that
+# has happened and been committed live (`gen_parts_assets_fix_migration.py`),
+# every FUTURE `asset_plan()` build must keep emitting that SAME corrected
+# name -- or a later migration built from a fresh extraction silently
+# reverts the fix. Found on EJC 2024 H2 P2, 2026-09-26: the formatting-
+# review patch's own asset-resync step (`gen_parts_patch_migration.py`)
+# rebuilt `asset_plan.json` from scratch, which used the stock names again
+# and would have undone that same morning's filename-mismatch fix if it had
+# been run -- caught from the dry run's own RETURNING output before it was
+# committed, not by any automated check. Keyed by
+# (school, level, paper, year, qnum, slot) -> the filename actually live in
+# the storage bucket. An unlisted (school, level, paper, year, qnum, slot)
+# keeps `asset_plan()`'s own generated default, unaffected.
+ASSET_RENAMES = {
+    ("EJC", "H2", "P2", 2024, 2, "intro"): "EJC_H2_P2_q2_stem_2024.png",
+    ("EJC", "H2", "P2", 2024, 2, "b"): "EJC_H2_P2_q2b_stem_2024.png",
+    ("EJC", "H2", "P2", 2024, 3, "a"): "EJC_H2_P2_q3a_stem_2024.png",
+    ("EJC", "H2", "P2", 2024, 3, "b"): "EJC_H2_P2_q3b_stem_2024.png",
+    ("EJC", "H2", "P2", 2024, 3, "bii"): "EJC_H2_P2_Q3_bii-w_2024.png",
+    ("EJC", "H2", "P2", 2024, 3, "d"): "EJC_H2_P2_q3d_stem_2024.png",
+    ("EJC", "H2", "P2", 2024, 4, "intro"): "EJC_H2_P2_q4_stem_2024.png",
+    ("EJC", "H2", "P2", 2024, 4, "intro2"): "EJC_H2_P2_Q4_fig1_2024.png",
+    ("EJC", "H2", "P2", 2024, 4, "g"): "EJC_H2_P2_Q4_fig2_2024.png",
+}
+
+
+def renamed_asset_path(school, level, paper, year, qnum, slot, default_path):
+    """The filename actually live in storage for this asset, or
+    `default_path` unchanged if it was never renamed -- see ASSET_RENAMES
+    above."""
+    return ASSET_RENAMES.get((school, level, paper, year, qnum, slot),
+                             default_path)
 
 
 # EQUATION OPTIONS READ AS FRACTIONS
@@ -131,6 +206,7 @@ def eqtext_options(school, level, paper, year, qnum) -> dict:
 
 CORRECTIONS = [
     (
+        ("RI", "H2", "P2", 2024),
         r"Fig\.\s*3\.1",
         "Fig. 4.1",
         "RI's mark scheme captions the Q4 kinetics graph 'Fig. 3.1' and the "
@@ -140,13 +216,46 @@ CORRECTIONS = [
         "not a conversion artefact.",
         "user, 2026-09-18",
     ),
+    (
+        ("EJC", "H2", "P2", 2024),
+        "Acidic conditions:\n\nBasic conditions:\n",
+        "",
+        "Q3(d)'s Latimer-diagram image (corrections.COMBINED_FIGURES already "
+        "merges its two pictures into one crop) already labels 'Acidic "
+        "conditions' and 'Basic conditions' inside the picture itself; the "
+        "text-only lines duplicating those same labels read as a formatting "
+        "defect once the diagram is in place, not real question content.",
+        "user, 2026-09-26",
+    ),
+    (
+        ("EJC", "H2", "P2", 2024),
+        # The CENTRE sentinel ("\x00C\x00", oxml.py) precedes this paragraph
+        # because Word centres it -- matched literally rather than imported,
+        # since a text-substitution table has no other reason to depend on
+        # oxml.py, and the byte sequence itself will not change.
+        "\n\x00C\x00<b>Question 4 starts on the next page\\.<br></b>",
+        "",
+        "A literal page-turn note typed into the docx body at the end of "
+        "Q3(e)(iii) (not PDF footer furniture -- it is real body text), "
+        "meaningless once questions are not paginated the same way in the "
+        "app as in the printed paper.",
+        "user, 2026-09-26",
+    ),
 ]
 
 
-def apply(html: str) -> tuple[str, list[str]]:
-    """Return (corrected_html, [descriptions of what changed])."""
+def apply(html: str, scope: tuple | None = None) -> tuple[str, list[str]]:
+    """Return (corrected_html, [descriptions of what changed]).
+
+    `scope` is (school, level, paper, year), matching a CORRECTIONS entry's
+    own scope. An entry scoped to a DIFFERENT paper is skipped -- see the
+    module docstring for why this must not be optional. An entry with
+    scope=None (safe on every paper) always runs, whatever `scope` is.
+    """
     log = []
-    for pattern, replacement, reason, who in CORRECTIONS:
+    for entry_scope, pattern, replacement, reason, who in CORRECTIONS:
+        if entry_scope is not None and entry_scope != scope:
+            continue
         new, n = re.subn(pattern, replacement, html)
         if n:
             log.append("%dx %s -> %r (%s; approved: %s)"

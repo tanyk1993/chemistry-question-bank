@@ -176,6 +176,23 @@ def _tokens_from_run(r, *, in_math: bool = False):
     if not text:
         return
 
+    # EJC 2024 H2 P2 types the standard-state ("plimsoll") symbol as a bare
+    # LATIN CAPITAL LETTER O WITH LONG STROKE OVERLAY (U+A74A) in an ordinary
+    # Arial run, not via OMML math (contrast the sSubSup handling above,
+    # which is what OTHER papers' equation-editor "plimsoll above" objects
+    # go through). Confirmed against the reference PDF's OWN text layer --
+    # it contains the identical U+A74A codepoint at the same spot, so this
+    # is genuinely what the source document encodes, not a misread on our
+    # part; it just does not carry the sub/superscript formatting a reader
+    # needs to recognise it, and U+A74A does not display as a standard-state
+    # symbol in a normal web font. Substituted for the actual Unicode
+    # standard-state character, raised the way every other run: ΔHꝊ,
+    # EꝊ, GꝊ (Q3(a)(ii), (d)(i)-(iii)) all being ONE bare run confirms this
+    # is always a full run on its own, never mixed with other text.
+    if text == "Ꝋ":
+        yield "<sup>⦵</sup>", EMPTY, True
+        return
+
     # SS7 / defect SS2: a run whose entire content is the element symbol l gets the
     # serif face, so "AlCl3" does not read as "AICI3". Everything else italic
     # (Data Booklet, k, Ea) stays in the body face.
@@ -324,15 +341,113 @@ def _omml_tokens(el):
 # paragraph assembly
 # --------------------------------------------------------------------------
 
+def _combine_group_id(r):
+    """The run's `w:eastAsianLayout` combine-characters group id, or None.
+
+    Word's "Combine Characters" feature stacks up to ~6 characters into two
+    half-height lines sharing one normal character's width -- EJC 2024 H2 P2
+    uses it as a compact ion-charge notation (see `_flush_combine` below),
+    typing e.g. "-3" this way right after "HCO" instead of using real
+    sub/superscript runs.
+    """
+    pr = r.find(Wq + "rPr")
+    if pr is None:
+        return None
+    eal = pr.find(Wq + "eastAsianLayout")
+    if eal is None or eal.get(Wq + "combine") != "1":
+        return None
+    return eal.get(Wq + "id")
+
+
+def _combine_run_text(r) -> str:
+    """A combine-flagged run's bare `<w:t>` text, for grouping only.
+
+    Every combine run actually seen is a single plain `w:t` (never a tab,
+    symbol, drawing, ...), so this does not need `_tokens_from_run`'s full
+    child-element handling.
+    """
+    t = r.find(Wq + "t")
+    return t.text or "" if t is not None else ""
+
+
 def paragraph_tokens(p):
     """Yield (text, Style) for a w:p, descending into any OMML."""
+    pending: list = []
+    pending_id = None
+
+    def _flush_combine():
+        nonlocal pending, pending_id
+        if not pending:
+            return []
+        runs, pending, pending_id = pending, [], None
+        text = "".join(_combine_run_text(r) for r in runs)
+        # A SECOND, unrelated use of this same combine id: the standard-state
+        # ("plimsoll") symbol (U+A74A, substituted below -- see
+        # _tokens_from_run's own comment on the bare-run case) stacked over a
+        # variable-length subscript label -- confirmed against the reference
+        # PDF's own rendered page image (Q3(a)(ii)'s Table 3.1 and its two
+        # "reaction 1" equation labels): the symbol sits raised, the label
+        # sits lowered directly beneath it, at every length seen in this
+        # document from "f" (1 char) to "reaction 1" (10 chars, shrunk to
+        # fit) -- NOT the fixed-width two-row squeeze the ION-CHARGE notation
+        # below uses. An EARLIER pass at this treated every one of these as
+        # "a much longer run of text sharing one combine id is a coincidental
+        # or vestigial tag... not a real combine" and let it fall through to
+        # plain sequential text -- which is what let the standard-state
+        # symbol itself through (its own bare-run special case still fired)
+        # but silently dropped "at"/"sublimation"/"f"/"reaction 1" as
+        # ordinary baseline text instead of subscript (found from the user's
+        # own comparison against the source paper, 2026-09-26, after the
+        # symbol itself had already been fixed). Splits cleanly on the
+        # symbol -- confirmed on all 5 such groups in this document -- so
+        # length is irrelevant here; only the ION notation below needs a
+        # length check, because it has no fixed anchor character to split on.
+        if "Ꝋ" in text:
+            before, _, after = text.partition("Ꝋ")
+            before, after = before.strip(), after.strip()
+            html = (_esc(before) if before else "") + "<sup>⦵</sup>"
+            if after:
+                html += "<sub>%s</sub>" % _esc(after)
+            return [(html, EMPTY, True)]
+        # Word's real combine limit for the ION-CHARGE notation is a handful
+        # of characters split into a TOP line and a BOTTOM line (the first
+        # ceil(n/2) chars on top). A much longer run of text sharing one
+        # combine id, with no standard-state symbol in it, is a coincidental
+        # or vestigial tag, not a real combine -- rendered as ordinary
+        # sequential text instead.
+        if text and len(text) <= 3:
+            top_n = -(-len(text) // 2)          # ceil(len/2)
+            top, bottom = text[:top_n], text[top_n:]
+            # Chemistry reads number-then-charge left to right (HCO3-, not
+            # -3HCO). Word stacks the group TOP/BOTTOM instead, first-typed
+            # on top -- confirmed against this document's own combine text
+            # ("2-4" for CrO4(2-), "-3" for HCO3-/ClO3-, "-4" for ClO4-):
+            # the BOTTOM half is always the subscript count, the TOP half
+            # the superscript charge.
+            return [("<sub>%s</sub><sup>%s</sup>" % (_esc(bottom), _esc(top)),
+                     EMPTY, True)]
+        out = []
+        for r in runs:
+            out.extend(_tokens_from_run(r))
+        return out
+
     for child in p:
         ln = etree.QName(child).localname
         if ln == "r":
+            cid = _combine_group_id(child)
+            if cid is not None:
+                if pending and pending_id != cid:
+                    yield from _flush_combine()
+                pending.append(child)
+                pending_id = cid
+                continue
+            yield from _flush_combine()
             yield from _tokens_from_run(child)
         elif ln in ("oMath", "oMathPara"):
+            yield from _flush_combine()
             yield from _omml_tokens(child)
         elif ln in ("hyperlink", "smartTag", "sdt", "ins"):
+            yield from _flush_combine()
             for sub in child.iter():
                 if etree.QName(sub).localname == "r" and sub.getparent() is child:
                     yield from _tokens_from_run(sub)
@@ -342,8 +457,10 @@ def paragraph_tokens(p):
         elif ln in ("subDoc",):
             continue
         else:
+            yield from _flush_combine()
             # Unknown block-level child: surface it rather than dropping it.
             raise ValueError("unhandled paragraph child <w:%s>" % ln)
+    yield from _flush_combine()
 
 
 def tokens_to_html(tokens) -> str:
@@ -386,3 +503,89 @@ def paragraph_html(p) -> str:
     if html.strip() and paragraph_is_centred(p):
         return CENTRE + html
     return html
+
+
+def paragraph_numid(p) -> int | None:
+    """This paragraph's `w:numPr/w:numId` value, or None if it isn't a list
+    item at all.
+
+    Reads the PARAGRAPH's own declaration only -- resolving it against a
+    style's inherited numbering is not needed by any paper seen so far, and
+    would risk inventing list membership a paragraph never actually states.
+
+    Returns an int (not the raw XML string) so it compares directly against
+    `load_numid_formats`'s int-keyed dict below -- merged from two
+    independently-written copies of this function (RI 2024 H2 P3's origin
+    commit kept the numId as a string; EJC 2024 H2 P2's local copy, which
+    `parts_flow.py` also depends on, casts to int). Every caller in this
+    codebase only ever does membership/dict-key checks, never string
+    formatting, on the result, so standardising on int here is safe for
+    both.
+    """
+    numid = p.find(Wq + "pPr/" + Wq + "numPr/" + Wq + "numId")
+    if numid is None:
+        return None
+    val = numid.get(Wq + "val")
+    return int(val) if val is not None else None
+
+
+def load_numid_formats(numbering_xml) -> dict:
+    """{numId: ilvl-0 w:numFmt value} for every numId in this document's
+    numbering part -- "bullet", "decimal", "lowerLetter", "lowerRoman", etc.
+
+    Shared groundwork for `load_bullet_numids` (below) and for
+    `parts_flow.py`'s own auto-numbered-letter recovery: both need to know
+    what KIND of list a numId renders as, not just whether it is a bullet.
+
+    `numbering_xml=None` (a paper with no numbering part at all) returns an
+    empty dict rather than raising -- RI 2024 H2 P3's own copy of this
+    guard, absorbed here since `load_bullet_numids` is now built on top of
+    this function instead of duplicating the two-hop lookup itself.
+    """
+    if numbering_xml is None:
+        return {}
+    tree = etree.parse(str(numbering_xml))
+    root = tree.getroot()
+
+    fmt_by_abstract = {}
+    for absnum in root.findall(Wq + "abstractNum"):
+        abs_id = absnum.get(Wq + "abstractNumId")
+        lvl0 = absnum.find(Wq + "lvl[@" + Wq + "ilvl='0']")
+        if lvl0 is None:
+            continue
+        numfmt = lvl0.find(Wq + "numFmt")
+        if numfmt is not None:
+            fmt_by_abstract[abs_id] = numfmt.get(Wq + "val")
+
+    formats = {}
+    for num in root.findall(Wq + "num"):
+        num_id = num.get(Wq + "numId")
+        absid_el = num.find(Wq + "abstractNumId")
+        if absid_el is None or num_id is None:
+            continue
+        abs_id = absid_el.get(Wq + "val")
+        fmt = fmt_by_abstract.get(abs_id)
+        if fmt is not None:
+            formats[int(num_id)] = fmt
+    return formats
+
+
+def load_bullet_numids(numbering_xml) -> set:
+    """numId -> set, for every numId whose ilvl-0 `w:numFmt` is "bullet".
+
+    Word's bullet GLYPH is generated from this part at render time and is
+    never written into a run as literal text (`paragraph_tokens` explicitly
+    skips `w:pPr`, which is where `w:numPr` lives), so a bulleted list is
+    otherwise invisible to this module entirely.
+
+    Deliberately excludes non-bullet formats (decimal, letter, roman) rather
+    than treating every numPr paragraph the same -- a genuinely NUMBERED list
+    whose numbers carry meaning ("step 1", "step 2"...) must keep rendering as
+    plain paragraphs (visibly wrong in a preview, and so caught) rather than
+    being silently mislabelled as an unordered list. Only ilvl 0 is read
+    (every numPr list surveyed so far, across both RI 2024 H2 P3 and EJC
+    2024 H2 P2, is single-level); re-survey and extend the caller if a
+    future paper nests one.
+    """
+    return {nid for nid, fmt in load_numid_formats(numbering_xml).items()
+            if fmt == "bullet"}

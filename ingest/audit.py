@@ -76,6 +76,56 @@ FIGURE_BORNE = {
               'same Equation.DSMT4 objects as \\uf05b above',
     "\uf0fb": 'EJC P1 Q13 -- stretchy bracket CORNER piece (bottom, right '
               'side), same Equation.DSMT4 objects as \\uf05b above',
+    # EJC 2024 H2 P2 -- confirmed by grepping the WHOLE paper's own
+    # pdftotext output (not assumed from the character alone): every "V" in
+    # the entire question paper is one of Q3(d)'s Latimer-diagram electrode
+    # potentials ("+1.19V", "+1.18V", "+1.64V", "+0.17V", "+0.35V"), drawn as
+    # native-shape text inside the acidic/basic-conditions diagrams (the
+    # same two pictures corrections.COMBINED_FIGURES merges into one crop),
+    # not extractable text. No other question in this paper uses a bare "V".
+    "V": "EJC 2024 H2 P2 Q3(d)'s Latimer diagram electrode potentials -- "
+         "native-shape text drawn inside the diagram, not extractable",
+}
+
+
+#: Characters we DELIBERATELY show as something else, unlike FIGURE_BORNE
+#: (which is absent from our side entirely because it is inside a picture).
+#: Here the information is present, just re-rendered as a clearer/correct
+#: character -- so it legitimately fails a byte-for-byte comparison against
+#: the reference PDF without being a coverage gap. Each entry names the
+#: substitution so the exemption cannot silently cover an unrelated future
+#: drop of the same source codepoint.
+SUBSTITUTED_CHARS = {
+    "Ꝋ": "the standard-state (\"plimsoll\") symbol -- EJC 2024 H2 P2 "
+              "types it as a bare LATIN CAPITAL LETTER O WITH LONG STROKE "
+              "OVERLAY (confirmed identical in the reference PDF's own text "
+              "layer, so this is genuinely how the source encodes it, not a "
+              "misread), which does not display as a standard-state symbol "
+              "in a normal web font. oxml.py substitutes the real CIRCLE "
+              "WITH HORIZONTAL BAR character (⦵), raised, wherever it "
+              "occurs.",
+}
+
+
+#: Characters absent because the SENTENCE carrying them was deliberately
+#: dropped by a `corrections.py` CORRECTIONS entry -- a third, distinct
+#: reason from FIGURE_BORNE (never extractable, it lives inside a picture)
+#: and SUBSTITUTED_CHARS (present, just re-rendered as a different glyph).
+#: Here the text is gone on purpose, recorded and scoped in corrections.py,
+#: and this entry only explains a total-absence gate hit (charset_gate only
+#: fires when OUR side has ZERO of the character anywhere), so it is safe
+#: exactly as long as the named corrections.py entry exists -- remove this
+#: exemption in the same change that ever removes that entry.
+CORRECTED_AWAY = {
+    "Q": "EJC 2024 H2 P2 Q3(e)(iii)'s \"Question 4 starts on the next "
+         "page.\" page-turn note, dropped by corrections.py (meaningless "
+         "once questions are not paginated the same way in the app as in "
+         "the printed paper). The reference PDF's every other 'Q' sits in "
+         "front-matter/header text already excluded by the extraction's "
+         "own page range, and the app never prints a literal 'Question N' "
+         "label in body text (the number is stored and rendered "
+         "separately) -- so this one dropped sentence is the extraction's "
+         "entire 'Q' deficit.",
 }
 
 
@@ -85,8 +135,19 @@ def classify(problems: list[str]) -> tuple[list[str], list[str]]:
     for p in problems:
         hit = next((ch for ch in FIGURE_BORNE
                     if ("U+%04X" % ord(ch)) in p), None)
-        (expected if hit else real).append(
-            p + ("  [expected: %s]" % FIGURE_BORNE[hit] if hit else ""))
+        sub = next((ch for ch in SUBSTITUTED_CHARS
+                    if ("U+%04X" % ord(ch)) in p), None) if not hit else None
+        dropped = next((ch for ch in CORRECTED_AWAY
+                       if ("U+%04X" % ord(ch)) in p), None) \
+            if not hit and not sub else None
+        if hit:
+            expected.append(p + "  [expected: %s]" % FIGURE_BORNE[hit])
+        elif sub:
+            expected.append(p + "  [expected: %s]" % SUBSTITUTED_CHARS[sub])
+        elif dropped:
+            expected.append(p + "  [expected: %s]" % CORRECTED_AWAY[dropped])
+        else:
+            real.append(p)
     return real, expected
 
 

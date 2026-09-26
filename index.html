@@ -140,6 +140,15 @@
   .stem .figimg img[data-fig="RI_H2_P2_Q1_di2_2024.png"]{max-height:21.4em}
   .stem .figimg img[data-fig="RI_H2_P2_Q2_e_2024.png"]{max-width:min(100%,25em);max-height:21.7em}
   .stem .figimg img[data-fig="RI_H2_P2_Q3_b_2024.png"]{max-width:min(100%,28em);max-height:20.8em}
+  /* EJC 2024 H2 P2 Q4 Fig 4.1 (the LiAlH4 reduction apparatus) -- a
+     hand-snipped crop (919x678px, not a 400dpi PDF auto-crop, confirmed from
+     the user's own file), so the default 13em height cap crushed it well
+     below readable size (user, 2026-09-26: "Fig 4.1 is currently a bit
+     small, can it be made bigger?"). 25.1em = 34em / (919/678), so the
+     existing 34em WIDTH cap becomes the binding constraint instead, same
+     pattern as the RI P2 overrides above -- no re-snip needed, the source
+     file's own resolution is more than enough for this. */
+  .stem .figimg img[data-fig="EJC_H2_P2_Q4_fig1_2024.png"]{max-height:25.1em}
   .stem .optgrid{display:flex;flex-direction:column;gap:.5rem;margin:.5rem 0}
   .stem .optrow{display:flex;gap:.6rem;align-items:center;background:var(--paper);
     border-radius:8px;padding:.5rem .6rem}

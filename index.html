@@ -165,6 +165,26 @@
      constraint instead, same pattern as EJC_H2_P2_Q4_fig1 above -- no re-snip
      needed, the existing crop already has more than enough resolution. */
   .stem .figimg img[data-fig="EJC_H2_P3_Q1_b_2024.png"]{max-height:27.2em}
+  /* EJC 2024 H2 P3 Fig 1.2, Fig 2.1, Fig 4.1 -- same story as Fig 1.1 above:
+     the 13em height cap was binding well short of the 34em width cap, so the
+     user's re-snipped/re-uploaded crops (confirmed from the user's own files,
+     2026-09-27) still looked small. Each value = 34em / (actual pixel aspect
+     ratio of the re-uploaded file), making the width cap the binding
+     constraint. Fig 1.2 1542x1059, Fig 2.1 1261x786, Fig 4.1 1612x990. */
+  .stem .figimg img[data-fig="EJC_H2_P3_Q1_cii2_2024.png"]{max-height:23.4em}
+  .stem .figimg img[data-fig="EJC_H2_P3_Q2_aii_2024.png"]{max-height:21.2em}
+  .stem .figimg img[data-fig="EJC_H2_P3_Q4_d_2024.png"]{max-height:20.9em}
+  /* EJC 2024 H2 P3 Q5(b2) (the Ha/Hb carbonyl acidity sketch) and Q5(biv)
+     (the conjugated dienone) -- the opposite problem: both are small, simple
+     structures with little internal padding, so the DEFAULT 13em cap already
+     rendered them large relative to how little they show (user, 2026-09-27:
+     "not happy with the size... smaller"; biv in particular is wide enough
+     (aspect 2.48) that 13em height means ~32em width, nearly the full column).
+     8em brings both down to a consistent, modest "inline structure" scale --
+     width follows from each file's own aspect ratio (Q5b2 330x237 -> ~11.1em,
+     Q5biv 613x247 -> ~19.9em), both comfortably under the 34em width cap. */
+  .stem .figimg img[data-fig="EJC_H2_P3_Q5_b2_2024.png"]{max-height:8em}
+  .stem .figimg img[data-fig="EJC_H2_P3_Q5_biv_2024.png"]{max-height:8em}
   .stem .optgrid{display:flex;flex-direction:column;gap:.5rem;margin:.5rem 0}
   .stem .optrow{display:flex;gap:.6rem;align-items:center;background:var(--paper);
     border-radius:8px;padding:.5rem .6rem}

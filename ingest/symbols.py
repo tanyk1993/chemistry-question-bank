@@ -115,15 +115,24 @@ WINGDINGS = {
                         #   correct one" convention from F0DE's answer-line tick
                         #   above, used specifically inside an A/B/C/D option
                         #   list rather than on the final bare answer letter.
-    "F0FB": "☐",   # EJC 2024 H2 P1 answers Q4: "A[FB]:bent" / "B[FB]:trigonal
+    "F0FB": "x",   # EJC 2024 H2 P1 answers Q4: "A[FB]:bent" / "B[FB]:trigonal
                         #   planar" / "C[FB]:square planar" -- the UNCHECKED
                         #   counterpart of F0FC above, sitting on every WRONG
-                        #   option in the same list (confirmed: the reference
-                        #   PDF's text layer shows nothing at this position for
-                        #   A/B/C, only "D✓" for the correct one -- consistent
-                        #   with an empty checkbox glyph, which pdftotext does
-                        #   not resolve to visible text any more than it does
-                        #   most other Wingdings/Symbol PUA codepoints).
+                        #   option in the same list. Originally guessed as an
+                        #   empty checkbox "☐" from the reference PDF's text
+                        #   layer showing nothing at this position for A/B/C
+                        #   (only "D✓" for the correct one) -- that guess was
+                        #   WRONG. The user's own screenshot of the live Q4
+                        #   rendering (the combined VSEPR-shapes snip, which
+                        #   bakes in the real glyphs as pixels) proved the
+                        #   actual source glyph is a CROSS, not a box; pdftotext
+                        #   simply failed to extract it, same as most other
+                        #   Wingdings/Symbol PUA codes in this document.
+                        #   Mapped to a plain ASCII "x" rather than a unicode
+                        #   cross (e.g. U+2717) on the user's explicit request,
+                        #   2026-09-28, for guaranteed cross-font/browser
+                        #   rendering -- this is a deliberate typography choice,
+                        #   not a further identification guess.
 }
 
 # MT Extra -- a THIRD font family, first seen on EJC 2024 H2 P1. Legacy

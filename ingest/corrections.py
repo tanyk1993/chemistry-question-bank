@@ -316,6 +316,98 @@ CORRECTIONS = [
         "(all jc=\"center\"); centring it here matches the rest.",
         "user, 2026-09-27",
     ),
+    (
+        ("EJC", "H2", "P1", 2024),
+        r"Eqm 2 and 4",
+        "Equilibria 2 and 4",
+        "Q7 statement 2 abbreviates 'Equilibria' as 'Eqm' (singular form used "
+        "for a plural referent, referring to equilibria 2 and 4 by the "
+        "numbering scheme (∆G1..∆G4) set up earlier in the same answer) -- a "
+        "short form in the source, spelled out per house style.",
+        "user, 2026-09-28",
+    ),
+    (
+        ("EJC", "H2", "P1", 2024),
+        r"\beqm \(2\)",
+        "equilibrium (2)",
+        "Q14 abbreviates 'equilibrium' as 'eqm' when referring back to its "
+        "own numbered equilibrium (2) (the H2C2O4 dissociation) -- a short "
+        "form in the source, spelled out per house style.",
+        "user, 2026-09-28",
+    ),
+    (
+        ("EJC", "H2", "P1", 2024),
+        r"\beqm \(1\)",
+        "equilibrium (1)",
+        "Q14 abbreviates 'equilibrium' as 'eqm' when referring back to its "
+        "own numbered equilibrium (1) (the CaC2O4 dissolution) -- a short "
+        "form in the source, spelled out per house style.",
+        "user, 2026-09-28",
+    ),
+    (
+        ("EJC", "H2", "P1", 2024),
+        r"solubitlity",
+        "solubility",
+        "Q16 option D: genuine spelling typo in the source document "
+        "('solubitlity' for 'solubility').",
+        "user, 2026-09-28",
+    ),
+    (
+        ("EJC", "H2", "P1", 2024),
+        r"↑es",
+        "increases",
+        "Q17 statements 1 and 2 use the raw up-arrow-plus-'es' shorthand "
+        "('atomic radius ↑es', 'number of electrons ↑es') in place of the "
+        "word -- the arrow glyph itself (symbols.py SYMBOL['F0AD']) is a "
+        "legitimate, evidenced transcription of the source's Symbol-font "
+        "character, but reads as a typo/short form once rendered as running "
+        "prose, so it is spelled out per house style.",
+        "user, 2026-09-28",
+    ),
+    (
+        ("EJC", "H2", "P1", 2024),
+        r"↓es",
+        "decreases",
+        "Q17 statements 2 and 3 use the raw down-arrow-plus-'es' shorthand "
+        "('volatility ↓es', 'E⦵(X2|X–) ↓es', 'Oxidising power ... ↓es') in "
+        "place of the word -- same rationale as the '↑es' entry above.",
+        "user, 2026-09-28",
+    ),
+    (
+        ("EJC", "H2", "P1", 2024),
+        r"↓ing",
+        "decreasing",
+        "Q17 statement 1 uses the raw down-arrow-plus-'ing' shorthand "
+        "('X–X bond energy ↓ing down the group') in place of the word -- "
+        "same rationale as the '↑es' entry above.",
+        "user, 2026-09-28",
+    ),
+    (
+        ("EJC", "H2", "P1", 2024),
+        r"↑ polarisability",
+        "increased polarisability",
+        "Q17 statement 2 uses the raw up-arrow shorthand ('resulting in ↑ "
+        "polarisability of electron cloud') in place of the word -- same "
+        "rationale as the '↑es' entry above.",
+        "user, 2026-09-28",
+    ),
+    (
+        ("EJC", "H2", "P1", 2024),
+        r"a ↓ in tendency",
+        "a decrease in tendency",
+        "Q17 statement 3 uses the raw down-arrow shorthand ('there is a ↓ "
+        "in tendency for X2 to be reduced') in place of the word -- same "
+        "rationale as the '↑es' entry above.",
+        "user, 2026-09-28",
+    ),
+    (
+        ("EJC", "H2", "P1", 2024),
+        r"tadical",
+        "radical",
+        "Q19 option C: genuine spelling typo in the source document "
+        "('tadical' for 'radical').",
+        "user, 2026-09-28",
+    ),
 ]
 
 

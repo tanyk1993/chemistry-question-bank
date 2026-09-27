@@ -17,9 +17,18 @@ ChemDraw structures need a manual snip EXCEPT one trivial "C=C" text
 fragment (Q21's second object), which is typed directly. The user combined
 Q4's four VSEPR shapes and Q23's four reaction schemes into one snipped
 image each (chat, 2026-09-28), so those two questions have only ONE asset
-slot despite having 4 OLE placeholders each in the source -- the first FIG
-placeholder in each gets the <img>, the other three are dropped (already
-shown in the combined picture).
+slot despite having 4 OLE placeholders each in the source. Both combined
+snips bake in EVERY per-option letter/glyph/caption as pixels (confirmed by
+the user's screenshot of the live Q4 rendering), so `render_block` special-
+cases qnum 4/23 to emit ONLY the bare `<img>` with no typed text around it
+at all -- an earlier version emitted the typed option list alongside the
+image too, which duplicated content already shown in the picture.
+
+`corrections.apply()` (ingest/corrections.py) is run on every question's
+assembled body HTML, scoped to ("EJC", "H2", "P1", 2024): it spells out a
+handful of arrow-shorthand/abbreviation short forms in Q7/Q14/Q17 and fixes
+two genuine source typos in Q16/Q19 (see that file's CORRECTIONS list for
+the full, individually-reasoned list).
 
 `oxml.paragraph_html()` already turns any w:object into the \x00FIG\x00
 sentinel (oxml.py line ~157) the same way it does an inline drawing, so this
@@ -44,6 +53,9 @@ from pathlib import Path
 sys.path.insert(0, '/home/claude/chemistry-question-bank')
 from lxml import etree
 from ingest.oxml import NS, Wq, paragraph_html
+from ingest import corrections
+
+SCOPE = ("EJC", "H2", "P1", 2024)
 
 CENTRE = "\x00C\x00"
 FIG = "\x00FIG\x00"
@@ -205,6 +217,18 @@ def _strip_empty_b(html):
 def render_block(qnum, paras, start, end):
     """Render one question's worked_solution body (no outer wrapper -- flat
     MCQ shape, style-guide.md #6)."""
+    if qnum in (4, 23):
+        # The combined single snip for this question already bakes in EVERY
+        # per-option letter, checkbox/cross/tick glyph and caption as pixels
+        # (the user explicitly combined Q4's 4 VSEPR shapes and Q23's 4
+        # reaction schemes into one image each, chat 2026-09-28). Rendering
+        # the surrounding typed paragraph text as well -- the "A x :"/"D
+        # ✓ :" option lines and captions -- duplicates content already
+        # shown in the picture, confirmed by the user's screenshot of the
+        # live Q4 rendering. So these two questions render ONLY the bare
+        # image, with no typed text around it at all.
+        return '<p>%s</p>' % ASSET_IMG[qnum]
+
     fig_queue = iter(fig_replacements(qnum))
     out = []
     first_content_seen = False
@@ -261,7 +285,11 @@ def parse(document_xml_path):
 
     results = {}
     for qnum, (s, e) in enumerate(zip(starts, boundaries), start=1):
-        results[qnum] = '<div class="worked-solution">\n%s\n</div>' % render_block(qnum, paras, s, e)
+        body = render_block(qnum, paras, s, e)
+        body, log = corrections.apply(body, SCOPE)
+        if log:
+            print(f"Q{qnum} corrections applied: {log}")
+        results[qnum] = '<div class="worked-solution">\n%s\n</div>' % body
     return results
 
 

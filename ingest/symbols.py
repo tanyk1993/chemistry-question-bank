@@ -49,6 +49,19 @@ SYMBOL = {
                         #   also gives 0x44 -> U+2206.
     "F05C": "∴",   # 0x5C therefore            ; ".'. reaction is first order"
     "F0B5": "∝",   # 0xB5 proportional         ; "k' [CH3CHO]"
+    "F0BB": "≈",   # 0xBB approxequal          ; RI 2024 H2 P1 answers Q17,
+                        #   the only occurrence in the document: "[CH3COO-]eqm
+                        #   [CH3COO-]initial = 1 mol dm-3 since CH3COO- is a
+                        #   weak acid with a small Kb" -- the standard weak-acid
+                        #   approximation, so "eqm ~= initial" is exactly the
+                        #   sense required. The Word-PDF text layer drops this
+                        #   glyph too (pdftotext doesn't decode Symbol PUA
+                        #   codepoints any more than it decodes the radical
+                        #   dot), so this entry is evidenced by the standard
+                        #   Adobe Symbol encoding table (0xBB=approxequal,
+                        #   consistent with every neighbouring entry already in
+                        #   this table: 0xAE/0xB0/0xB4/0xB5/0xB7/0xBE) plus the
+                        #   chemistry, not an independent PDF cross-check.
 }
 
 # Wingdings. Only one code appears in this document.

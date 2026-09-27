@@ -36,6 +36,11 @@ ADOBE_SYMBOL = {
     0xB4: "×",   # multiply
     0xB5: "∝",   # proportional
     0xB7: "•",   # bullet
+    0xBB: "≈",   # approxequal -- RI 2024 H2 P1 answers Q17. See symbols.py
+                      # for the full evidence (standard encoding table position
+                      # + chemistry sense; no independent PDF cross-check was
+                      # possible for this one, since the reference PDF's text
+                      # layer drops this glyph too).
     0xBE: "⎯",   # arrowhorizex -- the arrow SHAFT. Decoded to its true
                       # character here (unlike the extractor, which drops it as
                       # typographic scaffolding); audit.normalise strips it from

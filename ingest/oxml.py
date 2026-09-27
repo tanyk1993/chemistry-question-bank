@@ -198,14 +198,19 @@ def _tokens_from_run(r, *, in_math: bool = False):
     # (Data Booklet, k, Ea) stays in the body face.
     #
     # This is a TEXT-pattern guess, unlike the `sr` mark above, which reads the
-    # document's own font override. The two may well be the same phenomenon --
-    # Word may set these l runs in Times New Roman too, which would make this
-    # hack redundant. NOT ESTABLISHED: RI 2024 H2 P3 contains no `l` runs at
-    # all, so it could not settle the question either way. Do not remove this
-    # on the assumption that `sr` covers it without checking a paper that
-    # actually has one.
+    # document's own font override. RI 2024 H2 P1's ANSWERS document settles
+    # the "are these the same phenomenon" question left open when `sr` was
+    # introduced (RI 2024 H2 P3 had no `l` runs to test it against): its `l`
+    # runs in AlCl3/HCl/LiAlH4 etc. (Q10/Q18/Q20/Q27/Q29) ARE independently
+    # set in Times New Roman, so without this override both marks fired at
+    # once, producing `<i class="el"><span class="sr">l</span></i>`. The
+    # style guide's evidenced rule for element l (`[V] RI H2 P1 Q11`, and
+    # `claude/p3-live-formatting-fixes.md`'s confirmed-live Q27 row) is
+    # unambiguous: `<i class="el">l</i>`, nothing else -- so when the
+    # text-pattern rule fires, it wins outright and `sr` is dropped too, not
+    # just `i`.
     if text.strip() == "l":
-        style = Style((style - {"i"}) | {"el"})
+        style = Style((style - {"i", "sr"}) | {"el"})
     yield text, style, False
 
 

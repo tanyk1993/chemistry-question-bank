@@ -27,10 +27,17 @@ other gen_*_migration.py already follows -- see HANDOFF.md's own note on
 why a script meant to be reused across papers should never stay hardcoded
 to the one paper it was first built for.
 
+`--type` added 2026-09-27 for RI 2024 H2 P1 (MCQ, no parts): the question
+join must pin `q.type` because MCQ and structured questions share
+question_number within a paper (HANDOFF.md SS8's "any figure linker MUST
+pin q.type" rule applies just as much to a worked-solution migration).
+Defaults to 'structured' so every existing invocation of this script keeps
+working unchanged.
+
 Usage:
   python3 -m ingest.gen_answers_migration <worked_solutions.json> \\
       <answer_assets.json> <dest.sql> \\
-      [--school EJC] [--year 2024] [--paper 2] [--level H2]
+      [--school EJC] [--year 2024] [--paper 2] [--level H2] [--type structured]
 
 `worked_solutions.json`: {"1": "<div class=\\"worked-solution\\">...</div>", ...}
   -- question number (as a string key) -> the full worked_solution HTML.
@@ -63,7 +70,8 @@ def _lit(s: str) -> str:
 
 
 def main(ws_json: str, assets_json: str, dest: str, *, school: str = "RI",
-        year: int = 2024, paper: int = 2, level: str = "H2"):
+        year: int = 2024, paper: int = 2, level: str = "H2",
+        qtype: str = "structured"):
     worked = json.loads(Path(ws_json).read_text(encoding="utf-8"))
     assets_raw = json.loads(Path(assets_json).read_text(encoding="utf-8"))
     ASSETS = [(a["question"], a["slot"], a["path"], a["offset"])
@@ -87,9 +95,9 @@ def main(ws_json: str, assets_json: str, dest: str, *, school: str = "RI",
     add("DO $preflight$")
     add("DECLARE n int;")
     add("BEGIN")
-    add("  -- exactly one structured question row per question number")
+    add("  -- exactly one %s question row per question number" % qtype)
     add("  SELECT count(*) INTO n FROM questions q JOIN papers p ON p.id = q.paper_id")
-    add("   WHERE %s AND q.type = 'structured'" % WHERE)
+    add("   WHERE %s AND q.type = '%s'" % (WHERE, qtype))
     add("     AND q.question_number IN (%s);" % ", ".join(str(q) for q in QNUMS))
     add("  IF n <> %d THEN" % len(QNUMS))
     add("    RAISE EXCEPTION 'expected %d question(s), matched %%', n;" % len(QNUMS))
@@ -118,7 +126,7 @@ def main(ws_json: str, assets_json: str, dest: str, *, school: str = "RI",
         add("UPDATE questions q SET worked_solution = %s" % _lit(html))
         add("  FROM papers p")
         add(" WHERE p.id = q.paper_id AND %s" % WHERE)
-        add("   AND q.type = 'structured' AND q.question_number = %d" % q)
+        add("   AND q.type = '%s' AND q.question_number = %d" % (qtype, q))
         add(" RETURNING q.question_number, length(q.worked_solution) AS html_chars;")
         add("")
 
@@ -139,7 +147,7 @@ def main(ws_json: str, assets_json: str, dest: str, *, school: str = "RI",
         add("    SELECT COALESCE(MAX(qa.ordinal), 0) AS next_ord")
         add("      FROM question_assets qa WHERE qa.question_id = q.id")
         add("  ) base ON true")
-        add(" WHERE %s AND q.type = 'structured'" % WHERE)
+        add(" WHERE %s AND q.type = '%s'" % (WHERE, qtype))
         add("RETURNING question_id, slot, storage_path, ordinal;")
         add("-- Expect %d asset row(s) returned." % len(ASSETS))
         add("")
@@ -181,6 +189,8 @@ if __name__ == "__main__":
     ap.add_argument("--year", type=int, default=2024)
     ap.add_argument("--paper", type=int, default=2)
     ap.add_argument("--level", default="H2")
+    ap.add_argument("--type", dest="qtype", default="structured",
+                    choices=["structured", "mcq"])
     a = ap.parse_args()
     main(a.ws_json, a.assets_json, a.dest, school=a.school, year=a.year,
-        paper=a.paper, level=a.level)
+        paper=a.paper, level=a.level, qtype=a.qtype)

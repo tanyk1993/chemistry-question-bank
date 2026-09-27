@@ -62,9 +62,42 @@ SYMBOL = {
                         #   consistent with every neighbouring entry already in
                         #   this table: 0xAE/0xB0/0xB4/0xB5/0xB7/0xBE) plus the
                         #   chemistry, not an independent PDF cross-check.
+    "F0AD": "↑",   # 0xAD arrowup              ; EJC 2024 H2 P1 answers Q17:
+                        #   "the atomic radius [AD]es down the group" -- atomic
+                        #   radius genuinely INCREASES down a group (more
+                        #   shells), and "[AD] polarisability of electron
+                        #   cloud" in the same question is likewise an
+                        #   increase. Paired with F0AF (arrowdown) below;
+                        #   distinguished from it by checking which direction
+                        #   the surrounding chemistry actually goes in each of
+                        #   the 3 occurrences, not by the Adobe table alone.
+    "F0AF": "↓",   # 0xAF arrowdown            ; EJC 2024 H2 P1 answers Q17:
+                        #   "volatility [AF]es (higher boiling point) down the
+                        #   group" -- higher boiling point means LOWER
+                        #   volatility, and the same paragraph's "[AF] in
+                        #   tendency for X2 to be reduced" matches Group 17's
+                        #   well-known decreasing oxidising power down the
+                        #   group. 5 occurrences, all confirmed the same way.
+    "F0DE": "✓",   # 0xDE (checkmark, not the Adobe-table "braceleftbt" the
+                        #   raw codepoint might suggest -- this font substitutes
+                        #   a tick glyph here). EJC 2024 H2 P1 answers: 31
+                        #   occurrences, 30 of them the very first run of a
+                        #   question's bare answer-letter paragraph (" B" ->
+                        #   "✓ B"), i.e. a tick marking the final answer, plus
+                        #   one more on Q2's concluding sentence ("Final
+                        #   oxidation of Y is +4.") -- confirmed by walking
+                        #   every occurrence against the paragraph it sits in,
+                        #   not by the Adobe encoding table (which this
+                        #   document's font does not follow at this codepoint).
+    "F053": "Σ",   # 0x53 Sigma (uppercase)    ; EJC 2024 H2 P1 answers Q16:
+                        #   "∆Hsol = |L.E.| - |[53]∆Hhyd|" -- a salt has TWO
+                        #   hydration enthalpies (cation and anion) that get
+                        #   summed, so "sum of ∆Hhyd" is exactly the missing
+                        #   term; consistent with 0x73/sigma (lowercase) already
+                        #   mapped above being the same letter's lowercase form.
 }
 
-# Wingdings. Only one code appears in this document.
+# Wingdings.
 WINGDINGS = {
     "F0A1": "⦵",   # CIRCLE WITH HORIZONTAL BAR -- the standard-state / plimsoll
                         #   symbol. Appears as E<sup>x</sup> and E<sup>x</sup>cell.
@@ -72,6 +105,25 @@ WINGDINGS = {
                         #   The source runs already carry w:vertAlign=superscript, so
                         #   the generic superscript handling wraps it in <sup>; do NOT
                         #   special-case it here.
+    "F0FC": "✓",   # EJC 2024 H2 P1 answers Q4: "D[FC]:octahedral" -- the
+                        #   reference PDF's own text layer extracts this exact
+                        #   spot as "D✓:   octahedral" (D is the correct option),
+                        #   while the same position on options A/B/C (wrong
+                        #   answers, see F0FB below) extracts to nothing at all.
+                        #   A per-option checkbox pair, checked only on the
+                        #   correct option -- a second, independent "mark the
+                        #   correct one" convention from F0DE's answer-line tick
+                        #   above, used specifically inside an A/B/C/D option
+                        #   list rather than on the final bare answer letter.
+    "F0FB": "☐",   # EJC 2024 H2 P1 answers Q4: "A[FB]:bent" / "B[FB]:trigonal
+                        #   planar" / "C[FB]:square planar" -- the UNCHECKED
+                        #   counterpart of F0FC above, sitting on every WRONG
+                        #   option in the same list (confirmed: the reference
+                        #   PDF's text layer shows nothing at this position for
+                        #   A/B/C, only "D✓" for the correct one -- consistent
+                        #   with an empty checkbox glyph, which pdftotext does
+                        #   not resolve to visible text any more than it does
+                        #   most other Wingdings/Symbol PUA codepoints).
 }
 
 # MT Extra -- a THIRD font family, first seen on EJC 2024 H2 P1. Legacy

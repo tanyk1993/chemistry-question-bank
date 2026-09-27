@@ -190,7 +190,7 @@ def _tokens_from_run(r, *, in_math: bool = False):
     # EꝊ, GꝊ (Q3(a)(ii), (d)(i)-(iii)) all being ONE bare run confirms this
     # is always a full run on its own, never mixed with other text.
     if text == "Ꝋ":
-        yield "<sup>⦵</sup>", EMPTY, True
+        yield '<sup class="pl-sym">⦵</sup>', EMPTY, True
         return
 
     # SS7 / defect SS2: a run whose entire content is the element symbol l gets the
@@ -405,7 +405,7 @@ def paragraph_tokens(p):
         if "Ꝋ" in text:
             before, _, after = text.partition("Ꝋ")
             before, after = before.strip(), after.strip()
-            html = (_esc(before) if before else "") + "<sup>⦵</sup>"
+            html = (_esc(before) if before else "") + '<sup class="pl-sym">⦵</sup>'
             if after:
                 html += "<sub>%s</sub>" % _esc(after)
             return [(html, EMPTY, True)]

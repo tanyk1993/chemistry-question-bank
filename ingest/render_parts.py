@@ -262,6 +262,14 @@ def content_html(q) -> str:
     if q.intro_html.strip():
         out.append(_render_owner(q.intro_html, lead_inline=False))
     for p in q.parts:
+        # A bare group-introducing label ("(b)" before (b)(i)/(b)(ii)) has no
+        # text and no figure of its own in the source -- it exists only to
+        # carry the grid position that starts the sub-part group. Emitting a
+        # qpart div for it renders an orphaned label with nothing under it
+        # (EJC 2024 H2 P3 Q3's "(b)" and "(c)"). Skip it; the sub-parts still
+        # carry the full "(b)(i)" label and read fine on their own.
+        if not p.html.strip() and not p.figures:
+            continue
         inner = _render_owner(p.html, lead_inline=True) if p.html.strip() else ""
         out.append('<div class="qpart"><span class="pl">%s</span> %s</div>'
                    % (p.label, inner))

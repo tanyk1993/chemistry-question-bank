@@ -54,6 +54,7 @@ import re
 import pymupdf
 
 from .figures import figure_clusters, render
+from .parts import CAPTION_RE
 
 #: Part labels, each at its own x offset in the printed left margin. The
 #: ranges are deliberately narrow and non-overlapping: they are what tells a
@@ -208,6 +209,27 @@ def _text_lines(page) -> list:
     return out
 
 
+def _text_line_records(page) -> list:
+    """[(Rect, text, block_id)] -- like `_text_lines`, but keeping each
+    line's own text and which paragraph BLOCK Word/pymupdf grouped it into.
+
+    Only `_grow_to_labels`'s vertical pass needs either extra: the text, to
+    recognise and skip a "Fig. 1.1"-style caption line by name rather than
+    just by shape; the block id, because a wrapped sentence's own TAIL line
+    can be short enough to look exactly like a figure label on its own
+    ("equilibrium is 85 atm." -- the third line of one paragraph whose first
+    two lines are unmistakably prose) -- so a candidate is only trusted once
+    no OTHER line sharing its block has already failed the prose test.
+    Every other caller here only ever needed the boxes.
+    """
+    out = []
+    for bi, block in enumerate(page.get_text("dict")["blocks"]):
+        for line in block.get("lines", []):
+            text = "".join(s.get("text", "") for s in line.get("spans", []))
+            out.append((pymupdf.Rect(line["bbox"]), text, bi))
+    return out
+
+
 def _is_text_line_box(rect, text_lines) -> bool:
     """True if this 'cluster' is really a box sitting on a line of text.
 
@@ -317,6 +339,28 @@ def crop_owner(doc, spans) -> tuple:
 LABEL_REACH = 24.0
 
 
+#: How far above/below the artwork a title or endpoint label may sit and
+#: still belong to it (vertical counterpart of `LABEL_REACH`). EJC 2024 H2
+#: P3's Fig. 1.1 measures tight in practice -- its "Gibbs free energy, G"
+#: titles sit ~3pt above the arrow tips, and "composition of mixture" ~3pt
+#: below the axis line, with the two-line "pure L/M (standard state)" labels
+#: immediately under that -- but a generous margin costs nothing extra once
+#: the same non-prose filter (below) already keeps a real sentence out.
+LABEL_REACH_V = 40.0
+
+#: A hard ceiling on TOTAL vertical growth per direction, measured from the
+#: artwork's own original edge rather than reset at each newly-grown
+#: boundary. `LABEL_REACH_V` alone is not a safe stand-in for this: it
+#: bounds one STEP, but a chain of several real, closely-spaced lines (an
+#: axis title's own two stacked lines, then a run of short answer-line
+#: fragments the text-based filters below fail to rule out) can still walk
+#: the boundary arbitrarily far one small step at a time. Fig. 1.1 only
+#: ever needs ~30pt each way; 70pt leaves comfortable room for a taller
+#: multi-line label elsewhere without coming close to reaching a whole
+#: extra question part.
+MAX_GROW_V = 70.0
+
+
 def _grow_to_labels(page, union) -> pymupdf.Rect:
     """Widen the crop to cover the figure's OWN labels.
 
@@ -324,14 +368,25 @@ def _grow_to_labels(page, union) -> pymupdf.Rect:
     are text, so they fall outside it: Fig. 1.1's crop sliced through the
     final "0" of "1200" and lost "T / K" altogether.
 
-    HORIZONTAL ONLY, deliberately. Growing vertically would creep toward the
-    prose above and the caption below -- the caption is the thing most likely
-    to be swept in, since it sits directly beneath and is centred under the
-    figure. Restricting this to x fixes the clipped labels without opening
-    that door, and `_clip_prose` still runs afterwards as a backstop.
-
-    Only NON-prose lines qualify, by the same test used elsewhere, so a
+    Two passes. HORIZONTAL first, for a label beside the artwork (a chart's
+    y-axis title, printed level with the plot rather than above or below
+    it). Only NON-prose lines qualify, by the same test used elsewhere, so a
     sentence beside a narrow figure cannot drag the crop across the page.
+
+    VERTICAL second, iterated, for a title or endpoint label that sits
+    ABOVE or BELOW the artwork instead of beside it -- EJC 2024 H2 P3's own
+    Fig. 1.1 prints its two "Gibbs free energy, G" axis titles above the
+    arrows and "composition of mixture" / "pure L/M (standard state)" below
+    them, none of which touch the artwork's own y-range at all, so the first
+    pass alone still lost every one of them. This used to be considered too
+    risky (see the removed comment this replaced): "growing vertically would
+    creep toward the prose above and the caption below". The same non-prose
+    filter used for the horizontal pass already rules out a real sentence
+    (it is wide and starts at the left text margin, unlike any figure label
+    seen in this family); the caption is excluded by name instead
+    (`CAPTION_RE`, "Fig. 1.1" / "Table 2.2"), since it is short and centred
+    exactly like a genuine label would be and so cannot be told apart by
+    shape alone. `_clip_prose` still runs afterwards as a further backstop.
     """
     out = pymupdf.Rect(union)
     for t in _text_lines(page):
@@ -343,6 +398,98 @@ def _grow_to_labels(page, union) -> pymupdf.Rect:
             continue                      # too far out to be its label
         out = pymupdf.Rect(min(out.x0, t.x0), out.y0,
                            max(out.x1, t.x1), out.y1)
+
+    # Batched, and bounded to a short reach from the CURRENT boundary each
+    # round -- not "the first qualifying line found anywhere on the page".
+    # An early draft of this pass tested every line against an
+    # already-growing boundary and merged the first match found in text
+    # order, which let it leapfrog a real question part entirely: short
+    # lines like "(iii) State the type of reaction in step 3." (191pt, just
+    # under the 200pt prose-WIDTH floor `PROSE_MIN_W` checks) and a bare
+    # "(i)" sit BETWEEN Q2(b)'s reaction-scheme figure and its own dotted
+    # answer-writing rules several inches down the page; each one, once
+    # swept in, moved the boundary close enough to reach the next, and the
+    # crop ended up 350pt tall, containing three more question parts.
+    #
+    # The width test alone cannot rule these out -- a short line is exactly
+    # what a real label looks like too, AND a wrapped sentence's own tail
+    # end ("Suggest the identity of intermediates A and B.", the back half
+    # of a hanging-indent "(i)..." line) is often no wider than a real label
+    # either. Position helps with the first ("(iii) State..." starts flush
+    # at the same body-text margin `PROSE_X_MAX` marks, unlike any genuine
+    # label in this family, which sits centred or offset clear of it) but
+    # not the second, since a hanging indent's continuation line sits a
+    # little to the right of that margin, not on it. Belt and braces: reject
+    # by position OR by width, and cap the total distance grown from the
+    # artwork's own edge (`MAX_GROW_V`) regardless -- so even a line this
+    # pass fails to recognise as prose can only pull the crop a bounded
+    # distance, never across a whole extra question part.
+    # The running header/page-number (top) and footer (bottom, symmetric
+    # margin) are never a figure's own label, but a bare page number reads
+    # exactly like one to every test above -- short, clear of the body
+    # margin, and not a caption. EJC 2024 H2 P3's compound P (1(c)(ii)) sits
+    # near the top of its own page, and the previous page's own artwork
+    # continuing onto it meant "6" (that page's running number, printed at
+    # HEADER_Y) was the nearest line above and got pulled in as if it were
+    # one of the diagram's own labels.
+    page_h = page.rect.height
+    records = [(r, t, b) for r, t, b in _text_line_records(page)
+              if r.y0 >= HEADER_Y and r.y1 <= page_h - HEADER_Y]
+
+    def _is_prose(r) -> bool:
+        return r.x0 <= PROSE_X_MAX or r.width >= PROSE_MIN_W
+
+    # Which blocks contain at least one line already disqualified as prose --
+    # computed once per pass, not per candidate, but re-checked every round
+    # since growth so far never removes a block from consideration.
+    prose_blocks = {b for r, _, b in records if _is_prose(r)}
+
+    for _ in range(4):
+        grown = False
+        for rect, text, block_id in records:
+            if _is_prose(rect):
+                continue                  # at the body-text margin, or a
+                                           # full sentence -- never a label
+            if block_id in prose_blocks:
+                continue                  # a DIFFERENT line of this SAME
+                                           # paragraph is body prose -- a
+                                           # wrapped sentence's own short
+                                           # tail line ("equilibrium is 85
+                                           # atm.", the third line of a
+                                           # paragraph whose first two lines
+                                           # are unmistakably prose) or a
+                                           # mark allocation glued onto a
+                                           # real sentence's own paragraph
+                                           # ("... instead.  [1]") each pass
+                                           # every per-line test above on
+                                           # their own, but growing to
+                                           # either one's own tight box
+                                           # still uncovers the rest of its
+                                           # paragraph, since a crop is a
+                                           # rectangle, not a cutout around
+                                           # one run's own text
+            if CAPTION_RE.match(text.strip()):
+                continue                  # "Fig. 1.1" -- already has its
+                                           # own <p class="c"> in the HTML
+            if rect.x1 < out.x0 - LABEL_REACH or rect.x0 > out.x1 + LABEL_REACH:
+                continue                  # not over the artwork's own width
+            above = (rect.y0 >= union.y0 - MAX_GROW_V
+                     and out.y0 - LABEL_REACH_V <= rect.y0 <= out.y0)
+            below = (rect.y1 <= union.y1 + MAX_GROW_V
+                     and out.y1 <= rect.y1 and rect.y0 <= out.y1 + LABEL_REACH_V)
+            if not (above or below):
+                continue                  # not within reach, or would grow
+                                           # past the hard cap -- stop here
+            # Widen x too, not just y -- an axis title standing above/below
+            # the plot routinely runs past the arrows' own x-extent on one
+            # or both sides ("Gibbs free energy, G" starts well left of the
+            # y-axis arrow it labels), and leaving x alone here would just
+            # trade a vertical truncation for a horizontal one.
+            out = pymupdf.Rect(min(out.x0, rect.x0), min(out.y0, rect.y0),
+                               max(out.x1, rect.x1), max(out.y1, rect.y1))
+            grown = True
+        if not grown:
+            break
     return out
 
 

@@ -72,10 +72,20 @@ def render_question(row, assets, outdir: Path, problems: list) -> str:
             return ('<div style="border:2px solid #c00;padding:.6em;'
                     'color:#c00;font:12px monospace">missing %s</div>'
                     % a["storage_path"])
-        return ('<figure class="fig"><img src="%s" alt="%s">'
+        # Wrapped in the same `.figimg` div the live site's own JS puts
+        # around every figure (`figImg()` in index.html) -- the site's
+        # sizing CSS (`.stem .figimg img{max-width:...;max-height:...}`,
+        # plus any per-file override keyed to `data-fig`) only ever
+        # targets that wrapper, so a bare `<img>` here rendered at native
+        # (400dpi-crop) size regardless of what the live site would show,
+        # hiding real oversized-figure bugs from this preview (EJC 2024
+        # H2 P3's compound M/Fig 1.1/compound P/3-bromomandelic acid all
+        # looked "too big" here for exactly this reason).
+        return ('<figure class="fig"><div class="figimg">'
+                '<img src="%s" alt="" data-fig="%s"></div>'
                 '<figcaption style="font:11px monospace;color:#999">'
                 '%s &middot; ordinal %d</figcaption></figure>'
-                % (_data_uri(png), a["slot"], a["storage_path"], a["ordinal"]))
+                % (_data_uri(png), a["storage_path"], a["slot"], a["ordinal"]))
 
     filled = re.sub(r'<div class="fig">figure</div>', _fill, html)
 

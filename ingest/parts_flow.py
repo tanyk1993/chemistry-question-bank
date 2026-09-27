@@ -130,6 +130,25 @@ def _run_bare_text(r) -> str:
     return "".join(t.text or "" for t in r.findall(Wq + "t")).strip()
 
 
+def _run_raw_text(r) -> str:
+    """Like `_run_bare_text`, but keeps each run's own leading/trailing
+    whitespace. `_run_bare_text`'s per-run `.strip()` is correct when
+    hunting for an isolated bold label run ("(a)"), but wrong for
+    reassembling a whole paragraph's plain text: Word routinely splits a
+    sentence across runs at a formatting change with the space living on
+    one side of the split ("Answer " / "one" / " question..." -- EJC 2024
+    H2 P3's "Answer one question from this section." boilerplate has
+    "one" in its own bold run), and stripping each piece before joining
+    silently deletes those inter-run spaces ("Answeronequestion from this
+    section."), which then fails `_boilerplate()`'s `\\s+`-anchored regex
+    and lets the paragraph through as if it were real content. Callers
+    that need the paragraph's real text -- boilerplate/marks-total/dotted-
+    rule detection -- must use this instead and `.strip()` the JOINED
+    result, not the parts.
+    """
+    return "".join(t.text or "" for t in r.findall(Wq + "t"))
+
+
 def _run_is_bold(r) -> bool:
     rpr = r.find(Wq + "rPr")
     return rpr is not None and rpr.find(Wq + "b") is not None
@@ -580,7 +599,7 @@ def parse(document_xml, rels_xml, numbering_xml=None, scope=None):
             _flush_decimal()
 
             runs = _para_runs(el)
-            text = "".join(_run_bare_text(r) for r in runs)
+            text = "".join(_run_raw_text(r) for r in runs)
             stripped = text.strip()
 
             if _boilerplate(stripped):

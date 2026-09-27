@@ -102,7 +102,13 @@
   .source>a{font-weight:600;color:var(--teal);text-decoration:none;cursor:pointer;
     border-bottom:1px dotted var(--teal)}
   .source>a:hover{border-bottom-style:solid}
-  .stem .figimg{margin:.6rem 0;text-align:center}
+  /* clear:both -- a figure must never start beside a preceding floated
+     mark badge (.mk, below): a plain block box does not clear a float on
+     its own, so a badge floated right in the paragraph right before a
+     figure can sit alongside/behind the figure's border rather than
+     pushing it down, at some (not all) text-wrap widths. EJC 2024 H2 P3
+     Q3(c)(iv) reproduced this against Fig. 3.2's grey border. */
+  .stem .figimg{margin:.6rem 0;text-align:center;clear:both}
   /* Crops are rendered at 400dpi, so their intrinsic pixel size is enormous and
      EVERY figure inflates to whatever the cap allows -- a single small skeletal
      structure (Q23) filled as much screen as a full circuit diagram. Capping
@@ -222,15 +228,35 @@
      into "W 2 Y 3". Inside .stem the options are prose, so restore normal inline flow. */
   .stem .opts li{display:block;gap:0;border:0}
   .stem sub,.stem sup{line-height:0}
+  /* EJC's typed "standard state"/plimsoll symbol (CIRCLE WITH HORIZONTAL BAR,
+     U+29B5) is rare enough that the body sans-serif face doesn't carry it, so
+     the browser substitutes a fallback symbol font -- one whose glyph renders
+     visibly heavier/larger than the plain digits and letters around it in the
+     same <sup>. Pin a font stack that actually has the glyph and shrink it
+     back down to match its neighbours, rather than trusting the UA's pick. */
+  .stem .pl-sym, .ws .pl-sym{
+    font-family:"Segoe UI Symbol","Noto Sans Symbols","Arial Unicode MS",sans-serif;
+    font-weight:400; font-size:.85em;
+  }
   .stem .opt b{font-family:"IBM Plex Mono";color:var(--muted);margin-right:.5rem}
   .stem ol.stmts,.stem ul.stmts{margin:.5rem 0;padding-left:1.6rem}
   .stem ol.stmts li,.stem ul.stmts li{margin:.15rem 0}
   .stem .fig{display:block;font-size:.82rem;color:#8a97a3;background:#eef2f5;
-    border:1px dashed #c4ced6;border-radius:7px;padding:.4rem .6rem;margin:.5rem 0}
+    border:1px dashed #c4ced6;border-radius:7px;padding:.4rem .6rem;margin:.5rem 0;
+    clear:both}
   .stem .muted{color:var(--muted);font-size:.88rem;margin-top:.3rem}
   table.qt{border-collapse:collapse;margin:.6rem 0;font-size:.9rem;width:100%}
   table.qt th,table.qt td{border:1px solid var(--line);padding:.35rem .55rem;text-align:center;vertical-align:top}
   table.qt th{background:var(--paper);font-weight:600}
+  /* A data table (RI 2024 H2 P3 Table 5.1's [I2]/rate columns, superscripts
+     and all) has a real minimum width its content needs to stay readable;
+     forcing it to squeeze into a narrow phone viewport instead of a table.qt
+     wrapping a superscript onto its own line mid-column. Scroll the table
+     horizontally on narrow screens rather than compressing it. */
+  @media (max-width:760px){
+    .stem table.qt{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .stem table.qt th,.stem table.qt td{white-space:nowrap}
+  }
   .stem math{font-size:1.05em;vertical-align:middle}
   table.opt2col{border-collapse:separate;border-spacing:0 .35rem;width:100%;margin:.5rem 0}
   table.opt2col td{background:var(--paper);padding:.45rem .55rem;vertical-align:baseline}

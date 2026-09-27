@@ -262,6 +262,20 @@ def _cell_html(tc) -> str:
                 if h.strip():
                     buf.append("<li>%s</li>" % h)
                 continue
+            # Boilerplate ("Section B" / "Answer ONE/ALL question...") can
+            # land as a SECOND paragraph inside an existing part's own cell,
+            # not on its own row -- EJC 2024 H2 P3's Section A/B boundary
+            # sits as a trailing paragraph in Q3(e)(vi)'s cell, right after
+            # its own answer text. The row-level boilerplate check (this
+            # module's caller, matched against the whole row's concatenated
+            # text) never catches this: the row no longer STARTS with the
+            # boilerplate phrase once real content precedes it. Catch it
+            # here instead, per paragraph, before it's HTML-ized and glued
+            # onto the preceding part's content.
+            para_text = "".join(child.itertext(Wq + "t")).strip()
+            if _boilerplate(para_text):
+                _flush()
+                continue
             _flush()
             h = paragraph_html(child)
             if h.strip():

@@ -279,6 +279,43 @@ CORRECTIONS = [
         "app as in the printed paper.",
         "user, 2026-09-26",
     ),
+    (
+        ("EJC", "H2", "P3", 2024),
+        # Same convention as the "Question 4 starts on the next page" entry
+        # above for EJC 2024 H2 P2 -- this school's own template prints a
+        # literal page-turn note as real body text (not PDF footer
+        # furniture) wherever a question straddles a page break. No leading
+        # "\n" here (unlike that entry): this one is Q3's very own paragraph
+        # between (d) and (e), not glued onto a preceding part's text.
+        "\x00C\x00<b>Question 3 continues on the next page\\.<br></b>",
+        "",
+        "A literal page-turn note typed into the docx body between Q3(d) "
+        "and Q3(e), meaningless once questions are not paginated the same "
+        "way in the app as in the printed paper.",
+        "user, 2026-09-27",
+    ),
+    (
+        ("EJC", "H2", "P3", 2024),
+        # Every OTHER figure caption in this paper's docx is its own
+        # paragraph with jc="center" (confirmed by direct inspection of all
+        # 10: Fig. 1.1-1.4, 2.1, 3.1, 3.2, 4.1, 5.1's own two occurrences).
+        # This one paragraph -- "Fig. 5.1" with its "[2]" mark allocation
+        # glued onto the same line -- is jc="both" (justify) instead, a
+        # one-off typo in EJC's own Word file, not a conversion artefact.
+        # Matched AFTER `_write_mark` has already wrapped "[2]" (parts_flow's
+        # per-paragraph pass runs before extract_parts.py calls corrections
+        # .apply()), so the pattern targets the <span class="mk"> form, not
+        # the bare "[2]" oxml.paragraph_html() would emit on its own.
+        # Prepending the CENTRE sentinel here (oxml.py never added it, since
+        # the source paragraph itself isn't centred) makes it render the
+        # same way as every other caption in the paper.
+        '\n<b>\tFig\\. 5\\.1</b>\t<span class="mk">\\[2\\]</span>',
+        '\n\x00C\x00<b>\tFig. 5.1</b>\t<span class="mk">[2]</span>',
+        "Q5(b)(iii)'s 'Fig. 5.1' caption paragraph is typed jc=\"both\" in "
+        "EJC's own Word file, unlike every other caption in this paper "
+        "(all jc=\"center\"); centring it here matches the rest.",
+        "user, 2026-09-27",
+    ),
 ]
 
 

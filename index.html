@@ -62,6 +62,11 @@
   .search-box input::placeholder{color:#9aa7b3}
   .count{font-size:.85rem;color:var(--muted)}
   .count b{color:var(--ink)}
+  .check-group{display:flex;flex-direction:column;gap:.5rem}
+  .check-item{display:flex;align-items:center;gap:.55rem;font-size:.92rem;
+    color:var(--ink);cursor:pointer;user-select:none}
+  .check-item input[type=checkbox]{width:1.05rem;height:1.05rem;margin:0;flex:none;
+    accent-color:var(--teal);cursor:pointer}
 
   /* ---------- question cards ---------- */
   .results{display:flex;flex-direction:column;gap:.9rem;min-height:40vh}
@@ -624,6 +629,14 @@
         <label for="lo">Learning objective</label>
         <select id="lo"><option value="">All objectives</option></select>
       </div>
+      <div id="paperwrap">
+        <label>Paper</label>
+        <div class="check-group" id="paperGroup">
+          <label class="check-item"><input type="checkbox" value="1"> P1</label>
+          <label class="check-item"><input type="checkbox" value="2"> P2</label>
+          <label class="check-item"><input type="checkbox" value="3"> P3</label>
+        </div>
+      </div>
       <div class="count" id="count"></div>
     </aside>
     <section class="results" id="results">
@@ -841,22 +854,32 @@
   $('#kw').addEventListener('input', render);
   $('#topic').addEventListener('change', async ()=>{ await buildLoFilter(); render(); });
   $('#lo').addEventListener('change', render);
+  // Paper filter: multi-select checkboxes, P1/P2/P3. Independent of topic/LO —
+  // a colleague may want "every P3 question" with no topic picked at all, so
+  // (like topic) it can unlock the initial blank-state gate on its own (see render()).
+  const PAPER_SEL = new Set();
+  $('#paperGroup').addEventListener('change', e=>{
+    const cb = e.target; if(cb.tagName!=='INPUT') return;
+    if(cb.checked) PAPER_SEL.add(cb.value); else PAPER_SEL.delete(cb.value);
+    render();
+  });
 
   function render(){
     const kw = $('#kw').value.trim().toLowerCase();
     const tc = $('#topic').value;
     const lo = $('#lo') ? $('#lo').value : '';
     const box = $('#results');
-    if(!kw && !tc){                       // blank default: nothing until the user picks/searches
+    if(!kw && !tc && !PAPER_SEL.size){     // blank default: nothing until the user picks/searches
       $('#count').innerHTML = `<b>${ALL.length}</b> question${ALL.length===1?'':'s'} in the bank`;
-      box.innerHTML = '<div class="empty"><b>Pick a topic or type a search to begin.</b><br>'+
-        'Filter by topic on the left, or search for a reagent, formula, or term.</div>';
+      box.innerHTML = '<div class="empty"><b>Pick a topic or paper, or type a search to begin.</b><br>'+
+        'Filter by topic or paper on the left, or search for a reagent, formula, or term.</div>';
       return;
     }
     const shown = ALL.filter(q=>{
       if(tc==='__untagged__'){ if(q.topics.length) return false; }
       else if(tc && !q.topics.some(t=>topicKey(t)===tc)) return false;
       if(lo && !(q.los||[]).some(l=>l && l.id===lo)) return false;
+      if(PAPER_SEL.size && !PAPER_SEL.has(String(q.paper?.paper_number||''))) return false;
       if(!kw) return true;
       const hay = [
         q.content_text,

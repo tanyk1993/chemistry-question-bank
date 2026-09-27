@@ -1,0 +1,7 @@
+[build]
+  # Skip a deploy unless index.html itself changed between the last built commit
+  # and this one. ingest/-only commits (extraction code, migrations, notes) were
+  # burning a Netlify build/deploy each time even though nothing served changes.
+  # `git diff --quiet` exits 0 (no diff) -> Netlify skips the build;
+  # exits 1 (diff found) -> Netlify proceeds. See HANDOFF.md §F.
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- index.html"

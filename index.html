@@ -155,6 +155,16 @@
      pattern as the RI P2 overrides above -- no re-snip needed, the source
      file's own resolution is more than enough for this. */
   .stem .figimg img[data-fig="EJC_H2_P2_Q4_fig1_2024.png"]{max-height:25.1em}
+  /* EJC 2024 H2 P3 Fig 1.1 (the Gibbs-free-energy-vs-composition sketch) --
+     the shared 13em height cap was the binding constraint here (aspect ratio
+     1142x914, so 13em height only implies ~16em width, well under the 34em
+     width cap), which is why re-snipping and re-uploading a "bigger" crop
+     (user, 2026-09-27) never changed what displayed: a larger source image
+     at the same aspect ratio still gets scaled down to fit the same 13em-tall
+     box. 27.2em = 34em / (1142/914) makes the 34em WIDTH cap the binding
+     constraint instead, same pattern as EJC_H2_P2_Q4_fig1 above -- no re-snip
+     needed, the existing crop already has more than enough resolution. */
+  .stem .figimg img[data-fig="EJC_H2_P3_Q1_b_2024.png"]{max-height:27.2em}
   .stem .optgrid{display:flex;flex-direction:column;gap:.5rem;margin:.5rem 0}
   .stem .optrow{display:flex;gap:.6rem;align-items:center;background:var(--paper);
     border-radius:8px;padding:.5rem .6rem}

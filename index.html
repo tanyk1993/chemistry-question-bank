@@ -518,6 +518,19 @@
   img.q-fig, img.ws-fig { display:block; max-width:100%; height:auto;
     border:1px solid var(--line,#dfe3e8); border-radius:6px; margin:.7em 0;
     background:#fff; }
+  /* ws-fig has never had a height cap (unlike .stem .figimg img / .stem
+     .optrow img, both capped by height as well as width), so a small source
+     crop just renders at the full column width with nothing to stop it --
+     no 400dpi-oversized-crop problem here, the opposite one: these two are
+     small (322x343 / 378x280) simple structures blown UP to fill the
+     column. Per-file override via the data-fig hook resolveAssets()/the
+     runtime answerAssets loop now both stamp (same inert-hook pattern as
+     figImg() below), rather than a shared height cap on img.ws-fig, to
+     avoid touching any other paper's already-live answer figures sight
+     unseen (user, 2026-09-28: "both diagrams in Q24 answer... are way too
+     big and need to be made smaller"). */
+  img.ws-fig[data-fig="ACJC_H2_P1_Q24_ans-a_2024.png"],
+  img.ws-fig[data-fig="ACJC_H2_P1_Q24_ans-b_2024.png"] { max-width:min(100%,10em); max-height:8em; }
   .ws { border-left:3px solid var(--line,#dfe3e8); padding:.4em 0 .4em .9em;
         margin-top:.7em; }
   .ws h4 { margin:.6em 0 .3em; font-size:.95rem; }
@@ -915,7 +928,14 @@
     const byName = new Map((assets||[]).map(a => [baseName(a.storage_path), a]));
     root.querySelectorAll('img[data-asset]').forEach(im => {
       const a = byName.get(baseName(im.getAttribute('data-asset')));
-      if(a && a.url){ im.src = a.url; im.loading='lazy'; im.removeAttribute('data-asset'); }
+      if(a && a.url){
+        im.src = a.url; im.loading='lazy';
+        // Same inert per-file CSS hook figImg() gives stem figures (§ below):
+        // the resolved src is a tokenised bucket URL, unusable as a selector,
+        // so stash the stable filename before dropping data-asset.
+        im.dataset.fig = a.storage_path;
+        im.removeAttribute('data-asset');
+      }
       else {
         const note=document.createElement('div'); note.className='figbroken';
         note.textContent='[figure not available]';
@@ -1357,6 +1377,7 @@
           if(placed.has(a.url)) return;
           const im=document.createElement('img'); im.className='ws-fig';
           im.src=a.url; im.loading='lazy'; im.alt='';
+          if(a.storage_path) im.dataset.fig = a.storage_path;
           d.appendChild(im);
         });
         el.appendChild(d); return d;

@@ -89,6 +89,14 @@ SYMBOL = {
                         #   every occurrence against the paragraph it sits in,
                         #   not by the Adobe encoding table (which this
                         #   document's font does not follow at this codepoint).
+    "F0B8": "÷",   # 0xB8 divide               ; ACJC 2024 H2 P1 answers Q29:
+                        #   "Amt of AgCl ppt = 2.87 [B8] 143.4" (mass / molar
+                        #   mass = moles) and Q30: "Ratio of Cl : CrCl3.6H2O
+                        #   = 0.02 [B8] 0.01" (a mole-ratio division) -- both
+                        #   are ordinary division steps in a calculation,
+                        #   consistent with the standard Adobe Symbol table
+                        #   (0xB8 = divide) and with every neighbouring entry
+                        #   already in this table (0xB4=multiply, 0xB7=bullet).
     "F053": "Σ",   # 0x53 Sigma (uppercase)    ; EJC 2024 H2 P1 answers Q16:
                         #   "∆Hsol = |L.E.| - |[53]∆Hhyd|" -- a salt has TWO
                         #   hydration enthalpies (cation and anion) that get
@@ -115,6 +123,23 @@ WINGDINGS = {
                         #   correct one" convention from F0DE's answer-line tick
                         #   above, used specifically inside an A/B/C/D option
                         #   list rather than on the final bare answer letter.
+    "F0E0": "→",   # ACJC 2024 H2 P1 answers: 7 occurrences, every one sitting
+                        #   directly between reactants and products of a stated
+                        #   equation ("MnO4- + 8H+ + 5e- [F0E0] Mn2+ + 4H2O" in
+                        #   Q2; "W + X [F0E0] Y" / "2W + X [F0E0] 2Z" in Q10,
+                        #   each written twice, once in the restated stem and
+                        #   once in the explanation; "2Z [F0E0] W + Y" also in
+                        #   Q10; "2Cu2+ + 4I- [F0E0] 2CuI + I2" in Q30) --
+                        #   confirmed against the Word PDF's own text layer,
+                        #   which resolves all 7 as a plain rightwards arrow.
+                        #   (Q10's explanation separately reads "...is
+                        #   Reaction 1 - Reaction 2" a few words later -- a
+                        #   literal typed minus sign, not an 8th F0E0. A first
+                        #   pass here mistook it for one, on the theory that
+                        #   any gap in a concatenated-w:t text scan must be
+                        #   the symbol being searched for; it is not -- a gap
+                        #   just means SOME non-text element sits there, and
+                        #   this document has plenty that are not this glyph.)
     "F0FB": "x",   # EJC 2024 H2 P1 answers Q4: "A[FB]:bent" / "B[FB]:trigonal
                         #   planar" / "C[FB]:square planar" -- the UNCHECKED
                         #   counterpart of F0FC above, sitting on every WRONG

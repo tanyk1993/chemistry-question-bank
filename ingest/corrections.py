@@ -408,6 +408,21 @@ CORRECTIONS = [
         "('tadical' for 'radical').",
         "user, 2026-09-28",
     ),
+    (
+        ("ACJC", "H2", "P1", 2024),
+        r"I<sup>-</sup>\)",
+        "I<sup>−</sup>)",
+        "Q28's explanation types the iodide charge in 'E-o(I2/I-)' with a "
+        "plain ASCII hyphen, unlike every other singly-charged anion in the "
+        "same document (MnO4-, X-, Y-, all typed with the proper U+2212 "
+        "minus, confirmed by the raw run text) -- the same class of defect "
+        "as RI 2024 H2 P1's Q11 wrong-minus-glyph fix (HANDOFF.md SS13), "
+        "found the same way: a visual comparison against the surrounding "
+        "consistent usage, not any charset gate (which is blind to a "
+        "correct character used in the wrong position when the right one "
+        "exists elsewhere in the document).",
+        "user, 2026-09-28",
+    ),
 ]
 
 

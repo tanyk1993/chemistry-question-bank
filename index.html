@@ -753,7 +753,7 @@
       .select(`id, type, section_label, question_number, content_text, content_html, options, answer_key, status,
                worked_solution,
                papers ( school, year, level, paper_number, paper_name, assessment_type, source_path ),
-               question_assets ( storage_path, slot, ordinal ),
+               question_assets ( storage_path, slot, ordinal, display_width_pt ),
                question_topics ( topics ( id, code, name, ordinal, syllabus ) ),
                question_los ( part_label, learning_objectives ( id, section_code, text, syllabus, topic_id ) ),
                question_question_types ( part_label, question_types ( id, code, name, area ) )`)
@@ -921,6 +921,22 @@
   const isOptSlot    = s => /^[A-E]$/.test(s||'');
   const baseName     = p => String(p||'').replace(/^.*\//,'');
 
+  // A single figure can carry its own display width (in PDF points) instead of
+  // hitting the shared default size cap for its slot -- the data-driven
+  // replacement for a filename-keyed CSS override (see HANDOFF.md §13E/§18).
+  // NULL/absent = do nothing, the existing CSS caps apply exactly as before.
+  // Overrides max-height too, not just max-width: the default caps constrain
+  // BOTH dimensions to guard against 400dpi-oversized crops, but a figure
+  // sized to its real printed width should be free to take whatever height
+  // that implies (width:auto/height:auto in CSS already preserves the aspect
+  // ratio) rather than be squeezed by an unrelated height ceiling.
+  function sizeFig(im, a){
+    if(a && a.display_width_pt){
+      im.style.maxWidth = 'min(100%,' + a.display_width_pt + 'pt)';
+      im.style.maxHeight = 'none';
+    }
+  }
+
   // content_html / worked_solution reference figures by filename
   // (<img data-asset="FILE.png">) because the bucket is private and no URL can
   // be baked in. Swap in the resolved URL at render time.
@@ -934,6 +950,7 @@
         // the resolved src is a tokenised bucket URL, unusable as a selector,
         // so stash the stable filename before dropping data-asset.
         im.dataset.fig = a.storage_path;
+        sizeFig(im, a);
         im.removeAttribute('data-asset');
       }
       else {
@@ -1261,6 +1278,7 @@
         // CSS (the resolved src is a tokenised bucket URL, unusable as a
         // selector). Sets no style itself; only the one rule below reads it.
         if(a.storage_path) im.dataset.fig = a.storage_path;
+        sizeFig(im, a);
         w.appendChild(im); return w;
       };
       // A figure-only option carries the placeholder "[structure A]" in its
@@ -1306,6 +1324,8 @@
           const body=document.createElement('div'); body.className='optbody';
           if(r.img){
             const im=document.createElement('img'); im.src=r.img.url; im.loading='lazy'; im.alt='';
+            if(r.img.storage_path) im.dataset.fig = r.img.storage_path;
+            sizeFig(im, r.img);
             body.appendChild(im);
             // RI 2024 H2 P1 Q8 captions each graph "constant V" / "constant T",
             // and those captions ARE the difference between the four options.
@@ -1378,6 +1398,7 @@
           const im=document.createElement('img'); im.className='ws-fig';
           im.src=a.url; im.loading='lazy'; im.alt='';
           if(a.storage_path) im.dataset.fig = a.storage_path;
+          sizeFig(im, a);
           d.appendChild(im);
         });
         el.appendChild(d); return d;

@@ -141,6 +141,20 @@ _BOILERPLATE_RES = [
 #: space, not content; kept out of `content_html` the same way a blank
 #: spacer row is.
 _DOTTED_RE = re.compile(r"^[\s.․…‧]*$")
+#: A run of answer-writing dots INSIDE a paragraph that also holds real
+#: content -- ACJC 2024 H2 P2 sets every answer line as a paragraph of its
+#: own inside the wide content cell (RI's came as whole rows, which the
+#: row-level `_DOTTED_RE` test above already drops), sometimes carrying the
+#: "[n]" allocation on the last one, and sometimes trailing a label
+#: ("Step 1: ……", "Y+ 1s2……"). Five or more dot characters (spaces
+#: allowed between them) is an answer rule, never prose: a genuine ellipsis
+#: is three dots.
+_DOT_RUN_RE = re.compile(r"[ \t\u00a0]*(?:[.․…‧][ \t\u00a0]*){5,}")
+
+
+def _strip_answer_dots(s: str) -> str:
+    """Remove answer-writing dot runs from one paragraph's HTML or text."""
+    return _DOT_RUN_RE.sub(" ", s).strip() if _DOT_RUN_RE.search(s) else s
 
 
 def _boilerplate(text: str) -> bool:
@@ -184,7 +198,16 @@ class Question:
 
 
 def _cell_text(tc) -> str:
-    return "".join(tc.itertext(Wq + "t")).strip()
+    # Direct-child paragraph by paragraph (never `tc.iter("p")`, which would
+    # also reach paragraphs nested inside a text box and count them twice), so
+    # an answer-dot run is judged and dropped per line -- see
+    # `_strip_answer_dots`. Joined with "" exactly as before.
+    out = []
+    for child in tc:
+        t = "".join(child.itertext(Wq + "t"))
+        out.append(_strip_answer_dots(t) if etree.QName(child).localname == "p"
+                   else t)
+    return "".join(out).strip()
 
 
 def _gridspan(tc) -> int:
@@ -238,6 +261,18 @@ def _cell_html(tc) -> str:
     """
     out = []
     buf: list[str] = []
+    #: A FLOATING table (`w:tblpPr`) held back until the paragraph after it is
+    #: seen. Word stores a floating table BEFORE the "Table n.n" caption
+    #: paragraph that the page prints ABOVE it (ACJC 2024 H2 P2 Q4(c)'s
+    #: Table 4.2: the docx child order is table, caption; the printed page
+    #: is caption, table). Every other paper here has non-floating tables,
+    #: whose docx order already matches the page, so the rule is confined to
+    #: floating ones and to a following paragraph that IS a table caption.
+    held_tbl: list[str] = []
+
+    def _release_held():
+        if held_tbl:
+            out.append(held_tbl.pop())
 
     def _flush():
         if buf:
@@ -256,6 +291,8 @@ def _cell_html(tc) -> str:
         if ln == "p":
             numid = paragraph_numid(child)
             if numid is not None and numid in _BULLET_NUMIDS:
+                if not buf:
+                    _release_held()
                 h = paragraph_html(child)
                 if h.startswith(CENTRE):
                     h = h[len(CENTRE):]
@@ -278,14 +315,33 @@ def _cell_html(tc) -> str:
                 continue
             _flush()
             h = paragraph_html(child)
-            if h.strip():
+            _held_caption = bool(held_tbl) and bool(CAPTION_RE.match(
+                _strip_answer_dots(h).replace(CENTRE, "").strip()))
+            if _held_caption:
+                # caption first, then the floating table it captions
+                out.append(CENTRE + _strip_answer_dots(h).replace(CENTRE, "").strip())
+                _release_held()
+                continue
+            _release_held()
+            # Answer-writing dots are handwriting space, not content: dropped
+            # per paragraph, exactly as a whole dotted ROW is dropped by the
+            # caller. A paragraph that is nothing but dots (and maybe a "[n]")
+            # keeps just the "[n]", which the mark-merge below then attaches
+            # to the previous line instead of leaving a badge alone in a <p>.
+            h = _strip_answer_dots(h)
+            if h.strip() and h.strip() != CENTRE:
                 out.append(h)
         elif ln == "tbl":
             _flush()
+            _release_held()
             h = _table_html(child)
             if h:
-                out.append(h)
+                if child.find(Wq + "tblPr/" + Wq + "tblpPr") is not None:
+                    held_tbl.append(h)
+                else:
+                    out.append(h)
     _flush()
+    _release_held()
     return "\n".join(out)
 
 

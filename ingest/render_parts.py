@@ -209,6 +209,9 @@ def _para(line: str) -> str:
     return "<p%s>%s</p>" % (cls, body)
 
 
+_BADGE_ALONE = r'\s*<span class="mk">\[\d+\]</span>\s*'
+
+
 def _render_owner(html: str, lead_inline: bool) -> str:
     """Owner html -> block elements, figures as div.fig placeholders.
 
@@ -235,7 +238,21 @@ def _render_owner(html: str, lead_inline: bool) -> str:
             # full stop is noise, not content.
             centred = line.startswith(CENTRE)
             body = line[len(CENTRE):] if centred else line
-            for i, piece in enumerate(body.split(FIG_SENTINEL)):
+            pieces = body.split(FIG_SENTINEL)
+            # A "[n]" badge that trails a picture ENDING the line (ACJC 2024
+            # H2 P2 1(c): five blank axes, "[2]" printed under them) would
+            # become a `<p>` holding only the badge -- the `mk-alone-in-p`
+            # defect (style-guide SS2/SS7). Move it onto the end of the text
+            # line just before the picture instead, when there is one.
+            if (len(pieces) > 1 and out and pieces[-1].strip()
+                    and re.fullmatch(_BADGE_ALONE, pieces[-1])
+                    and out[-1] != FIG_DIV):
+                badge = pieces[-1].strip()
+                prev = out[-1]
+                out[-1] = (prev[:-4].rstrip() + " " + badge + "</p>"
+                           if prev.endswith("</p>") else prev.rstrip() + " " + badge)
+                pieces[-1] = ""
+            for i, piece in enumerate(pieces):
                 if i:
                     out.append(FIG_DIV)
                 if re.search(r"\w", _strip(piece)):

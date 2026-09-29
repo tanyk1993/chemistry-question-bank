@@ -84,7 +84,55 @@ DROPPED_PART_FIGURES = {
         "part's band is empty, and the printed page shows only prose and "
         "answer-space dots. Not a real figure; almost certainly a leftover "
         "invisible drawing object in EJC's template.",
+    # ACJC 2024 H2 P2 (2026-09-29). Four owners whose parsed "figures" are NOT
+    # pictures the paper prints, each confirmed by rendering the printed page:
+    ("ACJC", "H2", "P2", 2024, 1, "(b)(ii)"):
+        "One EMPTY Word text box (34 x 33 pt, no text, no fill) anchored under "
+        "1(b)(ii). The printed page shows nothing there -- the student is told "
+        "to sketch ON Fig. 1.1, printed once, in 1(b)(i). Not a figure.",
+    ("ACJC", "H2", "P2", 2024, 6, None):
+        "Four references to the SAME 18 x 15.85 pt EMF (media/image10.emf) -- "
+        "the reversible-arrow glyph sitting between the two sides of each "
+        "equation in Table 6.2 (the four rows). A character drawn as a "
+        "picture, not a figure: the arrows are typed as U+21CC by the "
+        "CORRECTIONS entry below, which is why the placeholders go.",
+    ("ACJC", "H2", "P2", 2024, 6, "(e)(iv)"):
+        "The same reversible-arrow EMF (media/image10.emf) as Table 6.2, here "
+        "in the H2CO3 + CO3(2-) <=> 2HCO3(-) equation. Typed as U+21CC.",
+    ("ACJC", "H2", "P2", 2024, 6, "(f)"):
+        "Two references to media/image11.wmf -- the capital-sigma glyphs in "
+        "'dS = SUM m dS(products) - SUM n dS(reactants)', set as pictures. "
+        "Typed as U+03A3 by the CORRECTIONS entry below.",
 }
+
+
+# LEAD-IN MOVES (structured papers)
+# ---------------------------------
+# A paper prints a passage AFTER one part's "[n]" and BEFORE the next part's
+# label -- prose that introduces the NEXT part(s) -- but Word keeps it in the
+# same table cell as the part above, so the parser files it under that part,
+# below its mark. ACJC 2024 H2 P2 Q6: the "Process 2 is thought to proceed via
+# two steps..." passage sits under (b)(ii)'s [2], and the coral-skeleton passage
+# under (c)(iii)'s [1], though each introduces what follows. Declared here, the
+# same way a dropped figure is: the lines after the part's LAST mark badge move
+# to the START of the next part (the reading order the paper prints; the label
+# then sits beside the first sentence of the passage, as any part's intro does).
+# Refused (logged, nothing moved) when the tail holds a figure or table, since
+# moving one would change which part owns its asset. Keyed
+# (school, level, paper, year, qnum, part_label of the part the tail is now in).
+LEADIN_MOVES = {
+    ("ACJC", "H2", "P2", 2024, 6, "(b)(ii)"):
+        "'Process 2 is thought to proceed via the two steps...' introduces "
+        "(b)(iii) (mechanism) and (b)(iv) (rate-determining step); printed "
+        "between (b)(ii)'s [2] and (b)(iii).",
+    ("ACJC", "H2", "P2", 2024, 6, "(c)(iii)"):
+        "The two coral-skeleton paragraphs introduce (d)-(f); printed between "
+        "(c)(iii)'s [1] and (d).",
+}
+
+
+def leadin_move_reason(school, level, paper, year, qnum, part_label) -> str | None:
+    return LEADIN_MOVES.get((school, level, paper, year, qnum, part_label))
 
 
 def dropped_part_figures(school, level, paper, year, qnum, part_label) -> str | None:
@@ -243,6 +291,60 @@ def eqtext_options(school, level, paper, year, qnum) -> dict:
 
 
 CORRECTIONS = [
+    # ---- ACJC 2024 H2 P2 (2026-09-29): characters the source draws as pictures
+    # Word set the reversible arrow and the capital sigma as tiny EMF/WMF
+    # PICTURES anchored beside the text (the text itself keeps a run of spaces
+    # where the picture sits), exactly as ACJC 2024 H2 P1's Q13/Q14 did. The
+    # pictures are dropped (DROPPED_PART_FIGURES) and the real characters typed:
+    # searchable, and no pixel-sized crop to upload. Each was checked against the
+    # rendered page (Table 6.2, 6(e)(iv), 6(f)), not inferred from the docx.
+    (
+        ("ACJC", "H2", "P2", 2024),
+        r"[ \t]*<br>[ \t]*",
+        " ",
+        "Four SOFT line breaks (w:br) the author typed to wrap a sentence at "
+        "the printed page's right margin -- Q1(a)(iv) 'are / 2300 kJ...', "
+        "Q2 intro 'converted to / trans-2-...', Q2(b) 'between / 2-methyl...', "
+        "Q6(c)(iii) 'in / Table 6.2'. In the app the column is a different "
+        "width, so each would leave a ragged mid-sentence break. No genuine "
+        "line break in this paper uses <br> (checked: only these four exist).",
+        "housekeeping, 2026-09-29",
+    ),
+    (
+        ("ACJC", "H2", "P2", 2024),
+        r"<b></b>|<i>\s+</i>",
+        "",
+        "Empty <b>/<i> shells left where a picture-only run (the arrow "
+        "pictures in Table 6.2) or a run of answer-line spaces (Q3(a)(ii)) "
+        "sat inside formatting.",
+        "housekeeping, 2026-09-29",
+    ),
+    (
+        ("ACJC", "H2", "P2", 2024),
+        r"(?<=\((?:g|l)\))[ \t]{4,}(?=[A-Z])",
+        " \u21cc ",
+        "Table 6.2's four equations: the reversible arrow is a picture sitting "
+        "in an 8-space gap after '(g)'/'(l)' (CO2(g) <=> CO2(aq), etc.).",
+        "carried over from ACJC 2024 H2 P1 Q13/Q14 (user-approved there); flagged for confirmation here, 2026-09-29",
+    ),
+    (
+        ("ACJC", "H2", "P2", 2024),
+        r"(?<=</sup>)[ \t]{4,}(?=2HCO<sub>3</sub>)",
+        " \u21cc ",
+        "6(e)(iv): 'H2CO3 + CO3(2-) <=> 2HCO3(-)' -- the arrow is a picture in "
+        "the space between the two sides.",
+        "carried over from ACJC 2024 H2 P1 Q13/Q14 (user-approved there); flagged for confirmation here, 2026-09-29",
+    ),
+    (
+        ("ACJC", "H2", "P2", 2024),
+        r"= m(∆<i>S</i><sub>f</sub><sup>o</sup>\(products\)) − n(∆<i>S</i>"
+        r"<sub>f</sub><sup>o</sup>\(reactants\))",
+        "= \u03a3m\\1 − \u03a3n\\2",
+        "6(f): the two capital-sigma glyphs in the entropy-change formula are "
+        "pictures (media/image11.wmf), so the extraction read "
+        "'= m dS(products) - n dS(reactants)' with both sigmas missing.",
+        "carried over from ACJC 2024 H2 P1 Q13/Q14 (user-approved there); flagged for confirmation here, 2026-09-29",
+    ),
     (
         ("RI", "H2", "P2", 2024),
         r"Fig\.\s*3\.1",

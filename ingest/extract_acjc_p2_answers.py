@@ -54,6 +54,10 @@ SCOPE = ("ACJC", "H2", "P2", 2024)
 FIG = "\x00FIG\x00"
 MA, MC, MN = "⁣A⁣", "⁣C⁣", "⁣N⁣"
 
+#: Examiner "Comments" rows are parsed but NOT emitted (user decision 2026-09-30:
+#: no examiner comments; the red "DNA:" marker notes are kept).
+INCLUDE_COMMENTS = False
+
 BLUE = "0000FF"
 RED = "FF0000"
 
@@ -452,7 +456,7 @@ def build(unz: Path, outdir: Path, bank_questions: list, first_ordinals: dict,
                 else:
                     body_html.append('<ul class="stmts">%s</ul>'
                                      % "".join("<li>%s</li>" % wrap(i) for i in body))
-            if comments:
+            if comments and INCLUDE_COMMENTS:
                 body_html.append('<p class="mark-note"><b>Comments</b></p>')
                 body_html.append('<ul class="marks mark-note">%s</ul>'
                                  % "".join("<li>%s</li>" % c for c in comments))

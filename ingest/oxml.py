@@ -230,7 +230,11 @@ def _omml_tokens(el):
         yield from _tokens_from_run(el, in_math=True)
         return
 
-    if ln in ("oMath", "oMathPara", "num", "den", "e", "sup", "sub", "deg"):
+    # "func"/"fName": a named function (ln, log, ...) then its argument -- both
+    # are plain containers, the function name itself is an ordinary m:r run.
+    # First needed by ACJC 2024 H2 P2's solutions doc (3(b)(iii), "ln 2 / k'").
+    if ln in ("oMath", "oMathPara", "num", "den", "e", "sup", "sub", "deg",
+              "func", "fName", "limLow", "lim"):
         for ch in el:
             if etree.QName(ch).localname.endswith("Pr"):
                 continue

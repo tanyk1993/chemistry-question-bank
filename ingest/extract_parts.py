@@ -77,6 +77,41 @@ def main(argv=None):
                 p.html = p.html.replace(FIG_SENTINEL, "")
                 p.figures = []
 
+    # --- lead-in passages filed under the wrong part (corrections.LEADIN_MOVES)
+    # Runs BEFORE the text corrections, on the parser's own lines, so a moved
+    # passage is then corrected like any other text. Every part with content
+    # after its last mark badge is REPORTED, declared or not, so an
+    # undeclared case is seen rather than silently left under the wrong part.
+    for q in questions:
+        for i, p in enumerate(q.parts):
+            lines = p.html.split("\n")
+            last = max((k for k, ln in enumerate(lines)
+                        if '<span class="mk">' in ln), default=None)
+            tail = lines[last + 1:] if last is not None else []
+            tail = [ln for ln in tail if ln.strip()]
+            if not tail:
+                continue
+            reason = corrections.leadin_move_reason(*scope, q.qnum, p.label)
+            where = "Q%d%s" % (q.qnum, p.label)
+            if i + 1 >= len(q.parts):
+                continue  # last part: trailing text is its own (or nothing to move to)
+            if not reason:
+                correction_log.append(
+                    "%s: %d line(s) sit AFTER this part's last [n] mark "
+                    "(possible lead-in for the next part; not declared in "
+                    "corrections.LEADIN_MOVES, left in place)" % (where, len(tail)))
+                continue
+            if any(FIG_SENTINEL in ln or "<table" in ln for ln in tail):
+                anomalies.append("%s: lead-in move REFUSED -- the tail holds a "
+                                 "figure or table" % where)
+                continue
+            nxt = q.parts[i + 1]
+            p.html = "\n".join(lines[:last + 1])
+            nxt.html = "\n".join(tail + ([nxt.html] if nxt.html else []))
+            correction_log.append("%s: moved %d line(s) after its mark to the "
+                                  "start of %s -- %s"
+                                  % (where, len(tail), nxt.label, reason))
+
     # --- recorded source corrections, BEFORE anything reads the figures ----
     # One of them removes placeholders (1(c)'s radical dots), so it has to run
     # before the collapse decides which placeholder is the picture.
@@ -165,6 +200,10 @@ def main(argv=None):
         ignore_re=[r"©\s*Raffles Institution\s*\d{4}",
                    r"9729/0\d/S/\d+",
                    r"©\s*EJC", r"9729/0\d/J\dPE/\d+", r"\[Turn Over",
+                   # ACJC's running footer ("© ACJC2024  9729/Preliminary
+                   # Examination/2024  [Turn over]"): page furniture, never
+                   # inside a question's own page range.
+                   r"©\s*ACJC\s*\d{4}", r"9729/Preliminary Examination/\d{4}",
                    r"(?m)^\s*\d{1,2}\s*$", r"…+"],
         first_page=a.first_page, last_page=last)
     real, expected = audit.classify(problems)

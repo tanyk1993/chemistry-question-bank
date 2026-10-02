@@ -487,7 +487,18 @@ def _classify(cells, w0, w1, w2, anomalies=None):
             anomalies.append("letter slot holds unexpected text: %r" % text[:40])
         pos += cells[i][3]
         i += 1
-    if i < n and w2 is not None and pos == w0 + w1 and cells[i][3] == w2:
+    # A roman label cell may be WIDER than w2 when Word leaves a hairline
+    # grid column (ACJC 2024 H2 P3 Q5: gridCol w=13 twips) that some rows
+    # span and others don't -- those rows are [1,1,2,1] while the part rows
+    # lower down are [1,1,1,2], so min_width_at() settles on w2=1 and the
+    # label cells above never matched, collapsing (a)(i)/(a)(ii)/(b)(i)... into
+    # their parent part. Accepted ONLY when the wider cell's text is itself a
+    # roman label AND a content cell follows, so a genuinely merged
+    # (label-skipping) cell is never mistaken for a slot.
+    if (i < n and w2 is not None and pos == w0 + w1
+            and (cells[i][3] == w2
+                 or (cells[i][3] > w2 and i + 1 < n
+                     and ROMAN_RE.match(cells[i][1])))):
         text = cells[i][1]
         m = ROMAN_RE.match(text)
         if m:

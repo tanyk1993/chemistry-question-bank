@@ -196,9 +196,9 @@ EQN_LINE_RE = re.compile(r"^(?:equation|reaction)\s+\d+\s{2,}")
 def _para(line: str) -> str:
     centred = line.startswith(CENTRE)
     body = line[len(CENTRE):] if centred else line
-    # Already a block element from parts.py (a data table, or a <ul> grouped
+    # Already a block element from parts.py (a data table, or a <ul>/<ol> grouped
     # from consecutive numPr paragraphs) -- pass through, don't wrap in <p>.
-    if body.lstrip().startswith(("<table", "<ul")):
+    if body.lstrip().startswith(("<table", "<ul", "<ol")):
         return body
     classes = []
     if centred:

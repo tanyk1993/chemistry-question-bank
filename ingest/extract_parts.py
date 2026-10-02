@@ -204,6 +204,9 @@ def main(argv=None):
                    # Examination/2024  [Turn over]"): page furniture, never
                    # inside a question's own page range.
                    r"©\s*ACJC\s*\d{4}", r"9729/Preliminary Examination/\d{4}",
+                   # "BLANK PAGE" heading on a school's intentionally blank
+                   # pages (ACJC 2024 H2 P3 pp.13, 25): furniture, not content.
+                   r"BLANK PAGE",
                    r"(?m)^\s*\d{1,2}\s*$", r"…+"],
         first_page=a.first_page, last_page=last)
     real, expected = audit.classify(problems)

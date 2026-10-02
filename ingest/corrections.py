@@ -103,6 +103,23 @@ DROPPED_PART_FIGURES = {
         "Two references to media/image11.wmf -- the capital-sigma glyphs in "
         "'dS = SUM m dS(products) - SUM n dS(reactants)', set as pictures. "
         "Typed as U+03A3 by the CORRECTIONS entry below.",
+    # ACJC 2024 H2 P3 (2026-10-01). Reversible-arrow glyphs set as 15 x 10 pt
+    # Word drawing GROUPS (wordprocessingGroup) beside the text, each confirmed
+    # against the printed page. A character drawn as a picture, not a figure:
+    # typed as U+21CC by the CORRECTIONS entries below (same treatment as ACJC
+    # 2024 H2 P2 Table 6.2).
+    ("ACJC", "H2", "P3", 2024, 1, "(b)"):
+        "One 15 x 10 pt drawing group = the reversible arrow in 'equation 1' "
+        "([Al(H2O)6]3+ + EDTA4- <=> [Al(EDTA)]- + 6H2O). Typed as U+21CC.",
+    ("ACJC", "H2", "P3", 2024, 4, "(a)"):
+        "One 15 x 10 pt drawing group = the reversible arrow in the zincate "
+        "half-equation Zn(OH)4 2- + 2e- <=> Zn + 4OH-. Typed as U+21CC.",
+    ("ACJC", "H2", "P3", 2024, 4, "(b)(i)"):
+        "One 15 x 10 pt drawing group = the reversible arrow in "
+        "2SO2 + O2 <=> 2SO3. Typed as U+21CC.",
+    ("ACJC", "H2", "P3", 2024, 5, None):
+        "One 15 x 10 pt drawing group = the reversible arrow in the OXO "
+        "equation CH2=CH2 + CO + H2 <=> CH3CH2CHO. Typed as U+21CC.",
 }
 
 
@@ -524,6 +541,98 @@ CORRECTIONS = [
         "correct character used in the wrong position when the right one "
         "exists elsewhere in the document).",
         "user, 2026-09-28",
+    ),
+    # ---- ACJC 2024 H2 P3 (2026-10-01) ------------------------------------
+    # Characters the source draws as pictures -> real characters (see
+    # DROPPED_PART_FIGURES); each sits in a run of spaces where the picture was.
+    (
+        ("ACJC", "H2", "P3", 2024),
+        r"(EDTA<sup>4\u2212</sup>\(aq\))[ \t]{4,}(\[A<i class=\"el\">l</i>\(EDTA\))",
+        "\\1 \u21cc \\2",
+        "Q1(b) equation 1: the reversible arrow is a picture in the gap "
+        "between EDTA4-(aq) and [Al(EDTA)]-(aq).",
+        "same treatment as ACJC 2024 H2 P2 Table 6.2 (user-approved there); flagged for confirmation here, 2026-10-01",
+    ),
+    (
+        ("ACJC", "H2", "P3", 2024),
+        r"(2e<sup>\u2212</sup>)[ \t]{4,}(Zn\(s\))",
+        "\\1 \u21cc \\2",
+        "Q4(a): reversible arrow picture in the zincate half-equation.",
+        "same treatment as ACJC 2024 H2 P2 Table 6.2 (user-approved there); flagged for confirmation here, 2026-10-01",
+    ),
+    (
+        ("ACJC", "H2", "P3", 2024),
+        r"(O<sub>2</sub>\(g\))[ \t]{4,}(2SO<sub>3</sub>)",
+        "\\1 \u21cc \\2",
+        "Q4(b)(i): reversible arrow picture in 2SO2 + O2 <=> 2SO3.",
+        "same treatment as ACJC 2024 H2 P2 Table 6.2 (user-approved there); flagged for confirmation here, 2026-10-01",
+    ),
+    (
+        ("ACJC", "H2", "P3", 2024),
+        r"(H<sub>2</sub>\(g\))[ \t]{4,}(CH<sub>3</sub>CH<sub>2</sub>CHO\(g\))",
+        "\\1 \u21cc \\2",
+        "Q5 intro: reversible arrow picture in the OXO equation.",
+        "same treatment as ACJC 2024 H2 P2 Table 6.2 (user-approved there); flagged for confirmation here, 2026-10-01",
+    ),
+    # Q1(d)(ii): the two "1." / "2." sub-items are a Word auto-numbered list
+    # (numId 42, decimal). parts.py only groups BULLET lists, so the numbers
+    # were lost and the two items ran together as plain paragraphs.
+    (
+        ("ACJC", "H2", "P3", 2024),
+        r"(the amount of Cu atoms to cover <b>both</b> sides of the graphene "
+        r"with a depth of 500 atoms)\n(the time required to achieve this "
+        r"using a current of 5\.0 A\.\s*<span class=\"mk\">\[3\]</span>)",
+        '<ol class="stmts"><li>\\1</li> <li>\\2</li></ol>',
+        "Q1(d)(ii): restore the auto-numbered '1. / 2.' list as <ol class=stmts> "
+        "(CSS for ol.stmts already exists in index.html).",
+        "pending user confirmation, 2026-10-01",
+    ),
+    # Q3(d): the stem's equation 'R-COOH + Pb(CH3CO2)4 --Cu(CH3CO2)2--> alkene +
+    # ...' is native Word shapes (a text box labelling an arrow line) laid over
+    # a typed line. Typing it did not work in the app (user, 2026-10-01), so one
+    # snip of the WHOLE equation line (slot d) replaces both: the typed
+    # duplicate and the second placeholder are removed.
+    (
+        ("ACJC", "H2", "P3", 2024),
+        r"\x00C\x00\x00FIG\x00R\u2013COOH \+ Pb\(CH<sub>3</sub>CO<sub>2</sub>\)<sub>4</sub>"
+        r"[^\n]*?Pb\(CH<sub>3</sub>CO<sub>2</sub>\)<sub>2</sub>",
+        "",
+        "Q3(d): the typed equation line is replaced by a single picture of the "
+        "whole equation (reactants, Cu(CH3CO2)2-labelled arrow, products).",
+        "user, 2026-10-01 (typed version reverted to image)",
+    ),
+    # Standard-state symbol: Q3(a)(i) types U+A74A (oxml.py turns it into the
+    # real plimsoll <sup class="pl-sym">), but every other question types a
+    # plain superscript letter 'o' -- E(o), dG(o), dG(o)sol -- which renders as
+    # a small circle with no bar. All 'o' superscripts in this paper are
+    # standard-state marks (checked: Q1(d)(iii), Q4(a), Q4(a)(i)-(ii), Q5(c)(iv)).
+    (
+        ("ACJC", "H2", "P3", 2024),
+        r"<sup>o</sup>",
+        '<sup class="pl-sym">\u29b5</sup>',
+        "Standard-state symbol typed as a superscript letter o; replaced with "
+        "the same plimsoll markup oxml.py already emits for Q3(a)(i).",
+        "user, 2026-10-01",
+    ),
+    # Q2(b) Table 2.1: snipped whole (header row, names, structures, pKb).
+    (
+        ("ACJC", "H2", "P3", 2024),
+        r'<table class="qt"><tr><td>name</td><td>structure</td>.*?</table>',
+        "\x00FIG\x00",
+        "Q2(b) Table 2.1: the whole table is one picture (slot b).",
+        "user, 2026-10-01",
+    ),
+    # Q3(d) Fig. 3.2: a 4-row step table whose cells hold six separate
+    # native-shape pictures plus a few typed fragments. Annotating it is the
+    # whole task ((d)(i) 'add five half arrows', (d)(ii) 'add two full arrows'),
+    # so it is placed as ONE picture of the entire boxed figure.
+    (
+        ("ACJC", "H2", "P3", 2024),
+        r'<table class="qt"><tr><td>step 1</td>.*?</table>',
+        "\x00FIG\x00",
+        "Q3(d) Fig. 3.2: the four-step table collapses into one picture of the "
+        "whole figure (steps 1-4 with their labels).",
+        "pending user confirmation, 2026-10-01",
     ),
 ]
 

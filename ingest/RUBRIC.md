@@ -242,6 +242,12 @@ not-yet-tagged and with out-of-syllabus material.
 
 ---
 
+## Rule 8 addendum — `NIS` (not in syllabus)
+
+User convention, 2026-10-02: a part whose assessed chemistry the syllabus does
+not code (Rule 8a, "syllabus gap") is called **NIS** and is simply left untagged
+(no key in `tags.json`). Examples: ACJC 2024 H2 P3 5(c)(iv) (ΔG = −RT ln K).
+
 ## Rule 9 — Over-tagging is the default failure mode; under-tagging is the organic one
 
 Let the chemistry decide the count. Physical parts are usually 1 LO; organic
@@ -321,7 +327,15 @@ Everywhere else, prefer the single LO naming the assessed skill.**
 
 ---
 
-## Rule 12 — Tag count ≤ mark count
+## Rule 12 — Tag count ≤ mark count  (**SUPERSEDED 2026-10-02 — see amendment**)
+
+> **Amendment, user ruling 2026-10-02 (ACJC 2024 H2 P3):** the mark-count cap is
+> **removed**. Many parts have several LOs that genuinely fit the same mark
+> (e.g. ACJC P3 1(d)(i): `12(o)(ii)` and `12(m)`; 2(a)(iv): three accepted tests),
+> so a 1-mark part may carry more than one primary. The primary/secondary split
+> below still applies, decided by the per-tag test (can a mark-scheme line be
+> named for it?), not by counting marks. `len(primary) <= marks` is **no longer an
+> invariant**. The original text is kept for the record.
 
 *New in v0.2. A mechanical guard, not a judgement.*
 
@@ -379,8 +393,7 @@ confidence score — confidence measured as miscalibrated on WA2 and must not be
 load-bearing until it is revalidated on more papers. An LO goes in `primary`
 only if a specific mark-scheme line can be named for it.
 
-`len(primary) <= marks` is a hard invariant. Assert it; do not emit a proposal
-that violates it.
+~~`len(primary) <= marks` is a hard invariant.~~ **Removed 2026-10-02** (see Rule 12 amendment): do not assert it.
 
 The review UI renders the two lists distinctly, and accepting all of them stays
 one click. This preserves the recall the user asked for while keeping spurious

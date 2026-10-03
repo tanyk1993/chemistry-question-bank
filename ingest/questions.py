@@ -32,7 +32,7 @@ from dataclasses import dataclass, field
 
 from lxml import etree
 
-from .oxml import NS, Wq, paragraph_html
+from .oxml import NS, Wq, paragraph_html, CENTRE
 from .answers import _classify_drawing, _load_rels, Figure
 
 WPD = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
@@ -96,7 +96,17 @@ def _table_html(tbl) -> str:
     for tr in tbl.findall(Wq + "tr"):
         cells = []
         for tc in tr.findall(Wq + "tc"):
-            cells.append("<td>%s</td>" % _cell_html(tc))
+            # A cell holding SEVERAL paragraphs ("Volume of KBrO3" / "/ cm3",
+            # ASRJC 2024 H2 P1 Q10) comes back from _cell_html joined by "\n",
+            # and render_questions._blocks splits a stem on "\n" BEFORE it ever
+            # looks for the table -- which cut the table open mid-cell, left
+            # `</p>` and `<p class="c">` fragments straddling `<td>` boundaries,
+            # and leaked 80 raw NUL bytes (the CENTRE sentinel) into
+            # content_html, which Postgres refuses outright. A nested table
+            # cell is already centred by `table.qt td` CSS, so the sentinel is
+            # stripped HERE, and the paragraph break becomes a <br>.
+            inner = _cell_html(tc).replace(CENTRE, "").replace("\n", "<br>")
+            cells.append("<td>%s</td>" % inner)
         if cells:
             rows.append("<tr>%s</tr>" % "".join(cells))
     if not rows:
@@ -207,6 +217,15 @@ def parse(document_xml, rels_xml):
         opt_rows = [(i, o) for i, o in opt_rows if o]
         n_opt_cols = max((len(c) for _, o in opt_rows for _, c in o), default=0)
         first_opt = opt_rows[0][0] if opt_rows else len(stripped)
+        # The heading is the last row WITH CONTENT above the first option row.
+        # "Directly above" (first_opt - 1) is wrong when Word leaves a blank
+        # spacer row between the two -- ASRJC 2024 H2 P1 Q30 does (header, blank,
+        # A, blank, B...), so its "with zinc metal / with tin metal" heading
+        # fell through to extra_html and printed as a detached table above the
+        # options. Q11/Q24 have no spacer, which is why they always worked.
+        _content_rows = [j for j in range(first_opt) if stripped[j]
+                         and any(_cell_html(c).strip() for c in stripped[j])]
+        hdr_i = _content_rows[-1] if _content_rows else -1
 
         pending_letters: list = []
         caption_letters: list = []
@@ -273,7 +292,7 @@ def parse(document_xml, rels_xml):
             # (Q9: 3 headings over 3 values). Q7/Q15/Q23/Q28 open with numbered
             # statement rows -- 2 cells against 1-cell options -- so they fail
             # this test and stay in the stem, which is where they belong.
-            if (i == first_opt - 1 and n_opt_cols > 1
+            if (i == hdr_i and n_opt_cols > 1
                     and len(cells) == n_opt_cols
                     and all(len(h) < 120 for h in htmls)):
                 current.opt_headers = htmls

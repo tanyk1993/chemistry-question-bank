@@ -386,7 +386,8 @@ def figure_kinds(q, frac_letters=frozenset(), eqtext_map=None) -> list:
     and a question should only ever be in one of the two registries.
     """
     eqtext_map = eqtext_map or {}
-    out = []
+    glyphs = getattr(q, "glyphs", None) or {}
+    out, nblock = [], 0
     for f in q.figures:
         if f.part.startswith("option"):
             letter = f.part.split(":", 1)[1]
@@ -399,8 +400,19 @@ def figure_kinds(q, frac_letters=frozenset(), eqtext_map=None) -> list:
         elif f.kind == "equation":
             out.append("frac")
         else:
-            out.append("block")
+            nblock += 1
+            # corrections.GLYPH_FIGURES: a picture of a typographic character
+            # (a reaction arrow), typed in place instead of placed as an image.
+            out.append("glyph" if nblock in glyphs else "block")
     return out
+
+
+def _glyph_at(q, i: int) -> str:
+    """The character typed for glyph figure `i` (figure_kinds gave it 'glyph')."""
+    glyphs = getattr(q, "glyphs", None) or {}
+    nblock = sum(1 for f in q.figures[:i + 1]
+                 if not f.part.startswith("option") and f.kind != "equation")
+    return glyphs[nblock]
 
 
 def asset_plan(q, school="RI", level="H2", paper="P1", year=2024) -> list:
@@ -418,9 +430,11 @@ def asset_plan(q, school="RI", level="H2", paper="P1", year=2024) -> list:
     dropped = corrections.dropped_blocks(school, level, paper, year, q.qnum)
     plan, nb, nseen = [], 0, 0
     for i, kind in enumerate(kinds):
-        if kind != "block":
+        if kind not in ("block", "glyph"):
             continue
         nseen += 1
+        if kind == "glyph":
+            continue            # typed in place -- no asset, no placeholder
         if nseen in dropped:
             # Deliberately not placed -- see corrections.DROPPED_FIGURES. The
             # index is simply absent from the plan, and content_html/_text read
@@ -486,7 +500,12 @@ def _subs(q, plan, fractions, frac_fmt, block, drop, frac_letters=frozenset(),
     for i, k in enumerate(kinds):
         if k in ("option", "eqtext"):
             continue
-        if k == "frac":
+        if k == "glyph":
+            # Padded: the source never typed a space where the picture sat
+            # (Q12/Q13 "...(g)<arrow>CH4", Q14 "CH3Br<arrow> CH3NH2"); HTML
+            # collapses the doubled space wherever one already existed.
+            out.append(" %s " % _glyph_at(q, i))
+        elif k == "frac":
             n, d = fracs.pop(0) if fracs else ("", "")
             out.append(frac_fmt(n, d))
         elif placed is not None and i not in placed:

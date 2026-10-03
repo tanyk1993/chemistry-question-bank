@@ -97,6 +97,12 @@ SYMBOL = {
                         #   consistent with the standard Adobe Symbol table
                         #   (0xB8 = divide) and with every neighbouring entry
                         #   already in this table (0xB4=multiply, 0xB7=bullet).
+    "F071": "\u03b8",   # 0x71 theta -- ASRJC 2024 H2 P1 answers Q30: "E<sup>[71]</sup>(Zn2+/Zn)",
+                        #   the standard-state sign typed as a Greek theta in the SOURCE
+                        #   (the run is already superscript). Kept as theta, i.e. as the
+                        #   source encodes it, exactly as the same paper's questions keep
+                        #   the plain "o" of Q8/Q28; it is NOT silently upgraded to the
+                        #   house plimsoll.
     "F053": "Σ",   # 0x53 Sigma (uppercase)    ; EJC 2024 H2 P1 answers Q16:
                         #   "∆Hsol = |L.E.| - |[53]∆Hhyd|" -- a salt has TWO
                         #   hydration enthalpies (cation and anion) that get

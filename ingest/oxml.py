@@ -193,6 +193,27 @@ def _tokens_from_run(r, *, in_math: bool = False):
         yield '<sup class="pl-sym">⦵</sup>', EMPTY, True
         return
 
+    # A THIRD way a document makes the standard-state sign (ASRJC 2024 H2 P1,
+    # 2026-10-03): a lone superscript lowercase "o" with STRIKE-THROUGH on --
+    # the author draws the plimsoll as an "o" with a line across it. Our run
+    # style ignores strike, so it rendered as a plain "o" and the line was
+    # lost (user: "circle with line ... line missing", Q8 statement 3). It
+    # occurs 20 times in that document, always as the standard-state sign
+    # (dG, dH, dS, E of the Q8/Q28/Q29 text). Keyed on the strike mark AND
+    # superscript AND the bare letter, so ordinary struck-through text
+    # elsewhere is untouched.
+    if text == "o":
+        pr = r.find(Wq + "rPr")
+        if pr is not None:
+            st = pr.find(Wq + "strike")
+            va = pr.find(Wq + "vertAlign")
+            if (st is not None
+                    and st.get(Wq + "val") not in ("0", "false")
+                    and va is not None
+                    and va.get(Wq + "val") == "superscript"):
+                yield '<sup class="pl-sym">⦵</sup>', EMPTY, True
+                return
+
     # SS7 / defect SS2: a run whose entire content is the element symbol l gets the
     # serif face, so "AlCl3" does not read as "AICI3". Everything else italic
     # (Data Booklet, k, Ea) stays in the body face.

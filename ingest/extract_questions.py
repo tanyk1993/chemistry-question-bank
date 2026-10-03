@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 
 import pymupdf
@@ -225,6 +226,9 @@ def main(argv=None):
     ap.add_argument("--first-page", type=int, default=2,
                     help="first QUESTION page; the cover is not question content")
     ap.add_argument("--last-page", type=int, default=None)
+    ap.add_argument("--no-crops", action="store_true",
+                    help="plan assets and report figure anomalies but write NO "
+                         "PNGs (the user snips figures by hand)")
     ap.add_argument("--skip", default="",
                     help="comma-separated question numbers to leave out of the "
                          "bank entirely, e.g. out-of-syllabus items")
@@ -236,6 +240,10 @@ def main(argv=None):
     questions, figures, anomalies, shape = parse(
         unz / "word/document.xml", unz / "word/_rels/document.xml.rels")
     print("detected document shape: %s" % shape)
+    for q in questions:
+        # corrections.GLYPH_FIGURES -- read by render_questions.figure_kinds.
+        q.glyphs = corrections.glyph_blocks(
+            a.school, a.level, a.paper, a.year, q.qnum)
     doc = pymupdf.open(a.pdf)
     bands = QF.question_bands(doc, 1, max(q.qnum for q in questions))
     missing = [q.qnum for q in questions if q.qnum not in bands]
@@ -292,17 +300,38 @@ def main(argv=None):
         elif plan:
             crops += _crop_question(doc, q, plan, spans, anomalies)
 
-        rows.append({
+        row = {
             "question_number": q.qnum,
             "type": "mcq",
             "marks": 1,
             "content_html": R.content_html(q, plan, fracs, frac_letters, eqtext_map),
             "content_text": R.content_text(q, fracs, frac_letters, eqtext_map),
             "options": R.options_json(q, fracs, frac_letters, eqtext_map),
-        })
+        }
+        # corrections.MCQ_FIXUPS -- each must match EXACTLY the declared number
+        # of times; a silent miss is how a fix ships unapplied.
+        for field, pat, repl, want, why in corrections.mcq_fixups(
+                a.school, a.level, a.paper, a.year, q.qnum):
+            key = "content_" + field
+            new, n = re.subn(pat, repl, row[key])
+            if n != want:
+                raise SystemExit("Q%d fixup %r on %s matched %d time(s), "
+                                 "expected %d" % (q.qnum, pat, key, n, want))
+            row[key] = new
+            anomalies.append("Q%d: fixup applied to %s (%dx) -- %s"
+                             % (q.qnum, key, n, why))
+        # A NUL byte (an unstripped CENTRE sentinel) is refused outright by
+        # Postgres -- the whole migration would fail, so fail HERE instead.
+        for key in ("content_html", "content_text"):
+            if "\x00" in row[key]:
+                raise SystemExit("Q%d: NUL byte left in %s" % (q.qnum, key))
+        if "\x00" in json.dumps(row["options"]):
+            raise SystemExit("Q%d: NUL byte left in options" % q.qnum)
+        rows.append(row)
         plan_all.extend(plan)
 
-    QF.write_crops(doc, crops, out / "assets", dpi=a.dpi)
+    if not a.no_crops:
+        QF.write_crops(doc, crops, out / "assets", dpi=a.dpi)
 
     (out / "questions.json").write_text(
         json.dumps(rows, ensure_ascii=False, indent=1), encoding="utf-8")

@@ -30,6 +30,7 @@ ADOBE_SYMBOL = {
     0x44: "∆",   # Delta -> U+2206 increment (Adobe symbol.txt); see symbols.py
     0x5C: "∴",   # therefore
     0x70: "π",   # pi
+    0x71: "θ",   # theta (Adobe Symbol "theta" = 0x71)
     0x73: "σ",   # sigma
     0xAE: "→",   # arrowright
     0xB0: "°",   # degree

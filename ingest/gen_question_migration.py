@@ -34,7 +34,7 @@ THE GUARDS, AND WHY EACH ONE IS THERE (handoff SS8, SS11)
   positive (handoff SS4), no table is created.
 
 Usage:
-  python3 -m ingest.gen_question_migration <outdir> <answer_key.json> <dest.sql> \
+  python3 -m ingest.gen_question_migration <outdir> <answer_key.json | -> <dest.sql> \
       [--school RI] [--year 2024] [--paper 1] [--level H2] [--assessment prelim]
 
 School/year/paper/level/assessment default to the values this script was
@@ -76,10 +76,15 @@ def main(outdir: str, keyfile: str, dest: str, *,
     out = Path(outdir)
     rows = json.loads((out / "questions.json").read_text(encoding="utf-8"))
     plan = json.loads((out / "asset_plan.json").read_text(encoding="utf-8"))
-    keys = json.loads(Path(keyfile).read_text(encoding="utf-8"))
+    # keyfile "-" = NO answer keys at all: `answer_key` is inserted as NULL and
+    # set later, at the answers stage (ACJC 2024 H2 P1 precedent --
+    # gen_answers_migration.py's --answer-key, whose pre-flight asserts the
+    # column IS still NULL). Used when the user says "do not touch the answers".
+    no_keys = keyfile in ("-", "")
+    keys = {} if no_keys else json.loads(Path(keyfile).read_text(encoding="utf-8"))
 
-    missing = [r["question_number"] for r in rows
-               if str(r["question_number"]) not in keys]
+    missing = [] if no_keys else [r["question_number"] for r in rows
+                                  if str(r["question_number"]) not in keys]
     if missing:
         raise SystemExit("no answer key for questions %s" % missing)
 
@@ -151,7 +156,7 @@ def main(outdir: str, keyfile: str, dest: str, *,
         vals.append("      (%d, %s, %s, %s, %s)"
                     % (qn, _lit(r["content_html"]), _lit(r["content_text"]),
                        _lit(json.dumps(r["options"], ensure_ascii=False)),
-                       _lit(keys[str(qn)])))
+                       "NULL::text" if no_keys else _lit(keys[str(qn)])))
     add(",\n".join(vals))
     add("    ) AS v(qn, html, txt, opts, akey)")
     if plan:

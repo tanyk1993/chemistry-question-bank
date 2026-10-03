@@ -50,12 +50,156 @@ DROPPED_FIGURES = {
            "as span.frac. This leaves Q12 with no assets at all. "
            "(user, 2026-09-21: \"2 representations. i prefer the bottom one\")",
     },
+    # ASRJC 2024 H2 P1 (2026-10-02) ------------------------------------------
+    ("ASRJC", "H2", "P1", 2024, 10): {
+        1: "Reaction 1's arrow: an anchored zero-height line shape. Reactions "
+           "1 and 2 are now snipped together as one picture, so the typed "
+           "reaction-1 line is removed by MCQ_FIXUPS.",
+        3: "Reaction 2 is ONE printed scheme (phenol + 3Br2 -> tribromophenol "
+           "+ 3HBr, label 'reaction 2'): two structure objects, two text "
+           "boxes and an arrow line, all floating. The user snips the whole "
+           "scheme as ONE picture, so the structure objects and the shape "
+           "group collapse onto a single placeholder (block #2).",
+        4: "Part of reaction 2's scheme -- see #3.",
+    },
+    ("ASRJC", "H2", "P1", 2024, 11): {
+        2: "The Boltzmann graph is ONE printed picture. Word stores it as an "
+           "inline PNG plus a small 10 x 12 pt anchored shape and the parser "
+           "counts two figures, but only one placeholder exists in the text. "
+           "One asset (stem1) is the whole graph.",
+    },
+    ("ASRJC", "H2", "P1", 2024, 12): {
+        2: "The gas-syringe diagram is ONE printed picture: an inline PNG "
+           "(the syringe) plus three floating text-box labels ('sealed end', "
+           "'gaseous mixture', 'piston'). The user snips them together, so "
+           "the PNG's placeholder collapses onto the label group's (block #1).",
+    },
+    ("ASRJC", "H2", "P1", 2024, 18): {
+        2: "The four structures are snipped as ONE picture (numbers 1-4 "
+           "included): one placeholder, block #1. (user, 2026-10-02)",
+        3: "see #2.", 4: "see #2.",
+    },
+    ("ASRJC", "H2", "P1", 2024, 22): {
+        2: "The three equations are snipped as ONE picture (numbers 1-3 "
+           "included): one placeholder, block #1. (user, 2026-10-02)",
+        3: "see #2.",
+    },
+    ("ASRJC", "H2", "P1", 2024, 24): {
+        2: "Both structures are snipped as ONE picture (labels X and Y "
+           "included): one placeholder, block #1. (user, 2026-10-02)",
+    },
 }
 
 
 def dropped_blocks(school, level, paper, year, qnum) -> dict:
     """{block ordinal: reason} for figures deliberately not placed."""
     return DROPPED_FIGURES.get((school, level, paper, year, qnum), {})
+
+
+# GLYPH FIGURES (MCQ question papers)
+# -----------------------------------
+# A "figure" that is really a TYPOGRAPHIC CHARACTER drawn as a picture: the
+# reaction / equilibrium arrow set as a tiny ChemWindow (WMF) object or a
+# zero-height anchored line shape beside the equation text. Uploading a 30 x 6
+# pt crop for it is pointless and loses searchability; the real character is
+# typed instead, in place, so the equation stays ONE paragraph.
+#
+# Keyed like DROPPED_FIGURES -- (school, level, paper, year, qnum) -- to
+# {block ordinal: glyph}, where "block ordinal" counts every non-option,
+# non-equation figure in document order (the SAME numbering DROPPED_FIGURES
+# uses, and a glyph figure counts in it, so adding one never renumbers a drop).
+# A glyph figure gets no asset and no `div.fig`: render_questions substitutes
+# the character inline. Declared per question, after looking at the rendered
+# page -- never inferred from a figure's size.
+GLYPH_FIGURES = {
+    # ASRJC 2024 H2 P1 (2026-10-02). Every one of these was checked against the
+    # rendered Word PDF: each is a plain arrow sitting inside an equation line.
+    ("ASRJC", "H2", "P1", 2024, 9):  {1: "\u2192", 2: "\u2192", 3: "\u2192", 4: "\u2192"},
+    ("ASRJC", "H2", "P1", 2024, 12): {3: "\u21cc"},
+    ("ASRJC", "H2", "P1", 2024, 13): {1: "\u21cc", 2: "\u21cc", 3: "\u21cc", 4: "\u21cc"},
+    ("ASRJC", "H2", "P1", 2024, 14): {1: "\u2192", 2: "\u2192", 3: "\u2192", 4: "\u2192"},
+}
+
+
+def glyph_blocks(school, level, paper, year, qnum) -> dict:
+    """{block ordinal: character} for figures typed as a glyph, not placed."""
+    return GLYPH_FIGURES.get((school, level, paper, year, qnum), {})
+
+
+# MCQ FIXUPS
+# ----------
+# Per-question regex touch-ups applied to an MCQ row's `content_html` and
+# `content_text` AFTER rendering -- for the handful of things a registry of
+# dropped/typed figures cannot express (a label to delete, a gap to re-space).
+# Each entry is (scope_with_qnum, field, pattern, replacement, expected_count,
+# reason). `expected_count` is MANDATORY and enforced by the driver: a fixup
+# that matches 0 or 3 times when 1 was expected stops the run, because a silent
+# miss is exactly how a "fix" ships unapplied. Every application is printed
+# into anomalies.txt.
+_AS = ("ASRJC", "H2", "P1", 2024)
+MCQ_FIXUPS = [
+    # --- Q10: reactions 1 and 2 ------------------------------------------------
+    (_AS + (10,), "html",
+     r'<p class="c">BrO.*?reaction 1</p>\n', "", 1,
+     "Reactions 1 AND 2 are snipped together as ONE picture (labels "
+     "'reaction 1' / 'reaction 2' included; user, 2026-10-02), so the typed "
+     "reaction-1 line is removed and the single placeholder stands for both."),
+    (_AS + (10,), "html",
+     r'<p class="c">\x00C\x00\t+reaction 2</p>\n?', "", 1,
+     "'reaction 2' is the right-hand label of the reaction-2 scheme; the user "
+     "snips the scheme WITH its label, so the typed duplicate is removed."),
+    (_AS + (10,), "text", r"BrO3.*?reaction 1 ", "", 1,
+     "the reaction-1 equation is inside the combined snip."),
+    (_AS + (10,), "text", r"reaction 2 ", "", 1,
+     "same label, in the search text."),
+    # --- Q18 / Q22 / Q24: figure rows snipped as one picture (user, 2026-10-02)
+    (_AS + (18,), "html", r'<table class="qt center">.*?</table>\n',
+     '<div class="fig">figure</div>\n', 1,
+     "the four structures and their numbers 1-4 are ONE snip."),
+    (_AS + (18,), "text", r"\? 1 2 3 4 A ", "? A ", 1, "figure-borne numbers."),
+    (_AS + (22,), "html", r'<table class="qt center">.*?</table>\n',
+     '<div class="fig">figure</div>\n', 1,
+     "the three equations and their numbers 1-3 are ONE snip."),
+    (_AS + (22,), "text", r"\? 1 2 3 A ", "? A ", 1, "figure-borne numbers."),
+    (_AS + (24,), "html", r'<table class="qt">.*?</table>\n',
+     '<div class="fig">figure</div>\n', 1,
+     "the two structures and their labels X / Y are ONE snip."),
+    (_AS + (24,), "text", r"\? XY Test", "? Test", 1, "figure-borne labels."),
+    # --- Q5: two bullet statements ------------------------------------------------
+    (_AS + (5,), "html",
+     r'<p class="qstem">(the gas in the vessel was heated[^<]*)</p>\n'
+     r'<p class="qstem">(the vessel was filled with .*?)</p>',
+     '<ul class="stmts"><li>\\1</li><li>\\2</li></ul>', 1,
+     "the two changes are Word bullet paragraphs (w:numPr) -- questions.py has "
+     "no numPr-list merging (style-guide.md section 9), so they came out as "
+     "bare paragraphs with the bullets lost. style-guide section 2: bullets "
+     "are ul.stmts."),
+    # --- Q12: the equilibrium line ---------------------------------------------
+    (_AS + (12,), "html",
+     r"(2H<sub>2</sub>S\(g\))\s{4,}(\u2206<i>H</i>)<sub>\s*</sub>(&gt; 0)",
+     "\\1&emsp;&emsp;\\2 \\3", 1,
+     "an 11-space run hand-aligning the enthalpy label (HTML would collapse it "
+     "to one space) and an empty <sub>."),
+    # --- Q13: four equilibria, each with a hand-aligned K label ------------------
+    (_AS + (13,), "html", r'<p class="qstem">(?=Ag[CI])', '<p class="c">', 4,
+     "the four equilibrium equations are centred (user, 2026-10-02); "
+     "style-guide section 2: a centred equation is p.c."),
+    (_AS + (13,), "html", r"<i><sup>(\s*)</sup></i>", "\\1", 2,
+     "italic superscripts holding ONLY spaces (the alignment gap itself, "
+     "typed into a <sup>); the spaces are kept, the empty tags go."),
+    (_AS + (13,), "html", r"<i>(\s+)K</i>", "\\1<i>K</i>", 1,
+     "a run of spaces typed INSIDE the italic K."),
+    (_AS + (13,), "html", r"\s{4,}(<i>K</i>)", "&emsp;&emsp;\\1", 4,
+     "hand-aligned K labels (Ksp, Kc1, Ksp, Kc2) -- runs of 8-45 spaces that "
+     "HTML would collapse."),
+    (_AS + (13,), "html", r"(</sub>)\s{4,}</p>", "\\1</p>", 1,
+     "trailing spaces after the first K label."),
+]
+
+
+def mcq_fixups(school, level, paper, year, qnum) -> list:
+    """[(field, pattern, replacement, expected_count, reason)] for one question."""
+    return [e[1:] for e in MCQ_FIXUPS if e[0] == (school, level, paper, year, qnum)]
 
 
 # DROPPED PART FIGURES (structured papers)

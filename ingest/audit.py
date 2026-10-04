@@ -34,7 +34,7 @@ from lxml import etree
 
 from . import adobe_symbol
 from .oxml import Wq
-from .symbols import DECORATIVE, SYMBOL, WINGDINGS, MT_EXTRA
+from .symbols import DECORATIVE, SYMBOL, WINGDINGS, WINGDINGS_2, MT_EXTRA
 
 
 class GateFailure(AssertionError):
@@ -232,7 +232,7 @@ def charset_gate(extracted: str, reference_pdf,
     worry about in advance, which is exactly the property the previous EMF check
     lacked.
     """
-    problems_pre = adobe_symbol.cross_check(SYMBOL, WINGDINGS, MT_EXTRA)
+    problems_pre = adobe_symbol.cross_check(SYMBOL, WINGDINGS, MT_EXTRA, WINGDINGS_2)
     ref = pdf_text(reference_pdf, first_page, last_page)
     for pat in (ignore_re or []):
         ref = re.sub(pat, " ", ref)

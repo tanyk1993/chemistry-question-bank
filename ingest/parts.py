@@ -217,24 +217,54 @@ def _gridspan(tc) -> int:
 
 def _table_html(tbl) -> str:
     """A nested table inside a cell. As in `questions.py`: content in this
-    family, not layout -- e.g. a data table handed to the student."""
-    rows = []
-    for tr in tbl.findall(Wq + "tr"):
-        cells = []
+    family, not layout -- e.g. a data table handed to the student.
+
+    `w:gridSpan` -> colspan and `w:vMerge` -> rowspan (a continuation cell is
+    dropped). Added for ASRJC 2024 H2 P2 Table 2.1, whose header is "Amino
+    acid" (2 rows) over "pKa" (3 columns); without it the header row has
+    fewer cells than the data rows and the table misaligns. Tables with
+    neither attribute emit exactly what they always did."""
+    trs = tbl.findall(Wq + "tr")
+    grid = []
+    for tr in trs:
+        row = []
         for tc in tr.findall(Wq + "tc"):
-            # The CENTRE sentinel is dropped HERE, and only here. A `table.qt
-            # td` is already text-align:center by the existing CSS, so inside
-            # a data cell the sentinel says nothing and would render as a
-            # literal stray "C" (its surrounding U+0000 bytes are invisible,
-            # the letter between them is not).
-            #
-            # It must NOT be stripped in `_cell_html` itself: that runs for
-            # EVERY cell, including the wide content cell a question's prose
-            # lives in, where centring is real information. This paper centres
-            # all 15 of its "Fig. n.n" / "Table n.n" captions with a direct
-            # <w:jc w:val="center">, and stripping there silently left-aligned
-            # every one of them.
-            cells.append("<td>%s</td>" % _cell_html(tc).replace(CENTRE, ""))
+            span = _gridspan(tc)
+            vm = tc.find(Wq + "tcPr/" + Wq + "vMerge")
+            kind = None if vm is None else (vm.get(Wq + "val") or "continue")
+            row.append((tc, span, kind))
+        grid.append(row)
+    rows = []
+    for ri, row in enumerate(grid):
+        cells = []
+        col = 0
+        for tc, span, kind in row:
+            if kind == "continue":
+                col += span
+                continue
+            rowspan = 1
+            if kind == "restart":
+                for later in grid[ri + 1:]:
+                    pos, hit = 0, None
+                    for tc2, sp2, k2 in later:
+                        if pos == col:
+                            hit = k2
+                            break
+                        pos += sp2
+                    if hit == "continue":
+                        rowspan += 1
+                    else:
+                        break
+            attrs = ""
+            if span > 1:
+                attrs += ' colspan="%d"' % span
+            if rowspan > 1:
+                attrs += ' rowspan="%d"' % rowspan
+            # The CENTRE sentinel is dropped HERE, and only here (see the
+            # long note in the RI 2024 H2 P3 history: `_cell_html` itself must
+            # keep it for the wide content cell).
+            cells.append("<td%s>%s</td>" % (attrs, _cell_html(tc).replace(CENTRE, "")))
+            col += span
         if cells:
             rows.append("<tr>%s</tr>" % "".join(cells))
     if not rows:

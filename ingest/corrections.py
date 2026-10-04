@@ -282,6 +282,16 @@ DROPPED_PART_FIGURES = {
 # moving one would change which part owns its asset. Keyed
 # (school, level, paper, year, qnum, part_label of the part the tail is now in).
 LEADIN_MOVES = {
+    # ASRJC 2024 H2 P2 (2026-10-03). Each passage is printed between one
+    # part's [n] and the next part's label.
+    ("ASRJC", "H2", "P2", 2024, 5, "(a)(ii)"):
+        "'The hydrogen required for the Haber-Bosch process...' with equations "
+        "5.1 and 5.2 introduces (a)(iii) and (a)(iv).",
+    ("ASRJC", "H2", "P2", 2024, 5, "(c)(ii)"):
+        "'The standard enthalpy change of reaction...' and the Gibbs-energy "
+        "table introduce (c)(iii).",
+    ("ASRJC", "H2", "P2", 2024, 5, "(d)(ii)"):
+        "'It is suggested that a molten salt mixture...' introduces (d)(iii).",
     ("ACJC", "H2", "P2", 2024, 6, "(b)(ii)"):
         "'Process 2 is thought to proceed via the two steps...' introduces "
         "(b)(iii) (mechanism) and (b)(iv) (rate-determining step); printed "
@@ -451,7 +461,76 @@ def eqtext_options(school, level, paper, year, qnum) -> dict:
     return EQUATION_OPTIONS_AS_TEXT.get((school, level, paper, year, qnum), {})
 
 
+# GLYPH PICTURES (structured papers)
+# ----------------------------------
+# A reaction arrow the source sets as a tiny Word OBJECT picture between the two
+# sides of an equation. The picture is NOT a figure: the sentinel is replaced by
+# the real character before lead-in moves, reconcile() and asset planning, so no
+# asset is planned for it. (scope, regex, replacement, reason). Each pattern is
+# anchored on the chemistry either side so it can never hit a real figure.
+_A = ("ASRJC", "H2", "P2", 2024)
+GLYPH_PICTURES = [
+    (_A, r"(O<sub>2</sub>\(g\)) \x00FIG\x00 (2POC)", "\\1 \u2192 \\2",
+     "Q1(c) equation 1.1 forward arrow"),
+    (_A, r"(N<sub>2</sub>\(g\)) \x00FIG\x00(2NH<sub>3</sub>\(g\))\s{4,}(\u2206)",
+     "\\1 \u21cc \\2\u2003\u2003\u2003\\3",
+     "Q5(a) equilibrium arrow (rendered page shows the harpoon pair); the 29-space gap before dH is the source's own alignment"),
+    (_A, r"(H<sub>2</sub>O\(g\)) \x00FIG\x00(CO\(g\))", "\\1 \u2192 \\2",
+     "Q5 equation 5.1 forward arrow"),
+    (_A, r"(H<sub>2</sub>O\(g\)) \x00FIG\x00(CO<sub>2</sub>)", "\\1 \u2192 \\2",
+     "Q5 equation 5.2 forward arrow"),
+    (_A, r"(2LiOH) \x00FIG\x00 (2Li)", "\\1 \u2192 \\2", "Q5(c) stage 1 arrow"),
+    (_A, r"(N<sub>2</sub>) \x00FIG\x00 (2Li<sub>3</sub>N)", "\\1 \u2192 \\2", "Q5(c) stage 2 arrow"),
+    (_A, r"(3H<sub>2</sub>O) \x00FIG\x00(3LiOH)", "\\1 \u2192 \\2",
+     "Q5(c) and (c)(iii) stage 3 arrow"),
+    (_A, r"(\u00bd?H<sub>2</sub>O)\s+\x00FIG\x00 (LiOH)", "\\1 \u2192 \\2",
+     "Q5(d) equation 5.3 arrow"),
+]
+
+
+def apply_glyph_pictures(html: str, scope: tuple | None = None):
+    log = []
+    for sc, pat, rep, why in GLYPH_PICTURES:
+        if sc != scope:
+            continue
+        html, n = re.subn(pat, rep, html)
+        if n:
+            log.append("%dx glyph picture typed: %s" % (n, why))
+    return html, log
+
+
 CORRECTIONS = [
+    # ---- ASRJC 2024 H2 P2 (2026-10-03)
+    (_A, r"[ \t]*<br>[ \t]*", " ",
+     "Soft line breaks (w:br) typed to wrap a sentence at the printed margin: "
+     "1(c)(iii) 'in / equation 1.1', 2(b)(ii) 'at / pH 3.0', 2(c)(ii) 'structure / of V', "
+     "3(b) 'listed in / Table 3.2', 4(c)(i) 'and / (C6H5)3C-Cl'. No genuine break uses <br> here.",
+     "housekeeping, 2026-10-03"),
+    (_A, r"\n\x00C\x00glutamic acid\n\x00C\x00tyrosine\n\x00C\x00\x00FIG\x00\n\x00C\x00\x00FIG\x00",
+     "\n\x00C\x00\x00FIG\x00",
+     "2(b): the two amino-acid structures are snipped as ONE image that already carries the "
+     "names 'glutamic acid' / 'tyrosine' as pixels; typed captions and the second placeholder go "
+     "(style-guide SS6 bare-image rule).",
+     "user's combined-snip convention; confirm 2026-10-03"),
+    (_A, r"\n\x00C\x00<b>U</b>\n\x00C\x00<b>V</b> (<span class=\"mk\">\[2\]</span>)",
+     '\n<table class="qt"><tr><td><b>U</b></td><td><b>V</b></td></tr>'
+     '<tr><td>&nbsp;<br>&nbsp;<br>&nbsp;</td><td>&nbsp;<br>&nbsp;<br>&nbsp;</td></tr></table> \\1',
+     "2(b)(ii): the printed answer box is a two-column table headed U and V; the parser "
+     "flattened it to two stacked paragraphs.",
+     "housekeeping, 2026-10-03"),
+    (_A, r"\x00FIG\x00\n   Nicotinic acid\n\x00C\x00<b>E</b>\n\x00FIG\x00\nNicotinamide",
+     "\x00C\x00\x00FIG\x00",
+     "4(b): the whole two-step scheme (nicotinic acid, step 1, box E, step 2 / NH3, nicotinamide) "
+     "is ONE printed picture with its labels; snipped as one image, typed labels dropped.",
+     "bare-image rule; confirm 2026-10-03"),
+    (_A, r"\n\x00C\x00<b>T</b>(?=$)", "",
+     "Q2 stem: the user's snip of the tetrapeptide includes the bold label T as pixels, so the typed caption is dropped (bare-image rule).",
+     "user, 2026-10-03"),
+    (_A, r"(\d) (\u00b0C)", "\\1&nbsp;\\2",
+     "Q1(b)/Q5(a): keep a number and its degree-Celsius unit on one line (user, 2026-10-04: '106' and '\u00b0C' split across lines).",
+     "user, 2026-10-04"),
+    (_A, r"</li></ul>\n<ul class=\"stmts\"><li>", "</li><li>",
+     "4(c)(ii): the two bullets are one list.", "housekeeping, 2026-10-03"),
     # ---- ACJC 2024 H2 P2 (2026-09-29): characters the source draws as pictures
     # Word set the reversible arrow and the capital sigma as tiny EMF/WMF
     # PICTURES anchored beside the text (the text itself keeps a run of spaces

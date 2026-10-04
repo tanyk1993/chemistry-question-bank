@@ -77,6 +77,15 @@ def main(argv=None):
                 p.html = p.html.replace(FIG_SENTINEL, "")
                 p.figures = []
 
+    # --- reaction arrows etc. drawn as pictures -> real characters ---------
+    # BEFORE the lead-in moves (which refuse a tail holding a figure sentinel).
+    for q in questions:
+        q.intro_html, log = corrections.apply_glyph_pictures(q.intro_html, scope)
+        correction_log += ["Q%d intro: %s" % (q.qnum, x) for x in log]
+        for p in q.parts:
+            p.html, log = corrections.apply_glyph_pictures(p.html, scope)
+            correction_log += ["Q%d%s: %s" % (q.qnum, p.label, x) for x in log]
+
     # --- lead-in passages filed under the wrong part (corrections.LEADIN_MOVES)
     # Runs BEFORE the text corrections, on the parser's own lines, so a moved
     # passage is then corrected like any other text. Every part with content
@@ -101,9 +110,9 @@ def main(argv=None):
                     "(possible lead-in for the next part; not declared in "
                     "corrections.LEADIN_MOVES, left in place)" % (where, len(tail)))
                 continue
-            if any(FIG_SENTINEL in ln or "<table" in ln for ln in tail):
+            if any(FIG_SENTINEL in ln for ln in tail):
                 anomalies.append("%s: lead-in move REFUSED -- the tail holds a "
-                                 "figure or table" % where)
+                                 "figure" % where)
                 continue
             nxt = q.parts[i + 1]
             p.html = "\n".join(lines[:last + 1])
@@ -207,6 +216,15 @@ def main(argv=None):
                    # "BLANK PAGE" heading on a school's intentionally blank
                    # pages (ACJC 2024 H2 P3 pp.13, 25): furniture, not content.
                    r"BLANK PAGE",
+                   # ASRJC's running footer ("ASRJC JC2 PRELIM 2024  9729/02/H2
+                   # [Turn over") and the cover block that opens page 1 of its
+                   # combined questions+solutions PDF (Q1 starts on page 1, so
+                   # --first-page 1 cannot skip it).
+                   r"ASRJC JC2 PRELIM \d{4}", r"9729/0\d/H2",
+                   r"ANDERSON SERANGOON JUNIOR COLLEGE",
+                   r"\d{4} JC ?2 PRELIMINARY EXAMINATION",
+                   r"CHEMISTRY\s+9729/0\d", r"Paper \d Structured Questions",
+                   r"SUGGESTED SOLUTIONS", r"Answer\s+all\s+the\s+questions\.?",
                    r"(?m)^\s*\d{1,2}\s*$", r"…+"],
         first_page=a.first_page, last_page=last)
     real, expected = audit.classify(problems)

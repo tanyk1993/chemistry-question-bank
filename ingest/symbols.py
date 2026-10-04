@@ -35,6 +35,11 @@ SYMBOL = {
                         #   single highest-consequence entry in this table.
     "F02D": "−",   # 0x2D minus                - ; "8e-" (true minus, not hyphen)
     "F0B0": "°",   # 0xB0 degree               ; "bond angle: 120"
+    "F061": "α",   # 0x61 alpha -- ASRJC 2024 H2 P2 Table 2.1 header "α-carboxyl group" /
+                        #   "α-amino group" (confirmed against the rendered page, not just the
+                        #   text layer: the page shows a Greek alpha).
+    "F062": "β",   # 0x62 beta -- ASRJC 2024 H2 P2 Q4 stem: "N" + subscript alpha / beta labels
+                        #   (N-alpha, N-beta of nicotinamide); the rendered page shows Greek letters.
     "F070": "π",   # 0x70 pi
     "F073": "σ",   # 0x73 sigma; RI 2024 H2 P1 Q7 "There are 6 <s> and 2 <p>
                         #   bonds present." Question paper only -- the answers
@@ -109,6 +114,17 @@ SYMBOL = {
                         #   summed, so "sum of ∆Hhyd" is exactly the missing
                         #   term; consistent with 0x73/sigma (lowercase) already
                         #   mapped above being the same letter's lowercase form.
+}
+
+# Wingdings 2 (a different font from Wingdings: own table).
+WINGDINGS_2 = {
+    "F099": "⦵",   # ASRJC 2024 H2 P2 answers 1(a)(ii): "∆H<sub>r</sub>[99]" -- the
+                        #   standard-state (plimsoll) sign, rendered in the Word PDF as
+                        #   a circle with a bar; same character the Wingdings F0A1
+                        #   entry below produces for other schools.
+    "F09A": "⦵",   # ASRJC 2024 H2 P2 answers 1(a)(iv): "∆H<sub>r</sub>[9A]",
+                        #   "−T∆S<sub>r</sub>[9A]", "∆G<sub>r</sub>[9A]" -- same sign,
+                        #   neighbouring code point of the same private glyph pair.
 }
 
 # Wingdings.
@@ -208,6 +224,7 @@ def sym_to_text(font: str, char: str) -> str:
     spec does not require it.
     """
     table = {"symbol": SYMBOL, "wingdings": WINGDINGS,
+              "wingdings 2": WINGDINGS_2,
               "mt extra": MT_EXTRA}.get((font or "").strip().lower())
     if table is None:
         raise UnknownSymbol(f"unmapped w:sym font {font!r} (char {char!r})")

@@ -29,6 +29,8 @@ ADOBE_SYMBOL = {
     0x2D: "−",   # minus
     0x44: "∆",   # Delta -> U+2206 increment (Adobe symbol.txt); see symbols.py
     0x5C: "∴",   # therefore
+    0x61: "α",   # alpha (Adobe Symbol "alpha" = 0x61)
+    0x62: "β",   # beta (Adobe Symbol "beta" = 0x62)
     0x70: "π",   # pi
     0x71: "θ",   # theta (Adobe Symbol "theta" = 0x71)
     0x73: "σ",   # sigma
@@ -53,6 +55,13 @@ ADOBE_SYMBOL = {
 # Wingdings. Only the codes this document family actually uses.
 ADOBE_WINGDINGS = {
     0xA1: "⦵",   # circle with horizontal bar -- standard-state symbol
+}
+
+# Wingdings 2 -- the same standard-state sign at 0x99/0x9A (independent record,
+# read off the rendered Word PDF of ASRJC 2024 H2 P2, page 3: "ΔHr⦵", "ΔGr⦵").
+ADOBE_WINGDINGS_2 = {
+    0x99: "⦵",
+    0x9A: "⦵",
 }
 
 # MT Extra -- NOT a standard Adobe encoding (unlike Symbol/Wingdings, MT Extra
@@ -80,7 +89,8 @@ def decode(cp: int) -> str | None:
 
 
 def cross_check(extractor_symbol: dict, extractor_wingdings: dict,
-                 extractor_mt_extra: dict | None = None) -> list[str]:
+                 extractor_mt_extra: dict | None = None,
+                 extractor_wingdings_2: dict | None = None) -> list[str]:
     """Report disagreements between the extractor's table and this one.
 
     A divergence means the extractor and its auditor have drifted apart, which
@@ -102,6 +112,14 @@ def cross_check(extractor_symbol: dict, extractor_wingdings: dict,
                             "encoding has no entry for it" % key)
         elif got != want:
             problems.append("Wingdings %s: extractor=%r reference=%r"
+                            % (key, got, want))
+    for key, got in (extractor_wingdings_2 or {}).items():
+        want = ADOBE_WINGDINGS_2.get(int(key[2:], 16))
+        if want is None:
+            problems.append("extractor maps Wingdings 2 %s but the reference "
+                            "encoding has no entry for it" % key)
+        elif got != want:
+            problems.append("Wingdings 2 %s: extractor=%r reference=%r"
                             % (key, got, want))
     for key, got in (extractor_mt_extra or {}).items():
         want = ADOBE_MT_EXTRA.get(int(key[2:], 16))

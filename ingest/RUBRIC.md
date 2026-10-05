@@ -248,6 +248,19 @@ User convention, 2026-10-02: a part whose assessed chemistry the syllabus does
 not code (Rule 8a, "syllabus gap") is called **NIS** and is simply left untagged
 (no key in `tags.json`). Examples: ACJC 2024 H2 P3 5(c)(iv) (ΔG = −RT ln K).
 
+**Further NIS and tagging rulings, 2026-10-05 (ASRJC 2024 H2 P3, user):**
+- **Friedel-Crafts acylation is NIS** (9476 codes alkylation only). Tag the nearest
+  group LO (`11.4(d)`, Rule 2b: group code by absence) and record in the paper's tags
+  note that the part is acylation. The database cannot store a note.
+- **Nucleophilic acyl substitution mechanism is NIS** (the intermediates are given in
+  the stem). Tag the part `11.3(j)` only.
+- **Negative tests are not tagged** on structure-elucidation parts (no 11.8(f)-style
+  tag for "does not decolourise Br2").
+- **Delocalisation over induction**: when delocalisation into an adjacent C=O is the
+  dominant reason (enolate stability), tag `11.3(b)(i)` only, not the inductive LO.
+- A graph-reading part is `8(b)(ii)` only; a "define rate" part adds `8(a)`.
+
+
 ## Rule 9 — Over-tagging is the default failure mode; under-tagging is the organic one
 
 Let the chemistry decide the count. Physical parts are usually 1 LO; organic

@@ -142,25 +142,39 @@ def main(argv=None):
     plan_all, owners = [], []
     for q in questions:
         plan = R.asset_plan(q, a.school, a.level, a.paper, a.year)
+        # Inline pictures (corrections.INLINE_ASSETS) are planned AFTER the
+        # block figures, ordinals continuing the sequence; they are not crop
+        # owners (the snip is the user's own) and not div.fig placeholders.
+        _n = max((x["ordinal"] for x in plan), default=0)
+        _inline = []
+        for part, slot in corrections.inline_assets(*scope, q.qnum):
+            _n += 1
+            _inline.append({"question": q.qnum, "part": part, "slot": slot,
+                            "ordinal": _n, "inline": True, "n_refs": 0,
+                            "storage_path": "%s_%s_%s_Q%d_%s_%d.png"
+                            % (a.school, a.level, a.paper, q.qnum, slot, a.year)})
         for item in plan:
             label = ("%d%s" % (q.qnum, item["part"])) if item["part"] \
                 else "Q%d" % q.qnum
             owners.append((label, item["storage_path"]))
         plan_all.extend(plan)
+        plan_all.extend(_inline)
 
     crops, crop_anoms = PF.crop_all(doc, owners, scope=scope)
     anomalies += crop_anoms
-    if len(crops) != len(plan_all):
+    _n_block = len([x for x in plan_all if not x.get("inline")])
+    if len(crops) != _n_block:
         anomalies.append("%d assets planned but %d cropped -- every later "
                          "ordinal in the affected question would shift"
-                         % (len(plan_all), len(crops)))
+                         % (_n_block, len(crops)))
     write_crops(doc, crops, out / "assets", dpi=a.dpi)
 
     # --- rows --------------------------------------------------------------
     rows = []
     for q in questions:
         n_ph = R.content_html(q).count('<div class="fig">')
-        n_assets = len([p for p in plan_all if p["question"] == q.qnum])
+        n_assets = len([p for p in plan_all
+                        if p["question"] == q.qnum and not p.get("inline")])
         if n_ph != n_assets:
             # handoff SS7's costliest defect class: the frontend fills
             # placeholders in DOM order from ordinal-sorted assets, so a

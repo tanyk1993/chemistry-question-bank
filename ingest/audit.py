@@ -104,6 +104,13 @@ SUBSTITUTED_CHARS = {
               "in a normal web font. oxml.py substitutes the real CIRCLE "
               "WITH HORIZONTAL BAR character (⦵), raised, wherever it "
               "occurs.",
+    "\u0399": "GREEK CAPITAL IOTA -- ASRJC 2024 H2 P3 Q2(c)(iii) types the roman "
+              "numeral I of \"stage I\" in the Symbol font (w:sym F049), whose "
+              "glyph IS Greek capital iota and which the Word PDF's text layer "
+              "reports as U+0399. The page shows an upright bold \"I\" like the "
+              "two other \"stage I\" mentions (Times New Roman), so "
+              "corrections.py converts it to Latin I for search. Present, "
+              "re-rendered as the character it stands for.",
     "•": "a hand-typed bullet introducing a criteria/statement list (e.g. "
          "EJC 2024 H2 P3 Q1(a)(iii)'s two-item criteria list, Q2(a)(v)'s "
          "three-item effects list) -- house style renders these as "

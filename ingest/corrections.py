@@ -485,6 +485,9 @@ GLYPH_PICTURES = [
      "Q5(c) and (c)(iii) stage 3 arrow"),
     (_A, r"(\u00bd?H<sub>2</sub>O)\s+\x00FIG\x00 (LiOH)", "\\1 \u2192 \\2",
      "Q5(d) equation 5.3 arrow"),
+    (("ASRJC", "H2", "P3", 2024),
+     r"(O<sub>2</sub>\(g\)) \x00FIG\x00 (2SO<sub>3</sub>\(g\))", "\\1 \u21cc \\2",
+     "Q2(c) stage I equilibrium arrow (a drawn harpoon pair in the source)"),
 ]
 
 
@@ -499,7 +502,75 @@ def apply_glyph_pictures(html: str, scope: tuple | None = None):
     return html, log
 
 
+_P3 = ("ASRJC", "H2", "P3", 2024)
+
+#: Pictures that sit INSIDE a sentence, placed in the markup as
+#: `<img data-asset="FILE.png">` (matched by filename) rather than as a block
+#: `div.fig` placeholder. They still need an `question_assets` row, but with an
+#: ordinal AFTER every block figure of the same question: the frontend fills
+#: `div.fig` placeholders from ALL of a question's stem assets in ordinal order,
+#: so an inline asset in the middle of the sequence would be consumed by a block
+#: placeholder. Keyed by scope; value is [(qnum, part_label, slot)].
+INLINE_ASSETS = {
+    ("ASRJC", "H2", "P3", 2024): [(1, "(e)(ii)", "eii2")],
+}
+
+
+def inline_assets(school, level, paper, year, qnum) -> list:
+    return [(part, slot) for (q, part, slot)
+            in INLINE_ASSETS.get((school, level, paper, year), []) if q == qnum]
+
+
 CORRECTIONS = [
+    # ---- ASRJC 2024 H2 P3 (2026-10-04)
+    (_P3, r"[ \t]*<br>[ \t]*", " ",
+     "Soft line breaks (w:br) typed to wrap a sentence at the printed margin (1(b), 1(d)(ii), 1(d)(iii), "
+     "2(c)(iii), 3(c), 3(c)(i), 4(a), 4(b), 4(d), 5(b), 5(b)(iii), 5(c)(iii)). No genuine break uses <br> here.",
+     "housekeeping, same as ASRJC P2, 2026-10-04"),
+    (_P3, r"(\d) (\u00b0C)", "\\1&nbsp;\\2",
+     "Q5(b): keep a number and its degree-Celsius unit on one line (same rule the user set on ASRJC P2).",
+     "housekeeping, 2026-10-04"),
+    (_P3, r"(stage <b>I</b>) {10,}(2SO)", "\\1\u2003\u2003\u2003\\2",
+     "Q2(c): the 30-space gap between 'stage I' and the equation is the source's own alignment; "
+     "browsers collapse it, so it becomes three em-spaces (same treatment as ASRJC P2 Q5(a)).",
+     "housekeeping, 2026-10-04"),
+    (_P3, r"<i>K</i><sub>c\x00FIG\x00\.\s*</sub>\[1\]<sub>\s*</sub>",
+     '<i>K</i><sub>c</sub>(<span class="frac"><span class="fnum">1</span><span class="fden">RT</span></span>). '
+     '<span class="mk">[1]</span>',
+     "2(c)(ii): Kp = Kc(1/RT) is a MathType Equation.3 object (no text layer) sitting inside a run of "
+     "subscript-formatted whitespace, which also swallowed the [1] mark. Short and simple, so it is typed "
+     "as house .frac markup (style-guide SS3) instead of cropped; R and T upright, as printed.",
+     "editorial call, 2026-10-04; confirm"),
+    (_P3, r"(<b>Table 2\.2</b>\n)<table class=\"qt\">[^\n]*</table>", "\\1\x00C\x00\x00FIG\x00",
+     "2(b) Table 2.2: three structures sit in picture cells of a four-column table (the renderer cannot place "
+     "a figure inside a cell). The whole table body is snipped as ONE image; the 'Table 2.2' caption stays typed.",
+     "whole-table snip, precedent ACJC 2024 H2 P3 Q2(b) Table 2.1 (user, 2026-10-01); confirm"),
+    (_P3, r"<table class=\"qt\"><tr><td>\x00FIG\x00</td><td>\x00FIG\x00</td><td>\x00FIG\x00</td></tr>"
+          r"<tr><td>benzoyl chloride</td><td>chlorobenzene</td><td>3-chloro-1-phenylbutane</td></tr></table>",
+     "\x00C\x00\x00FIG\x00",
+     "3(b): the three structures and their names sit in a borderless 2-row table; snipped as ONE image that "
+     "already carries the names (style-guide SS6 bare-image rule), so the typed name row goes.",
+     "combined-snip convention (ASRJC P2 2(b)); confirm"),
+    (_P3, r"(<b>Table 5\.1</b>\n)<table class=\"qt\">[^\n]*</table>", "\\1\x00C\x00\x00FIG\x00",
+     "5(c) Table 5.1: the three equations are picture cells; the whole table body (header row, step "
+     "numbers and equations) is snipped as ONE image; the 'Table 5.1' caption stays typed.",
+     "whole-table snip, precedent ACJC 2024 H2 P3 Q2(b) Table 2.1 (user, 2026-10-01); confirm"),
+    (_P3, r"\n<b>\s+Z\s+</b>(<span class=\"mk\">\[1\]</span>)", "\\n\x00C\x00<b>Z</b> \\1",
+     "4(d)(ii): the compound label Z is padded with ~60 literal spaces to centre it under the structure; "
+     "typed as a centred label with the mark after it.",
+     "housekeeping, 2026-10-04"),
+    (_P3, r"(following structure\. )\n\x00FIG\x00\n(The C<sub>2</sub>O<sub>4</sub><sup>2\u2013</sup> ligand is "
+          r"represented using) O\s+O\.",
+     '\\1\n\\2 <img data-asset="ASRJC_H2_P3_Q1_eii2_2024.png" alt="">.',
+     "1(e)(ii): the O-arc-O ligand symbol is a small drawing floating over typed 'O   O'; Word anchors it in the "
+     "PREVIOUS paragraph, so its placeholder came out before the sentence it belongs in. It becomes an INLINE "
+     "image (matched by filename, planned via corrections.INLINE_ASSETS) and the typed 'O O' goes.",
+     "user's snip of the symbol replaces the typed letters; confirm"),
+    (_P3, "\u0399", "I",
+     "2(c)(iii) 'reaction in stage I': the roman numeral I is typed in the Symbol font (w:sym F049 = "
+     "Greek capital iota). Rendered page shows a bold upright I, like the other 'stage I' mentions, "
+     "so it is converted to Latin I for search and consistency.",
+     "housekeeping, 2026-10-04"),
     # ---- ASRJC 2024 H2 P2 (2026-10-03)
     (_A, r"[ \t]*<br>[ \t]*", " ",
      "Soft line breaks (w:br) typed to wrap a sentence at the printed margin: "

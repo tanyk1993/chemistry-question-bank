@@ -27,8 +27,12 @@ from __future__ import annotations
 # Word stores these offset into the F000 private-use block.
 ADOBE_SYMBOL = {
     0x2D: "−",   # minus
+    0x20: " ",   # space
+    0x40: "\u2245",   # congruent (Adobe Symbol "congruent" = 0x40)
     0x44: "∆",   # Delta -> U+2206 increment (Adobe symbol.txt); see symbols.py
+    0x49: "\u0399",   # Iota (Adobe Symbol "Iota" = 0x49)
     0x5C: "∴",   # therefore
+    0x64: "\u03b4",   # delta (Adobe Symbol "delta" = 0x64)
     0x61: "α",   # alpha (Adobe Symbol "alpha" = 0x61)
     0x62: "β",   # beta (Adobe Symbol "beta" = 0x62)
     0x70: "π",   # pi

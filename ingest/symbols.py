@@ -41,6 +41,18 @@ SYMBOL = {
     "F062": "β",   # 0x62 beta -- ASRJC 2024 H2 P2 Q4 stem: "N" + subscript alpha / beta labels
                         #   (N-alpha, N-beta of nicotinamide); the rendered page shows Greek letters.
     "F070": "π",   # 0x70 pi
+    "F020": " ",   # 0x20 space -- ASRJC 2024 H2 P3 answers Q5(b)(i): "t\u00bd is constant at" + [F020] + \u2248 440 min;
+                        #   the Symbol-font space between the words and the \u2248 sign.
+    "F064": "\u03b4",   # 0x64 delta (lowercase) -- ASRJC 2024 H2 P3 answers Q5(c)(iii): "do not have \u03b4+".
+    "F040": "\u2245",   # 0x40 congruent (U+2245) -- ASRJC 2024 H2 P3 answers Q4(c): "W has C:H ratio
+                        #   \u2245 1:1" (the school's \"approximately equal\" sign, typed as Symbol 0x40).
+    "F049": "\u0399",   # 0x49 Iota (U+0399) -- ASRJC 2024 H2 P3 Q2(c)(iii) "reaction in stage I":
+                        #   the roman numeral I typed in the Symbol font. Mapped faithfully to the
+                        #   font's own glyph (Greek capital iota, visually identical to Latin I);
+                        #   corrections.py turns it into Latin "I" for that paper so search matches
+                        #   the other "stage I" mentions. The Word PDF text layer DROPS this glyph
+                        #   ("in stage . State the units"), so the evidence is the rendered page,
+                        #   which shows a bold upright "I" there.
     "F073": "σ",   # 0x73 sigma; RI 2024 H2 P1 Q7 "There are 6 <s> and 2 <p>
                         #   bonds present." Question paper only -- the answers
                         #   family has no sigma.

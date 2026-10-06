@@ -197,6 +197,176 @@ MCQ_FIXUPS = [
 ]
 
 
+# CJC 2024 H2 P1 (2026-10-05) -------------------------------------------------
+# Declared after looking at the rendered Word PDF, page by page (user supplied
+# docx + Word PDF; the user snips every figure by hand).
+_CJ = ("CJC", "H2", "P1", 2024)
+
+_ONE_PICTURE = ("ONE printed picture: Word stores it as several floating "
+                "shapes / text boxes (and, for Q30, a duplicated jpeg), so the "
+                "parser counts several figures. The user snips it as ONE "
+                "image; the first figure keeps the placeholder, the rest are "
+                "dropped.")
+DROPPED_FIGURES.update({
+    (*_CJ, 3): {2: "Phenol and thiophenol are snipped as ONE picture WITH "
+                    "their names and pK<sub>a</sub> captions, so the two "
+                    "typed caption lines are removed by MCQ_FIXUPS."},
+    (*_CJ, 8): {n: "Figure 1 and Figure 2 side by side: " + _ONE_PICTURE
+                for n in range(2, 11)},
+    (*_CJ, 15): {n: "The P-Q-R solubility graph: " + _ONE_PICTURE
+                 for n in range(2, 10)},
+    (*_CJ, 30): {n: "The absorbance graph with its two x-axes: " + _ONE_PICTURE
+                 for n in range(2, 6)},
+})
+GLYPH_FIGURES.update({
+    # an equilibrium arrow drawn as a shape sitting inside the equation line
+    (*_CJ, 16): {1: "\u21cc"},
+    (*_CJ, 29): {1: "\u21cc", 2: "\u21cc"},
+})
+
+# NO-OPTION-TEXT questions (flow-shape MCQ). The options A-D exist only as
+# labels printed INSIDE a figure, so the question has no option paragraphs at
+# all. CJC Q8: "which of the options A, B, C or D corresponds to the boiling
+# point of element J?" -- A-D are marked points on Figure 2.
+NO_OPTION_TEXT = {
+    _CJ: {8},
+}
+
+
+_EMPTY_FRAC = ('<span class="frac"><span class="fnum"></span>'
+               '<span class="fden"></span></span>')
+
+
+def _stk(top, bottom):
+    return '<span class="stk"><span>%s</span><span>%s</span></span>' % (top, bottom)
+
+
+def cube_root(inner: str) -> str:
+    """Cube-root markup: an inline-block with a stretchable SVG radical sign.
+
+    A font radical glyph plus an overline never lined up (the bar floated off
+    the sign), so the sign is an SVG that stretches to the radicand's height.
+    This is exactly what is live on CJC 2024 H2 P1 Q16 (patch 3) and what the
+    answers extractor emits; keep the three in step. A shared `.nroot` CSS
+    component or MathML would be nicer (open item in HANDOFF.md).
+    """
+    svg = ('<svg viewBox="0 0 10 100" preserveAspectRatio="none" '
+           'style="position:absolute;left:.45em;top:0;width:.7em;height:100%;'
+           'overflow:visible" aria-hidden="true"><path d="M0 60 L2 56 L5 94 '
+           'L10 0" fill="none" stroke="currentColor" stroke-width="1.3" '
+           'vector-effect="non-scaling-stroke"/></svg>')
+    deg = ('<span style="position:absolute;left:.25em;top:-.05em;font-size:.65em;'
+           'line-height:1">3</span>')
+    return ('<span style="display:inline-block;vertical-align:middle;'
+            'position:relative;padding-left:1.15em;white-space:nowrap">' + deg
+            + svg + '<span style="display:inline-block;border-top:1.3px solid '
+            'currentColor;padding:.15em .15em 0 .05em">' + inner + '</span></span>')
+
+
+_Q16_FRAC = ('<span class="frac"><span class="fnum">q</span>'
+             '<span class="fden">4</span></span>')
+_Q16_ROOT_OPEN = '<sup>3</sup>√<span style="text-decoration:overline">'
+
+
+MCQ_FIXUPS.extend([
+    # --- Q11: stray underline on the reaction arrows, stray option tabs -----
+    (_CJ + (11,), "html", r"<u>(\u2192) ?</u> ?", r"\1 ", 4,
+     "the source underlines each reaction arrow (an authoring slip); live it "
+     "rendered as an arrow with a line through the text (user, 2026-10-06)."),
+    (_CJ + (11,), "html", r"<b>\t</b>", "", 5,
+     "typed tabs at the start/end of each option row shifted B and C to the "
+     "centre."),
+    # --- Q1: hard line breaks typed to mimic the printed wrap --------------
+    (_CJ + (1,), "html", r"<br>[ \t]+", " ", 3,
+     "options A, B and D carry a manual line break plus a run of spaces (and, "
+     "in B and D, a tab) where the printed page merely wraps; left in, the "
+     "app forces a mid-sentence newline with a ragged indent."),
+    # --- Q3: structures + names + pKa are ONE snip -------------------------
+    (_CJ + (3,), "html",
+     r'<p class="qstem eqn">\s+phenol\t\s+thiophenol\t</p>\n', "", 1,
+     "the names 'phenol' / 'thiophenol' are inside the combined snip (user "
+     "snips both structures WITH their captions); the typed line, hand-aligned "
+     "by spaces and a tab under the two pictures, is removed. The words stay "
+     "in content_text for search."),
+    (_CJ + (3,), "html",
+     r'<p class="qstem eqn">\s+p<i>K</i><sub>a</sub> = 10\.0\t\s+'
+     r'p<i>K</i><sub>a</sub> = 6\.50\t</p>\n', "", 1,
+     "the pKa captions, same reason."),
+    (_CJ + (3,), "html",
+     r"Thiophenol and phenol are both acting as weak acids in aqueous "
+     r"solutions\.", "Thiophenol and phenol both act as weak acids in "
+     "aqueous solution.", 1,
+     "stem reworded for grammar at the user's request (2026-10-05); the "
+     "source reads 'are both acting as weak acids in aqueous solutions'."),
+    (_CJ + (3,), "text",
+     r"Thiophenol and phenol are both acting as weak acids in aqueous "
+     r"solutions\.", "Thiophenol and phenol both act as weak acids in "
+     "aqueous solution.", 1, "same rewording, in the search text."),
+    (_CJ + (3,), "html", r"<li>\t</b>When", "<li>When", 1,
+     "a stray close-bold tag and a tab at the start of statement 3."),
+    (_CJ + (3,), "html", r'<p class="qstem">\.</p>\n', "", 1,
+     "a lone '.' paragraph between the statements and the options; the "
+     "printed page shows the same stray full stop (source typo)."),
+    (_CJ + (3,), "text", r"in phenol\. \. A ", "in phenol. A ", 1,
+     "the same stray full stop, in the search text."),
+    # --- Q8: no option text; one combined figure ---------------------------
+    (_CJ + (8,), "html", r'<p class="qstem"><b></b></p>\n?', "", 1,
+     "an empty bold paragraph left where the last figure marker was."),
+    (_CJ + (8,), "html", r'<p class="qstem eqn">With reference',
+     '<p class="qstem">With reference', 1,
+     "prose paragraph carrying a trailing tab, so it was tagged eqn."),
+    (_CJ + (8,), "html", r"\?\t</p>", "?</p>", 1, "the trailing tab."),
+    # --- Q9: four nuclide objects (MathType) typed as house .stk -----------
+    (_CJ + (9,), "html", r"\[ H = " + _EMPTY_FRAC,
+     "[ H = " + _stk(1, 1), 1,
+     "nuclide Equation.DSMT4 object (mass over atomic number) -- no text "
+     "layer, typed by hand from the printed page: hydrogen-1."),
+    (_CJ + (9,), "html", r"D = " + _EMPTY_FRAC + "H",
+     "D = " + _stk(2, 1) + "H", 1, "deuterium: 2 over 1."),
+    (_CJ + (9,), "html", r"C = " + _EMPTY_FRAC + "C",
+     "C = " + _stk(12, 6) + "C", 1, "carbon-12: 12 over 6."),
+    (_CJ + (9,), "html", r"O =" + _EMPTY_FRAC + "O",
+     "O = " + _stk(16, 8) + "O", 1, "oxygen-16: 16 over 8."),
+    (_CJ + (9,), "text",
+     r"\[ H = \(\)/\(\) H; D = \(\)/\(\) H; C = \(\)/\(\) C; O =\(\)/\(\) O \]",
+     "[ H = (1)/(1) H; D = (2)/(1) H; C = (12)/(6) C; O = (16)/(8) O ]", 1,
+     "the same four nuclides in the search text, in the house '(n)/(d)' form."),
+    # --- Q16: stray tab in a superscript ------------------------------------
+    (_CJ + (16,), "html", r"\)<sup>\t</sup>", ")", 1,
+     "an empty superscript holding only a tab after option B's bracket."),
+    # --- Q16: cube roots drawn with the stretchable SVG hook (patch 3) -------
+    # Order matters: strip B's leading tab first, then the two radical forms.
+    (_CJ + (16,), "html", "<b>\t</b>2\\(", "2(", 1,
+     "a typed tab before option B shifted it off the label column."),
+    (_CJ + (16,), "html",
+     "(?:<b>\t</b>)?" + re.escape(_Q16_ROOT_OPEN + _Q16_FRAC + "</span>"),
+     cube_root(_Q16_FRAC), 2,
+     "options B and D: cube root of q/4 as an SVG radical (live since "
+     "patch 3; regenerating must not revert it to the overline glyph form)."),
+    (_CJ + (16,), "html",
+     "(?:<b>\t</b>)?" + re.escape(_Q16_ROOT_OPEN + "q</span>"),
+     cube_root("<i>q</i>"), 1,
+     "option C: cube root of q, with q italic like the stem's q."),
+    # --- Q28: a prose paragraph tagged eqn by a leading tab ----------------
+    (_CJ + (28,), "html", r'<p class="qstem eqn"><b>\t</b>Which one of',
+     '<p class="qstem">Which one of', 1,
+     "a leading tab made this prose line an eqn paragraph."),
+    # --- Q29: option B 'F2' read as a combined-character stack -------------
+    (_CJ + (29,), "html",
+     r'F<span class="stk post"><span>\t\t</span><span>2</span></span>',
+     "F<sub>2</sub>", 1,
+     "the subscript 2 is a Word 'combine characters' group with a blank top "
+     "half; the ion-charge stack rule turned it into a stacked pair. It is "
+     "just F2 (compare option text and the stem's F2)."),
+])
+
+
+
+def no_option_text(school, level, paper, year) -> set:
+    """Question numbers whose options exist only as labels in a figure."""
+    return NO_OPTION_TEXT.get((school, level, paper, year), set())
+
+
 def mcq_fixups(school, level, paper, year, qnum) -> list:
     """[(field, pattern, replacement, expected_count, reason)] for one question."""
     return [e[1:] for e in MCQ_FIXUPS if e[0] == (school, level, paper, year, qnum)]
@@ -459,6 +629,23 @@ EQUATION_OPTIONS_AS_TEXT = {
 def eqtext_options(school, level, paper, year, qnum) -> dict:
     """{letter: (html, text)} for option equations rendered as markup -- see above."""
     return EQUATION_OPTIONS_AS_TEXT.get((school, level, paper, year, qnum), {})
+
+
+EQUATION_OPTIONS_AS_TEXT.update({
+    # Q7's options C and D are two plain single-rule fractions (MathType
+    # objects, no text layer); A and B are the same expressions typed on one
+    # line. Typed from the printed page (checked against the Word PDF).
+    _CJ + (7,): {
+        "C": ('<span class="frac"><span class="fnum">50 x 10<sup>\u2012'
+              '3</sup> x 6.02 x 10<sup>23</sup></span>'
+              '<span class="fden">28</span></span>',
+              '(50 x 10\u20123 x 6.02 x 10^23)/(28)'),
+        "D": ('<span class="frac"><span class="fnum">50 x 10<sup>3</sup> '
+              'x 6.02 x 10<sup>23</sup></span>'
+              '<span class="fden">28</span></span>',
+              '(50 x 10^3 x 6.02 x 10^23)/(28)'),
+    },
+})
 
 
 # GLYPH PICTURES (structured papers)

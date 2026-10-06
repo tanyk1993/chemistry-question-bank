@@ -43,9 +43,15 @@ def detect_shape(document_xml) -> str:
     return "flow"
 
 
-def parse(document_xml, rels_xml):
-    """(questions, figures, anomalies, shape) -- dispatches by container shape."""
+def parse(document_xml, rels_xml, no_option_text=frozenset()):
+    """(questions, figures, anomalies, shape) -- dispatches by container shape.
+
+    `no_option_text` (flow shape only): question numbers whose options exist
+    only as labels inside a figure -- see `questions_flow.parse`."""
     shape = detect_shape(document_xml)
-    adapter = _table_shape if shape == "table" else _flow_shape
-    questions, figures, anomalies = adapter.parse(document_xml, rels_xml)
+    if shape == "table":
+        questions, figures, anomalies = _table_shape.parse(document_xml, rels_xml)
+    else:
+        questions, figures, anomalies = _flow_shape.parse(
+            document_xml, rels_xml, no_option_text=no_option_text)
     return questions, figures, anomalies, shape

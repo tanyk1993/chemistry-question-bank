@@ -85,6 +85,12 @@ FIGURE_BORNE = {
     # not extractable text. No other question in this paper uses a bare "V".
     "V": "EJC 2024 H2 P2 Q3(d)'s Latimer diagram electrode potentials -- "
          "native-shape text drawn inside the diagram, not extractable",
+    # CJC 2024 H2 P1 -- traced by grepping the whole question paper's
+    # pdftotext output: all five "Y" are the W-X-Y-Z axis tick labels of
+    # Q5's stem graph and its four option graphs (text boxes inside native
+    # shapes); no prose or option in the paper uses a capital Y.
+    "Y": "CJC 2024 H2 P1 Q5's W/X/Y/Z axis labels -- text boxes drawn inside "
+         "the five graphs, snipped as images",
 }
 
 
@@ -111,6 +117,15 @@ SUBSTITUTED_CHARS = {
               "two other \"stage I\" mentions (Times New Roman), so "
               "corrections.py converts it to Latin I for search. Present, "
               "re-rendered as the character it stands for.",
+    "\U0001d45e": "MATHEMATICAL ITALIC SMALL Q -- CJC 2024 H2 P1 Q16's option "
+                  "equations are OMML, whose variable q the Word PDF reports "
+                  "as the math-italic codepoint; the extraction keeps the "
+                  "plain letter q (present in the stem too), which is what a "
+                  "search needs.",
+    "\U0001d492": "MATHEMATICAL BOLD ITALIC SMALL Q -- same Q16 option C, a "
+                  "bold-italic q inside the cube-root; extracted as plain q.",
+    "\U0001d7d1": "MATHEMATICAL BOLD DIGIT THREE -- same Q16 option C, the "
+                  "bold 3 of the cube-root index; extracted as plain 3.",
     "•": "a hand-typed bullet introducing a criteria/statement list (e.g. "
          "EJC 2024 H2 P3 Q1(a)(iii)'s two-item criteria list, Q2(a)(v)'s "
          "three-item effects list) -- house style renders these as "

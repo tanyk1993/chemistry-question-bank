@@ -124,9 +124,18 @@ OFFICE = "urn:schemas-microsoft-com:office:office"
 #: A question paragraph starts with its number directly against a capital
 #: letter or "(" -- no gap. This is what keeps "1 only" (an option's own text)
 #: or "25 C" (a temperature) from being mistaken for question 1 or question 25.
-QSTART = re.compile(r"^(\d{1,2})\s{0,2}(?=[A-Z(])")
+#: A number glued to a chemical LOCANT also starts a question ("222-bromobutane"
+#: = Q22 + "2-bromobutane", CJC 2024 H2 P1): the digit-then-dash lookahead.
+QSTART = re.compile(r"^(\d{1,2})\s{0,4}(?=[A-Z(]|\d[\u2012\u2013\u2010\u2011\-])")
 
 _LETTERS = "ABCD"
+
+#: Paragraph children that occupy a POSITION in a paragraph for marker/segment
+#: purposes. An inline OMML equation (`m:oMath`) is a sibling of the runs, not
+#: inside one, so a run-only list silently dropped it from every option that
+#: followed a marker (CJC 2024 H2 P1 Q16: all four options are OMML cube
+#: roots / fractions and came out EMPTY). `_children_html` already renders it.
+_RUNLIKE = ("r", "oMath")
 
 
 def _has_numpr(p) -> bool:
@@ -274,7 +283,15 @@ def _find_marker_boundaries(plain_paras):
             if _run_bare_text(r) == expected_letter:
                 tab_follows = (ri + 1 < len(runs)) and _run_has_tab(runs[ri + 1])
                 first_of_para = (ri == first_nonempty_idx) and not centred
-                if tab_follows or first_of_para:
+                # CJC Q10: the last marker is spaced, not tabbed ("D     33.5"
+                # -- the letter run carries its own trailing spaces). Only
+                # trusted when it is the NEXT letter in sequence, which
+                # expected_code already guarantees.
+                raw = "".join(t.text or "" for t in r.findall(Wq + "t"))
+                spaced = (len(raw) >= len(expected_letter) + 2
+                          and raw.rstrip() == expected_letter
+                          and ri + 1 < len(runs))
+                if tab_follows or first_of_para or spaced:
                     boundaries[expected_letter] = (pidx, ri)
                     expected_code += 1
                     if tab_follows:
@@ -344,6 +361,14 @@ def _render_segments(plain_paras, boundaries):
     for name, lo, hi in segs:
         htmls = []
         for pidx, el, runs, centred in plain_paras:
+            if etree.QName(el).localname == "tbl":
+                lo_p = lo[0] if lo else -1
+                hi_p = hi[0] if hi else 10 ** 9
+                if (lo_p <= pidx <= hi_p) if lo else (pidx < hi_p):
+                    th = _table_html(el)
+                    if th:
+                        htmls.append(th)
+                continue
             if runs is None:
                 lo_p = lo[0] if lo else -1
                 hi_p = hi[0] if hi else 10 ** 9
@@ -455,7 +480,7 @@ def _collect_figures_flow(span, qnum, boundaries, rels, order_start):
             continue
         # Position each drawing by (pidx, run-index within this paragraph),
         # the same coordinate system marker boundaries use.
-        runs = [c for c in el if etree.QName(c).localname == "r"]
+        runs = [c for c in el if etree.QName(c).localname in _RUNLIKE]
         for ri, r in enumerate(runs):
             for d in _iter_top_figures(r):
                 fig = _classify_drawing(d, rels)
@@ -481,8 +506,40 @@ def _collect_figures_flow(span, qnum, boundaries, rels, order_start):
     return figures, order
 
 
-def parse(document_xml, rels_xml):
+def _cell_top_figures(tc):
+    """Top-level drawing/object/pict elements anywhere in a table cell."""
+    out = []
+    for r in tc.iter(Wq + "r"):
+        out.extend(_iter_top_figures(r))
+    return out
+
+
+def _figure_option_grid(tbl):
+    """[(row, col, tc)] when this table is a FIGURE option grid, else None.
+
+    CJC 2024 H2 P1 Q5: four graphs laid out 2x2 in one Word table, the option
+    letters sitting INSIDE the cells (one of them inside a text box of the
+    drawing itself), so `_split_options` finds only a stray 'D'. A grid is
+    recognised by exactly FOUR cells that each hold a drawing, in reading
+    order = A, B, C, D. Anything else is left to the ordinary option-table
+    path.
+    """
+    cells = []
+    for ri, tr in enumerate(tbl.findall("w:tr", NS)):
+        for ci, tc in enumerate(tr.findall("w:tc", NS)):
+            if _cell_top_figures(tc):
+                cells.append((ri, ci, tc))
+    return cells if len(cells) == 4 else None
+
+
+def parse(document_xml, rels_xml, no_option_text=frozenset()):
     """Return (questions, figures, anomalies) for a paragraph-flow question paper.
+
+    `no_option_text` is a set of question numbers whose A-D options exist ONLY
+    as labels inside a figure (CJC 2024 H2 P1 Q8: "which of the options A, B, C
+    or D corresponds to ..." refers to points printed on the graph). They get
+    four empty options and the whole span as the stem, instead of being dropped
+    for having no option markers.
 
     Same contract as `questions.parse()` -- see that module's docstring for
     the return shape and handoff SS7's ordinal rule. Callers that need to
@@ -522,7 +579,13 @@ def parse(document_xml, rels_xml):
 
         tbls = [el for el in span if etree.QName(el).localname == "tbl"]
         table_opt = None
+        grid = None
         for tbl in tbls:
+            g = _figure_option_grid(tbl)
+            if g:
+                grid = (tbl, g)
+                break
+        for tbl in ([] if grid else tbls):
             rows = tbl.findall("w:tr", NS)
             opt_rows = [(i, _split_options(tr.findall("w:tc", NS)))
                        for i, tr in enumerate(rows)]
@@ -531,8 +594,46 @@ def parse(document_xml, rels_xml):
                 table_opt = (tbl, rows, opt_rows)
                 break
 
+        if grid:
+            tbl, gcells = grid
+            before = []
+            for el in span:
+                if el is tbl:
+                    break
+                before.append(el)
+                if etree.QName(el).localname == "p" and not _has_numpr(el):
+                    h = paragraph_html(el)
+                    q.n_placeholders += h.count(FIG_SENTINEL)
+                    if h.strip():
+                        q.stem_html = (q.stem_html + "\n" + h).strip() \
+                            if q.stem_html else h
+            figs, order = _collect_figures_flow(before, qnum, {}, rels, order)
+            all_figures.extend(figs)
+            for L, (ri, ci, tc) in zip(_LETTERS, gcells):
+                q.options[L] = [""]
+                for d in _cell_top_figures(tc):
+                    fig = _classify_drawing(d, rels)
+                    fig.index = order
+                    fig.qnum = qnum
+                    fig.part = L
+                    fig.cell = (("grid", ri, ci), L)   # one picture per cell
+                    all_figures.append(fig)
+                    order += 1
+                q.n_placeholders += 1
+            continue
+
         if table_opt:
             tbl, rows, opt_rows = table_opt
+            before_tbl = []
+            for el in span:
+                if el is tbl:
+                    break
+                before_tbl.append(el)
+            # Figures in the STEM paragraphs ahead of the option table (CJC
+            # 2024 H2 P1 Q4, Q25). Previously this branch collected none
+            # and the stem's placeholder had no figure behind it.
+            figs, order = _collect_figures_flow(before_tbl, qnum, {}, rels, order)
+            all_figures.extend(figs)
             for el in span:
                 if el is tbl:
                     break
@@ -565,17 +666,40 @@ def parse(document_xml, rels_xml):
         plain_paras = []   # (pidx, element, [w:r] or None if numPr, centred)
         pidx = 0
         for el in span:
+            if etree.QName(el).localname == "tbl":
+                # A DATA table inside the stem (CJC Q10's thermochemical data,
+                # Q26's Ka table) sits BETWEEN two paragraphs. It takes the
+                # half-step position before the next paragraph so marker
+                # boundaries (which count paragraphs only) are unaffected.
+                plain_paras.append((pidx - 0.5, el, [], False))
+                continue
             if etree.QName(el).localname != "p":
                 continue
             if _has_numpr(el):
                 plain_paras.append((pidx, el, None, False))
                 pidx += 1
                 continue
-            runs = [c for c in el if etree.QName(c).localname == "r"]
+            runs = [c for c in el if etree.QName(c).localname in _RUNLIKE]
             plain_paras.append((pidx, el, runs, paragraph_is_centred(el)))
             pidx += 1
 
         boundaries = _find_marker_boundaries(plain_paras)
+        if qnum in no_option_text:
+            htmls = []
+            for _pi, el, runs, _c in plain_paras:
+                if runs is None:
+                    h = "<li>" + _children_html(list(el)) + "</li>"
+                else:
+                    h = paragraph_html(el)
+                if _strip_tags(h) or FIG_SENTINEL in h:
+                    htmls.append(h)
+            q.stem_html = "\n".join(_wrap_stmt_lists(htmls))
+            for L in _LETTERS:
+                q.options[L] = [""]
+            q.n_placeholders = q.stem_html.count(FIG_SENTINEL)
+            figs, order = _collect_figures_flow(span, qnum, {}, rels, order)
+            all_figures.extend(figs)
+            continue
         if len(boundaries) != 4:
             anomalies.append("Q%d: only found %d/4 option markers (%s) -- "
                              "left with no options" %
@@ -630,6 +754,21 @@ def parse(document_xml, rels_xml):
         q.n_opt_figs = sum(1 for f in q.figures if f.part in _LETTERS)
 
     for q in questions:
+        # A sentinel with NO figure behind it (a text-box label paragraph that
+        # carries its own drawing marker, CJC Q8/Q15/Q30) would render as an
+        # empty `div.fig` the frontend can never fill. Keep the first N in
+        # document order, N = this question's stem-side figures; log it.
+        n_stem = sum(1 for f in q.figures if f.part == "stem")
+        have = q.stem_html.count(FIG_SENTINEL)
+        if have > n_stem:
+            parts_ = q.stem_html.split(FIG_SENTINEL)
+            q.stem_html = parts_[0] + "".join(
+                (FIG_SENTINEL if i < n_stem else "") + seg
+                for i, seg in enumerate(parts_[1:]))
+            q.stem_html = re.sub(r"<p[^>]*>\s*</p>\n?", "", q.stem_html)
+            q.n_placeholders -= have - n_stem
+            anomalies.append("Q%d: %d surplus figure marker(s) removed from "
+                             "the stem (kept %d)" % (q.qnum, have - n_stem, n_stem))
         placeholders = q.n_placeholders
         if placeholders != len(q.figures):
             anomalies.append(

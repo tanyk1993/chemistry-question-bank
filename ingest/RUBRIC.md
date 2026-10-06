@@ -260,6 +260,31 @@ not code (Rule 8a, "syllabus gap") is called **NIS** and is simply left untagged
   dominant reason (enolate stability), tag `11.3(b)(i)` only, not the inductive LO.
 - A graph-reading part is `8(b)(ii)` only; a "define rate" part adds `8(a)`.
 
+## Rule 3 addendum — MCQ: tag only what the key (or an assessed statement) needs
+*(user ruling, CJC 2024 H2 P1, 2026-10-06; the first draft of that paper had ~95
+tags and the user cut it to 49 because it had drifted back to "tag every LO that
+is related".)*
+
+An LO is tagged only if a mark-scheme line, or a datum in the stem, cannot be
+handled without it. Test: **name the line.** If you cannot, drop the tag.
+- **Statement-type items (1, 2, 3 / 4):** one LO per assessed statement, but
+  where ONE umbrella LO covers all of them, tag only that (a whole electrophilic
+  substitution mechanism is `11.3(m)(i)`, not `11.3(m)(ii)` + `11.1(b)` +
+  `11.3(a)(iv)` as well; electrophilic addition of IBr is `11.3(l)` alone).
+- **Single-answer A-D items:** the key's LOs. A distractor's LO is tagged only
+  if the stem itself is about it. Not tagged: an enzyme merely named in the stem
+  (CJC Q19, no `8(k)`); reaction-type terms that only label wrong options.
+- A calculation is one LO (Rule 11): do not add the expression-writing LO
+  (`9(d)`) to a Kc calculation.
+- A discriminating step decides: Q25's three-stage synthesis drops `11.4(c)`
+  because every option ends in HBr(g), so Markovnikov never separates them.
+- Lead tag first: Q11 (positive entropy change from gas moles) is `7(h)(iii)`
+  then `7(i)`; Q4 (strength of IMF vs ideality, no extreme P or T) is `3(b)(i)`,
+  not `3(b)(ii)`; Q9 (more protons than neutrons) is `1(e)(i)`, not `(ii)`.
+- No exact LO: Q12 (Maxwell-Boltzmann, key is a syllabus gap) and Q29 (E-standard
+  to rank reducing agents) are tagged `8(g)` and `12(b)(i)` and recorded as
+  low confidence. See `claude/cjc-2024-h2-p1-tags.md`.
+
 
 ## Rule 9 — Over-tagging is the default failure mode; under-tagging is the organic one
 

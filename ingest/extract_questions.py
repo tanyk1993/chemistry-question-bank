@@ -238,7 +238,9 @@ def main(argv=None):
     out.mkdir(parents=True, exist_ok=True)
 
     questions, figures, anomalies, shape = parse(
-        unz / "word/document.xml", unz / "word/_rels/document.xml.rels")
+        unz / "word/document.xml", unz / "word/_rels/document.xml.rels",
+        no_option_text=corrections.no_option_text(
+            a.school, a.level, a.paper, a.year))
     print("detected document shape: %s" % shape)
     for q in questions:
         # corrections.GLYPH_FIGURES -- read by render_questions.figure_kinds.
@@ -312,6 +314,18 @@ def main(argv=None):
         # of times; a silent miss is how a fix ships unapplied.
         for field, pat, repl, want, why in corrections.mcq_fixups(
                 a.school, a.level, a.paper, a.year, q.qnum):
+            if field.startswith("opt:"):
+                # an option's own text in the `options` JSON (CJC Q11's 1/2)
+                okey = field.split(":", 1)[1]
+                new, n = re.subn(pat, repl, row["options"][okey])
+                if n != want:
+                    raise SystemExit("Q%d fixup %r on option %s matched %d "
+                                     "time(s), expected %d"
+                                     % (q.qnum, pat, okey, n, want))
+                row["options"][okey] = new
+                anomalies.append("Q%d: fixup applied to option %s (%dx) -- %s"
+                                 % (q.qnum, okey, n, why))
+                continue
             key = "content_" + field
             new, n = re.subn(pat, repl, row[key])
             if n != want:

@@ -340,9 +340,13 @@ def _omml_tokens(el):
     if ln == "rad":                                 # radical
         deg = el.find(Mq + "deg")
         e = el.find(Mq + "e")
-        yield "√", EMPTY, False
+        # A root INDEX (the 3 of a cube root) is a superscript that sits in
+        # front of the radical sign. Emitted after the sign, as plain text,
+        # "cube root of q" read as "root 3, then q" (CJC 2024 H2 P1 Q16).
         if deg is not None and len(deg):
-            yield from _omml_tokens(deg)
+            for text, style, raw in _omml_tokens(deg):
+                yield text, Style(set(style) | {"sup"}), raw
+        yield "√", EMPTY, False
         yield "<span style=\"text-decoration:overline\">", EMPTY, True
         if e is not None:
             yield from _omml_tokens(e)

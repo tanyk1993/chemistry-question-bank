@@ -67,6 +67,24 @@
     color:var(--ink);cursor:pointer;user-select:none}
   .check-item input[type=checkbox]{width:1.05rem;height:1.05rem;margin:0;flex:none;
     accent-color:var(--teal);cursor:pointer}
+  /* `.filters label` (uppercase, small, display:block) outranks .check-item, so the
+     topic list / mode switch / data-based toggle opt back out of it explicitly. */
+  .filters .topic-list .check-item,.filters .mode-switch .check-item,.filters .dbq-toggle{
+    display:flex;text-transform:none;letter-spacing:0;font-weight:400;
+    font-size:.88rem;color:var(--ink);margin:0}
+  .topic-list{max-height:13rem;overflow-y:auto;padding:.1rem .35rem .1rem 0;gap:.4rem}
+  .topic-list .check-item{align-items:flex-start;line-height:1.25}
+  .topic-list .check-item input{margin-top:.12rem}
+  .topic-list .sep{border-top:1px dashed var(--line);margin:.1rem 0}
+  .mode-switch{display:flex;gap:1rem;margin-top:.6rem;flex-wrap:wrap}
+  .mode-switch input[type=radio]{margin:0;accent-color:var(--teal);cursor:pointer}
+  @media (min-width:761px){.filters{max-height:calc(100vh - 90px);overflow-y:auto}}
+  /* Data-based banner: coral, deliberately not amber (untagged badge), teal/purple
+     (topic + LO chips) or the grey/green/purple question-type chips. */
+  .dbq-banner{display:flex;align-items:center;gap:.5rem;padding:.4rem .7rem;
+    border-radius:8px;background:#fdeeeb;border:1px solid #f1b8ac;border-left:5px solid #e0583f;
+    color:#a6361f;font-size:.74rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase}
+  .dbq-banner svg{width:1rem;height:1rem;flex:none}
 
   /* ---------- question cards ---------- */
   .results{display:flex;flex-direction:column;gap:.9rem;min-height:40vh}
@@ -94,7 +112,9 @@
   .cell.untagged{border-color:#c98a1a;background:#fdf3e0}
   .cell.untagged .c-code{color:#a96f12;font-family:"IBM Plex Mono";font-weight:600;font-size:.8rem}
   .cell.untagged .c-name{color:#a96f12}
-  .los{display:flex;flex-wrap:wrap;gap:.35rem;margin-left:auto;align-items:flex-start}
+  /* LO chips sit on their own row, flush left. margin-left:auto used to push the block
+     right whenever it wrapped onto a part-filled row, leaving a gap on its left. */
+  .los{display:flex;flex-wrap:wrap;gap:.35rem;flex:0 0 100%;align-items:flex-start}
   .lo{font-family:"IBM Plex Mono";font-size:.75rem;padding:.18rem .4rem;border-radius:5px;
     background:var(--paper);border:1px solid var(--line);color:var(--ink);cursor:help}
   .lo.h1{background:var(--h1-soft);color:var(--h1)}
@@ -635,8 +655,15 @@
         <input id="kw" type="search" placeholder="reagent, formula, term…" autocomplete="off">
       </div>
       <div>
-        <label for="topic">Topic</label>
-        <select id="topic"><option value="">All topics</option></select>
+        <label id="topicLabel">Topic</label>
+        <div class="check-group topic-list" id="topicGroup" role="group" aria-labelledby="topicLabel"></div>
+        <div class="mode-switch hidden" id="modewrap" role="radiogroup" aria-label="Match topics">
+          <label class="check-item"><input type="radio" name="tmode" value="any" checked> Any of these</label>
+          <label class="check-item"><input type="radio" name="tmode" value="all"> All of these</label>
+        </div>
+      </div>
+      <div>
+        <label class="check-item dbq-toggle"><input type="checkbox" id="dbqOnly"> Data-based questions only</label>
       </div>
       <div id="lowrap" class="hidden">
         <label for="lo">Learning objective</label>
@@ -798,6 +825,14 @@
     return String(t.name||'').toLowerCase()
       .replace(/^the\s+/,'').replace(/^(chemical|reaction)\s+/,'').trim();
   }
+  // Topic filter state. TOPIC_SEL holds topicKey()s; '— Untagged —' is exclusive with it.
+  const TOPIC_SEL = new Set();
+  let TOPIC_MODE = 'any';          // 'any' = OR across selected topics, 'all' = AND
+  let UNTAGGED_ON = false;
+  let DBQ_ON = false;
+  // A whole-question Data-based tag is a question_question_types row with no part_label.
+  const isDbq = q => (q.qtypes||[]).some(r =>
+    !r.part_label && r.question_types && r.question_types.code === 'data-based');
   window.TOPIC_GROUPS = new Map();          // key -> {name, syllabuses:Set, members:[{code,syllabus}]}
   function buildTopicFilter(){
     const g = new Map();
@@ -813,25 +848,29 @@
       e.ordinal = Math.min(e.ordinal || 99, t.ordinal || 99);
     }));
     TOPIC_GROUPS = g;
-    const sel = $('#topic');
-    // (regression-tested: calling this twice used to duplicate every option)
-    // Rebuild from scratch: this appended to whatever was already in the select,
-    // so a second call (see the enterApp guard) duplicated the whole topic list.
-    const keep = sel.value;
-    sel.innerHTML = '<option value="">All topics</option>';
+    // Multi-select checkboxes (same pattern as the paper filter). Rebuilt from scratch on
+    // every call -- a second call used to duplicate the whole list -- but selections
+    // survive the rebuild, and any selected key that no longer exists is dropped.
+    const box = $('#topicGroup');
+    [...TOPIC_SEL].forEach(k => { if(!g.has(k)) TOPIC_SEL.delete(k); });
+    box.innerHTML = '';
+    const addItem = (value, text, checked) => {
+      const l = document.createElement('label'); l.className = 'check-item';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.value = value; cb.checked = checked;
+      l.appendChild(cb); l.appendChild(document.createTextNode(text));
+      box.appendChild(l);
+    };
     [...g.values()]
       .sort((a,b)=> a.name.localeCompare(b.name))
       .forEach(e=>{
         const only = e.syllabuses.size===1 ? ` (${[...e.syllabuses][0]})` : '';
-        const o=document.createElement('option');
-        o.value=e.key; o.textContent=`${e.name}${only}`;   // no numbers
-        sel.appendChild(o);
+        addItem(e.key, `${e.name}${only}`, TOPIC_SEL.has(e.key));   // no numbers
       });
     // Synthetic option: approved questions carrying no topic tag at all.
-    const ut=document.createElement('option');
-    ut.value='__untagged__'; ut.textContent='— Untagged —';
-    sel.appendChild(ut);
-    if(keep && [...sel.options].some(o=>o.value===keep)) sel.value = keep;
+    const sep = document.createElement('div'); sep.className = 'sep'; box.appendChild(sep);
+    addItem('__untagged__', '— Untagged —', UNTAGGED_ON);
+    $('#modewrap').classList.toggle('hidden', TOPIC_SEL.size < 2);
   }
 
   // ---------------- LO filter (depends on the chosen topic) ----------------
@@ -839,7 +878,9 @@
   // option is a visible gap in the bank, the same reasoning as the untagged badge.
   // A topic group can span H1 and H2, so byCode sorts syllabus first, then naturally.
   async function buildLoFilter(){
-    const wrap = $('#lowrap'), sel = $('#lo'), tc = $('#topic').value;
+    const wrap = $('#lowrap'), sel = $('#lo');
+    // Only meaningful for exactly one topic; with several selected it hides itself.
+    const tc = (TOPIC_SEL.size === 1 && !UNTAGGED_ON) ? [...TOPIC_SEL][0] : '';
     sel.innerHTML = '<option value="">All objectives</option>';
     const grp = TOPIC_GROUPS.get(tc);
     if(!tc || tc==='__untagged__' || !grp || !grp.topicIds.size){
@@ -865,7 +906,28 @@
 
   // ---------------- render + filter ----------------
   $('#kw').addEventListener('input', render);
-  $('#topic').addEventListener('change', async ()=>{ await buildLoFilter(); render(); });
+  $('#topicGroup').addEventListener('change', async e=>{
+    const cb = e.target; if(cb.tagName !== 'INPUT') return;
+    const all = [...$('#topicGroup').querySelectorAll('input')];
+    if(cb.value === '__untagged__'){
+      UNTAGGED_ON = cb.checked;
+      if(UNTAGGED_ON){                       // exclusive: clears any topic picks
+        TOPIC_SEL.clear();
+        all.forEach(i => { if(i !== cb) i.checked = false; });
+      }
+    } else {
+      if(cb.checked){
+        TOPIC_SEL.add(cb.value);
+        UNTAGGED_ON = false;                 // exclusive the other way too
+        all.forEach(i => { if(i.value === '__untagged__') i.checked = false; });
+      } else TOPIC_SEL.delete(cb.value);
+    }
+    $('#modewrap').classList.toggle('hidden', TOPIC_SEL.size < 2);
+    await buildLoFilter(); render();
+  });
+  document.querySelectorAll('input[name="tmode"]').forEach(r =>
+    r.addEventListener('change', ()=>{ if(r.checked){ TOPIC_MODE = r.value; render(); } }));
+  $('#dbqOnly').addEventListener('change', e=>{ DBQ_ON = e.target.checked; render(); });
   $('#lo').addEventListener('change', render);
   // Paper filter: multi-select checkboxes, P1/P2/P3. Independent of topic/LO —
   // a colleague may want "every P3 question" with no topic picked at all, so
@@ -879,18 +941,24 @@
 
   function render(){
     const kw = $('#kw').value.trim().toLowerCase();
-    const tc = $('#topic').value;
     const lo = $('#lo') ? $('#lo').value : '';
     const box = $('#results');
-    if(!kw && !tc && !PAPER_SEL.size){     // blank default: nothing until the user picks/searches
+    if(!kw && !TOPIC_SEL.size && !UNTAGGED_ON && !DBQ_ON && !PAPER_SEL.size){     // blank default: nothing until the user picks/searches
       $('#count').innerHTML = `<b>${ALL.length}</b> question${ALL.length===1?'':'s'} in the bank`;
       box.innerHTML = '<div class="empty"><b>Pick a topic or paper, or type a search to begin.</b><br>'+
-        'Filter by topic or paper on the left, or search for a reagent, formula, or term.</div>';
+        'Filter by topic, paper or Data-based on the left, or search for a reagent, formula, or term.</div>';
       return;
     }
     const shown = ALL.filter(q=>{
-      if(tc==='__untagged__'){ if(q.topics.length) return false; }
-      else if(tc && !q.topics.some(t=>topicKey(t)===tc)) return false;
+      if(UNTAGGED_ON){ if(q.topics.length) return false; }
+      else if(TOPIC_SEL.size){
+        const keys = new Set(q.topics.map(topicKey));
+        const want = [...TOPIC_SEL];
+        const ok = TOPIC_MODE === 'all' ? want.every(k => keys.has(k))
+                                        : want.some(k => keys.has(k));
+        if(!ok) return false;
+      }
+      if(DBQ_ON && !isDbq(q)) return false;
       if(lo && !(q.los||[]).some(l=>l && l.id===lo)) return false;
       if(PAPER_SEL.size && !PAPER_SEL.has(String(q.paper?.paper_number||''))) return false;
       if(!kw) return true;
@@ -1182,6 +1250,14 @@
     return wrap;
   }
 
+  function dbqBanner(){
+    const b = document.createElement('div'); b.className = 'dbq-banner'; b.setAttribute('role','note');
+    b.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">'+
+      '<rect x="1.75" y="2.75" width="12.5" height="10.5" rx="1.5"/>'+
+      '<path d="M1.75 6.25h12.5M1.75 9.75h12.5M6 2.75v10.5"/></svg><span>Data-Based Question</span>';
+    return b;
+  }
+
   function card(q){
     const el = document.createElement('article'); el.className='qcard';
 
@@ -1196,7 +1272,9 @@
            <span class="c-name">${esc(t.name)}</span>
          </span>`);
     });
-    if(!q.topics.length){
+    // A flagged DBQ with no topic is expected (it resists the LOs), so the banner
+    // stands in for the amber badge; the Untagged filter still finds it.
+    if(!q.topics.length && !isDbq(q)){
       head.insertAdjacentHTML('beforeend',
         `<span class="cell untagged" title="No topic tag — not matched to any learning objective">
            <span class="c-code">—</span>
@@ -1205,15 +1283,28 @@
     }
     if(q.los.length){
       const los = document.createElement('div'); los.className='los';
+      // The chip shows only section_code, so the same code tagged on several parts (or
+      // under two LOs sharing a code) would repeat. Show it once; keep every distinct
+      // objective text in the hover title.
+      const seen = new Map();
       q.los.forEach(l=>{
+        const key = (l.syllabus||'') + '|' + l.section_code;
+        const full = (l.syllabus? l.syllabus+' ':'')+(l.text||'');
+        if(seen.has(key)){
+          const e = seen.get(key);
+          if(!e.titles.includes(full)){ e.titles.push(full); e.el.title = e.titles.join('\n'); }
+          return;
+        }
         const s=document.createElement('span');
         s.className='lo ' + (l.syllabus==='H1' ? 'h1' : 'h2');
         s.textContent=l.section_code;
-        s.title=(l.syllabus? l.syllabus+' ':'')+(l.text||'');
+        s.title=full;
+        seen.set(key, {el:s, titles:[full]});
         los.appendChild(s);
       });
       head.appendChild(los);
     }
+    if(isDbq(q)) el.appendChild(dbqBanner());
     el.appendChild(head);
 
     if(q.paper){

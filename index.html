@@ -533,6 +533,12 @@
   .ws .part .lab { font-weight:700; min-width:3.6em; flex-shrink:0; }
   .ws .part .body { flex:1; }
   .ws .part .body > :first-child { margin-top:0; }
+  /* A part that OPENS with a figure: the flex-start rule above top-aligns the
+     label with the body, but img.ws-fig carries a .7em top margin, so the label
+     floated ~.7em ABOVE the picture's top edge (CJC 2024 H2 P2 Q3(b)(iii),
+     reported 2026-10-08). Drop that margin for the first figure only, leaving a
+     hair of room so the label's text still lines up with the frame's top edge. */
+  .ws .part .body > :first-child > img.ws-fig:first-child { margin-top:.2em; }
   .ws .part .lab.has-lo,
   .stem .qpart > .pl.has-lo { cursor:help; border-bottom:1px dotted var(--muted,#8a9099); }
   img.q-fig, img.ws-fig { display:block; max-width:100%; height:auto;

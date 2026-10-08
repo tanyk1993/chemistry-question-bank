@@ -61,7 +61,14 @@ _EMPTY_TABLE_RE = re.compile(
     r"<table class=\"qt\">(?:\s*<tr>(?:\s*<td>\s*</td>)*\s*</tr>)+\s*</table>")
 
 
+_STK_RE = re.compile(r'<span class="stk"><span>([^<]*)</span><span>([^<]*)</span></span>')
+
+
 def _strip(s: str) -> str:
+    # A nuclide's stacked mass/proton numbers (`.stk`) would otherwise run
+    # together in the search text ("2814Si+"); the house form is "(n)/(d)",
+    # the same as a fraction (CJC 2024 H2 P1 Q9 did this by hand).
+    s = _STK_RE.sub(r"(\1)/(\2)", s)
     return re.sub(r"<[^>]+>", "", s.replace(CENTRE, "")
                   .replace(FIG_SENTINEL, "")).strip()
 

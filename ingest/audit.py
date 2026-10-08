@@ -49,6 +49,13 @@ class GateFailure(AssertionError):
 #: If one of these ever appears in body text too, the gate will stop reporting
 #: it -- so keep the list short and specific.
 FIGURE_BORNE = {
+    # CJC 2024 H2 P2 Q3(a)(iii): the four text-box shapes that print as one
+    # equation with three EMPTY boxes also hold the examiner's answer as hidden
+    # (white) text -- "(x + (y+3)/4 - 3/2) O2", "x CO2", "(y+3)/2 H2O" -- which
+    # the Word PDF's text layer reports but which no student sees and the
+    # question must not carry. Math-italic x / y occur nowhere else in the paper.
+    "\U0001d465": "CJC P2 Q3(a)(iii) hidden answer text inside the equation's text boxes (math-italic x)",
+    "\U0001d466": "CJC P2 Q3(a)(iii) hidden answer text inside the equation's text boxes (math-italic y)",
     "\u00bd": 'chart construction-line labels "1st t\u00bd" / "2nd t1/2"',
     "<": 'energy-profile diagram label "\u2206H < 0" (4(b)(ii))',
     # EJC 2024 H2 P1 -- both are genuinely figure content, confirmed by
@@ -102,6 +109,10 @@ FIGURE_BORNE = {
 #: substitution so the exemption cannot silently cover an unrelated future
 #: drop of the same source codepoint.
 SUBSTITUTED_CHARS = {
+    "\u203e": "OVERLINE -- CJC 2024 H2 P2 types the charge of the electron "
+               "(Q4(e)(v)) and of [BH4]- (Q3(c)) with U+203E, which the page "
+               "shows as a raised minus. corrections.py (the two CJC P2 "
+               "U+203E entries) re-renders each as <sup>U+2212</sup>.",
     "Ꝋ": "the standard-state (\"plimsoll\") symbol -- EJC 2024 H2 P2 "
               "types it as a bare LATIN CAPITAL LETTER O WITH LONG STROKE "
               "OVERLAY (confirmed identical in the reference PDF's own text "

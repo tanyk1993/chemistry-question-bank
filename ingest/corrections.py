@@ -469,6 +469,13 @@ LEADIN_MOVES = {
     ("ACJC", "H2", "P2", 2024, 6, "(c)(iii)"):
         "The two coral-skeleton paragraphs introduce (d)-(f); printed between "
         "(c)(iii)'s [1] and (d).",
+    # CJC 2024 H2 P2 (2026-10-08)
+    ("CJC", "H2", "P2", 2024, 2, "(b)"):
+        "'The most important oxide of phosphorus is phosphorus(V) oxide...' "
+        "introduces (c); printed between (b)'s [2] and (c).",
+    ("CJC", "H2", "P2", 2024, 2, "(c)"):
+        "'The structure of phosphorus(V) sulfide, P4S10, ...' introduces (d); "
+        "printed between (c)'s [1] and (d).",
 }
 
 
@@ -503,6 +510,17 @@ COMBINED_FIGURES = {
         "Two Latimer diagrams (acidic conditions, basic conditions), "
         "separated only by the 'Basic conditions:' label -- user chose to "
         "snip them as one combined image rather than crop each separately.",
+    # CJC 2024 H2 P2 (2026-10-08)
+    ("CJC", "H2", "P2", 2024, 3, "(a)(iii)"):
+        "The combustion equation with three empty answer boxes is four native "
+        "text-box shapes (three boxes plus the frame holding the typed "
+        "equation) that print as ONE picture; snipped as one image. The text "
+        "boxes also hold the examiner's answer as hidden text, which the "
+        "question must not carry.",
+    ("CJC", "H2", "P2", 2024, 4, None):
+        "The copper reaction scheme is one ChemDraw object plus two floating "
+        "'step I' / 'step II' text boxes that print as ONE scheme; snipped as "
+        "one image.",
 }
 
 
@@ -674,7 +692,32 @@ GLYPH_PICTURES = [
      "Q5(d) equation 5.3 arrow"),
     (("ASRJC", "H2", "P3", 2024),
      r"(O<sub>2</sub>\(g\)) \x00FIG\x00 (2SO<sub>3</sub>\(g\))", "\\1 \u21cc \\2",
-     "Q2(c) stage I equilibrium arrow (a drawn harpoon pair in the source)"),
+     "Q2(c) stage I equilibrium arrow (a drawn harpoon pair in the source)"),    # --- CJC 2024 H2 P2 (2026-10-08) ------------------------------------
+    (("CJC", "H2", "P2", 2024),
+     r"A sample each of <b>\x00FIG\x00</b> and",
+     "A sample each of " + _stk(28, 14) + "Si<sup>+</sup> and",
+     "Q1(d): nuclide Equation.DSMT4 object (28 over 14 Si+) -- no text layer, "
+     "typed by hand from the printed page."),
+    (("CJC", "H2", "P2", 2024),
+     r"deflection of <b>\x00FIG\x00</b>and",
+     "deflection of " + _stk(28, 14) + "Si<sup>+</sup> and",
+     "Q1(d): the same nuclide object, second occurrence."),
+    (("CJC", "H2", "P2", 2024),
+     r"(<b>en\s*</b>)\x00FIG\x00(<b>\t</b>\[Cu\(H<sub>2</sub>O\)<sub>4)",
+     "\\1 \u21cc \\2",
+     "Q4(d) equilibrium arrow, first Kstab equation (a drawn harpoon pair)"),
+    (("CJC", "H2", "P2", 2024),
+     r"(2<b>en\s*</b>)\x00FIG\x00(<b>\t</b>\[Cu\(H<sub>2</sub>O\)<sub>2)",
+     "\\1 \u21cc \\2",
+     "Q4(d) equilibrium arrow, second Kstab equation"),
+    (("CJC", "H2", "P2", 2024),
+     r"(3<b>en\s*</b>)\x00FIG\x00(<b>\t</b>\[Cu\()",
+     "\\1 \u21cc \\2",
+     "Q4(d) equilibrium arrow, third Kstab equation"),
+    (("CJC", "H2", "P2", 2024),
+     r"(2e\u203e) \x00FIG\x00 (H<sub>2</sub>C<sub>2</sub>O<sub>4)\s*</sub>\s{10,}(E<sup)",
+     "\\1 \u21cc \\2</sub>\u2003\u2003\u2003\u2003\\3",
+     "Q4(e)(v) equilibrium arrow; the 24-space gap before E is the source's own alignment"),
 ]
 
 
@@ -708,7 +751,41 @@ def inline_assets(school, level, paper, year, qnum) -> list:
             in INLINE_ASSETS.get((school, level, paper, year), []) if q == qnum]
 
 
+_CP2 = ("CJC", "H2", "P2", 2024)
+
 CORRECTIONS = [
+    # ---- CJC 2024 H2 P2 (2026-10-08)
+    (_CP2, r"[ \t]*<br>[ \t]*", " ",
+     "Soft line breaks (w:br) typed to wrap a sentence at the printed margin "
+     "(4(e)(iii), 5(f), 5(f)(iv), 6(a)(ii), 6(a)(iii), 6(b)(i)). No genuine "
+     "break uses <br> here.",
+     "housekeeping, same as ASRJC P2/P3"),
+    (_CP2, r"e\u203e", "e<sup>\u2212</sup>",
+     "Q4(e)(v): the electron's charge is typed as U+203E (OVERLINE); the page "
+     "shows a raised minus, 2e-.",
+     "housekeeping, 2026-10-08"),
+    (_CP2, r"\]\u203e", "]<sup>\u2212</sup>",
+     "Q3(c): [BH4]- typed with U+203E (OVERLINE) for the charge; the page "
+     "shows a raised minus.",
+     "housekeeping, 2026-10-08"),
+    (_CP2, r"<u>(\u2192)</u>", "\\1",
+     "Q6(b): the equation's arrow is underlined in the source (an authoring "
+     "slip); the printed page shows a plain arrow. Same slip as CJC P1 Q11.",
+     "housekeeping, 2026-10-08"),
+    (_CP2, r"\t+(<i>K</i><sub>stab)", "\u2003\u2003\u2003\\1",
+     "Q4(d): the three Kstab equations are lined up with literal tabs, which "
+     "HTML collapses; an em-space gap keeps each Kstab value apart from its "
+     "equation.",
+     "housekeeping, 2026-10-08"),
+    (_CP2, r"(Number of \u03c3 bonds:)\s+(Number of \u03c0 bonds:)",
+     "\\1\u2003\u2003\u2003\u2003\\2",
+     "Q5(c): two answer slots on one line, separated by a tab stop in the "
+     "source; an em-space gap replaces it.",
+     "housekeeping, 2026-10-08"),
+    (_CP2, r"dessicant", "desiccant",
+     "Q2 stem: source typo ('dessicant'). PROPOSED, flagged to the user for "
+     "confirmation.",
+     "proposed 2026-10-08, awaiting user"),
     # ---- ASRJC 2024 H2 P3 (2026-10-04)
     (_P3, r"[ \t]*<br>[ \t]*", " ",
      "Soft line breaks (w:br) typed to wrap a sentence at the printed margin (1(b), 1(d)(ii), 1(d)(iii), "

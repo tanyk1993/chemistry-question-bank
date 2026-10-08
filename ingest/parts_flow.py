@@ -117,7 +117,7 @@ from .questions_flow import _iter_top_figures, _own_ole
 from . import parts as _parts_mod
 from . import corrections
 from .parts import (Question, Part, FIG_SENTINEL, QNUM_RE, LETTER_RE,
-                    ROMAN_RE, TOTAL_MARKS_RE, _boilerplate, _DOTTED_RE,
+                    ROMAN_RE, TOTAL_MARKS_RE, _boilerplate, _DOTTED_RE, _strip_answer_dots,
                     _write_mark, _BADGE_ALONE_RE, merge_owner_figures,
                     _ROMAN_SEQ)
 
@@ -440,7 +440,9 @@ def parse(document_xml, rels_xml, numbering_xml=None, scope=None):
                     else html_piece
             setattr(target, attr, new)
             if marks is not None and cur_part is not None:
-                cur_part.marks = marks
+                # A part can print several badges (CJC P2 Q6(a)(i): Anode [1],
+                # Cathode [1], Overall [1]); its mark total is their SUM.
+                cur_part.marks = (cur_part.marks or 0) + marks
 
         def _flush_bullets():
             nonlocal bullet_buf
@@ -655,7 +657,10 @@ def parse(document_xml, rels_xml, numbering_xml=None, scope=None):
 
             if label_run_idx:
                 _blank_runs(runs, label_run_idx)
-            html = paragraph_html(el)
+            # Answer-writing dots are handwriting space, never content (the
+            # same rule parts.py applies per paragraph; CJC 2024 H2 P2 sets a
+            # whole dotted rule in a paragraph that can also carry the "[n]").
+            html = _strip_answer_dots(paragraph_html(el))
             _append(html)
             pidx += 1
 

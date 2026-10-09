@@ -718,6 +718,25 @@ GLYPH_PICTURES = [
      r"(2e\u203e) \x00FIG\x00 (H<sub>2</sub>C<sub>2</sub>O<sub>4)\s*</sub>\s{10,}(E<sup)",
      "\\1 \u21cc \\2</sub>\u2003\u2003\u2003\u2003\\3",
      "Q4(e)(v) equilibrium arrow; the 24-space gap before E is the source's own alignment"),
+    # --- CJC 2024 H2 P3 (2026-10-09) ------------------------------------
+    (("CJC", "H2", "P3", 2024),
+     r"(CO\(g\) \+ 3H<sub>2</sub>\(g\)) \x00FIG\x00 (CH<sub>4</sub>)",
+     "\\1 ⇌ \\2",
+     "Q2(b) Fischer-Tropsch equilibrium arrow (a drawn harpoon pair)"),
+    (("CJC", "H2", "P3", 2024),
+     r"(H<sub>2</sub>O) \x00FIG\x00 (\s*N<sub>2</sub>H<sub>5</sub>)",
+     "\\1 ⇌\\2",
+     "Q5(b) hydrazine dissociation equilibrium arrow"),
+    (("CJC", "H2", "P3", 2024),
+     r"\x00FIG\x00 (N\(CH<sub>3</sub>\)<sub>3</sub> \+ A<i class=\"el\">l</i>C<i class=\"el\">l</i><sub>3</sub>)\s{8,}"
+     r"(\(CH<sub>3</sub>\)<sub>3</sub>NA<i class=\"el\">l</i>)",
+     "\\1 → \\2",
+     "Q4(d)(iii) forward arrow (a drawn long arrow anchored at the start of the line)"),
+    (("CJC", "H2", "P3", 2024),
+     r"\A\x00FIG\x00(Suggest a simple chemical test .*?\[2\]</span>\n\x00C\x00\x00FIG\x00)\Z",
+     "\\1",
+     "Q4(b)(iii): the same pair of structures is anchored twice (at the start and at "
+     "the end of the part); the printed page shows ONE picture, below the question line"),
 ]
 
 
@@ -1191,6 +1210,31 @@ CORRECTIONS = [
         "Q3(d) Fig. 3.2: the four-step table collapses into one picture of the "
         "whole figure (steps 1-4 with their labels).",
         "pending user confirmation, 2026-10-01",
+    ),
+    # --- CJC 2024 H2 P3 (2026-10-09) ------------------------------------
+    (
+        ("CJC", "H2", "P3", 2024),
+        r'<b><i>\x00FIG\x00</i></b>(<b>\t</b>Lidocaine is commonly used .*?operations\.\n\x00C\x00\x00FIG\x00)',
+        r"\1",
+        "Q4(e): the lidocaine structure is anchored twice (before the sentence and "
+        "after it); the printed page shows ONE picture, below the sentence.",
+        "user accepted the live render, 2026-10-09",
+    ),
+    (
+        ("CJC", "H2", "P3", 2024),
+        r'silver is <br>10\.49 g cm',
+        "silver is 10.49 g cm",
+        "Q5(d)(ii): a manual line break mid-sentence (a justification artefact of "
+        "the printed page), removed.",
+        "user accepted the live render, 2026-10-09",
+    ),
+    (
+        ("CJC", "H2", "P3", 2024),
+        r'to form <br>4-bromobutan-1-ol',
+        "to form 4-bromobutan-1-ol",
+        "Q4 intro: a manual line break mid-sentence (a justification artefact of "
+        "the printed page), removed.",
+        "user accepted the live render, 2026-10-09",
     ),
 ]
 

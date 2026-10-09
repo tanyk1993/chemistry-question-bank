@@ -463,9 +463,15 @@
      via ::before - no image, no inline style - and .rad carries the overline
      as its own border-top, so the bar's width tracks whatever it wraps
      rather than being a fixed-width image. */
-  .sqrt { white-space:nowrap; }
-  .sqrt::before { content:"\221A"; margin-right:1px; }
-  .sqrt > .rad { border-top:1.3px solid currentColor; padding:1px .06em 0 .05em; }
+  /* 2026-10-09: the hook is now a drawn radical (an SVG mask filled with currentColor,
+     so it follows the text colour and theme) that rises to meet the overline, instead of
+     the font's small "√" glyph which left a visible gap under the bar. The markup
+     (.sqrt > .rad) is unchanged. */
+  .sqrt { white-space:nowrap; display:inline-block; position:relative; padding-left:.72em; vertical-align:baseline; }
+  .sqrt::before { content:""; position:absolute; left:0; top:0; bottom:0; width:.8em; background:currentColor;
+    -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpolyline points='0,13 2,12.2 4.6,19.2 9.4,.8 10.5,.8' fill='none' stroke='black' stroke-width='1.4' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E") 0 0/100% 100% no-repeat;
+            mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpolyline points='0,13 2,12.2 4.6,19.2 9.4,.8 10.5,.8' fill='none' stroke='black' stroke-width='1.4' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E") 0 0/100% 100% no-repeat; }
+  .sqrt > .rad { display:inline-block; border-top:1.3px solid currentColor; padding:.04em .06em 0 0; line-height:1.3; }
   /* stacked super/subscript - nuclide notation and E-standard-cell.
      `.stk` alone stacks BEFORE the symbol (mass number over proton number, as
      in 234-over-90 Th); `.stk.post` stacks AFTER it (the standard-state sign

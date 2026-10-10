@@ -22,6 +22,7 @@ not our own conversion. See audit.py for why that distinction matters.
 # Adobe Symbol encoding. Word offsets these into the F0xx private-use range,
 # so F0B7 here is Symbol character 0xB7.
 SYMBOL = {
+    "F0BA": "\u2261",   # 0xBA equivalence: DHS 2024 H2 P1 answers Q26 "2H+ = CO3 2- = CO2" (5x)
     "F0AE": "→",   # 0xAE arrowright           -> ; verified p1 "B3+(g) --> B4+(g)"
     "F0BE": "",         # 0xBE arrowhorizex         horizontal EXTENDER, not content.
                         #   F0BE+F0AE is a two-glyph long arrow; Word draws the shaft
@@ -130,6 +131,12 @@ SYMBOL = {
 
 # Wingdings 2 (a different font from Wingdings: own table).
 WINGDINGS_2 = {
+    # DHS 2024 H2 P1 answers (2026-10-10): the tick / cross in the per-option
+    # marks column of every question table. Evidence = the Word PDF page images
+    # (a tick and a small cross) AND the counts: 21 F050 vs 20 F04F match the 21
+    # ticks and 20 crosses printed in the solutions.
+    "F050": "\u2713",   # tick, marks a correct option / statement
+    "F04F": "\u00d7",   # MULTIPLICATION SIGN, drawn as a small cross; marks a wrong one
     "F099": "⦵",   # ASRJC 2024 H2 P2 answers 1(a)(ii): "∆H<sub>r</sub>[99]" -- the
                         #   standard-state (plimsoll) sign, rendered in the Word PDF as
                         #   a circle with a bar; same character the Wingdings F0A1
@@ -141,6 +148,7 @@ WINGDINGS_2 = {
 
 # Wingdings.
 WINGDINGS = {
+    "F0F0": "\u21e8",   # RIGHTWARDS WHITE ARROW: DHS 2024 H2 P1 answers' "Concept: ... [arrow] ..." (11x)
     "F0A1": "⦵",   # CIRCLE WITH HORIZONTAL BAR -- the standard-state / plimsoll
                         #   symbol. Appears as E<sup>x</sup> and E<sup>x</sup>cell.
                         #   Matches WA2's live markup, which uses &#10677; (= U+29B5).

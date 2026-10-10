@@ -118,6 +118,9 @@ GLYPH_FIGURES = {
     ("ASRJC", "H2", "P1", 2024, 12): {3: "\u21cc"},
     ("ASRJC", "H2", "P1", 2024, 13): {1: "\u21cc", 2: "\u21cc", 3: "\u21cc", 4: "\u21cc"},
     ("ASRJC", "H2", "P1", 2024, 14): {1: "\u2192", 2: "\u2192", 3: "\u2192", 4: "\u2192"},
+    # DHS 2024 H2 P1 (2026-10-10). Q14: the equilibrium arrow between
+    # E(g) + F(g) and G(g) is a drawn arrow in its own paragraph; typed.
+    ("DHS", "H2", "P1", 2024, 14): {1: "\u21cc"},
 }
 
 
@@ -358,6 +361,77 @@ MCQ_FIXUPS.extend([
      "the subscript 2 is a Word 'combine characters' group with a blank top "
      "half; the ion-charge stack rule turned it into a stacked pair. It is "
      "just F2 (compare option text and the stem's F2)."),
+])
+
+
+# DHS 2024 H2 P1 (2026-10-10) -------------------------------------------------
+# Declared after reading the Word PDF page by page. The user snips every
+# figure by hand; nothing here crops.
+_DH = ("DHS", "H2", "P1", 2024)
+MCQ_FIXUPS.extend([
+    # --- Q3: two Word bullet paragraphs (w:numPr) lost their bullets --------
+    (_DH + (3,), "html",
+     r'<p class="qstem">(the SO<sub>2</sub> : CO<sub>2</sub> mole ratio[^<]*)</p>\n'
+     r'<p class="qstem">(the relative deviation[^<]*(?:<sub>[^<]*</sub>[^<]*)*\?)</p>',
+     '<ul class="stmts"><li>\\1</li><li>\\2</li></ul>', 1,
+     "the two criteria are Word bullet paragraphs (w:numPr); questions.py has "
+     "no numPr-list merging (style-guide.md section 9), so the bullets were "
+     "lost. style-guide section 2: bullets are ul.stmts."),
+    # --- Q5: four bulleted molecules ------------------------------------------
+    (_DH + (5,), "html",
+     r'<p class="qstem">(NC<i class="el">l</i><sub>3</sub>)</p>\n'
+     r'<p class="qstem">(HCN)</p>\n'
+     r'<p class="qstem">(BeC<i class="el">l</i><sub>2</sub>)</p>\n'
+     r'<p class="qstem">(SOC<i class="el">l</i><sub>2</sub>)</p>',
+     '<ul class="stmts"><li>\\1</li><li>\\2</li><li>\\3</li><li>\\4</li></ul>', 1,
+     "the four molecules are Word bullet paragraphs (w:numPr); same reason "
+     "as Q3."),
+    # --- Q13: the reaction scheme is ONE snip (arrow + catalyst Y + A+B, C+D)
+    (_DH + (13,), "html", r'<p class="c"><b>\s*A</b> \+ <b>B</b>[^\n]*</p>\n', "", 1,
+     "the whole scheme 'A + B --Y--> C + D' is snipped as ONE picture "
+     "(catalyst Y sits above the arrow); the typed A + B / C + D line is the "
+     "same content, so it is removed and the single placeholder stands for it."),
+    (_DH + (13,), "text", r"A \+ B C \+ D ", "", 1,
+     "the scheme is inside the snip."),
+    # --- Q14: the equilibrium arrow is typed (GLYPH_FIGURES) --------------------
+    (_DH + (14,), "html",
+     r'<p class="c"><b>E</b>\(g\)\s+\+\s+<b>F</b>\(g\)\s+\u21cc\s+<b>G</b>\(g\)\s*</p>',
+     '<p class="c"><b>E</b>(g) + <b>F</b>(g) \u21cc <b>G</b>(g)</p>', 1,
+     "the typed arrow joined the three pieces into one line already; this "
+     "only squeezes the hand-typed runs of spaces (HTML collapses them)."),
+    # --- Q16: options are three printed columns ---------------------------------
+    # --- Q15: the dissociation equation is centred (user, 2026-10-10) -----------
+    (_DH + (15,), "html", r'<p class="qstem eqn">(M\(OH\)<sub>2</sub>\(s\))',
+     '<p class="c eqn">\\1', 1,
+     "centre the equilibrium equation in the stem; 'eqn' kept so the spaces and "
+     "tabs that align the dH tag still show (pre-wrap)."),
+    (_DH + (16,), "html",
+     r'<td>((?:(?!<td>).)*?)\s{3,}(<i>K</i><sub>b</sub> of (?:(?!= ).)*?)\s*'
+     r'(= [\d.]+ × 10<sup>[^<]*</sup> mol dm<sup>[^<]*</sup>)</td>',
+     '<td>\\1</td><td>\\2 \\3</td>', 4,
+     "each option has two cells: the pair, then 'Kb of ... = value' kept in ONE "
+     "cell (user, 2026-10-10: the value was splitting into its own column); the "
+     "source hand-aligned them with spaces and tabs that HTML collapses."),
+    # --- Q21: the scheme is ONE snip, compound names included -------------------
+    (_DH + (21,), "html", r'<p class="qstem eqn">\s*but-2-ene-1,4-diol\s+ketobutanedioic acid</p>\n', "", 1,
+     "the two compound names sit under the scheme and are snipped WITH it; "
+     "the typed line (tab-aligned, fragile) is removed. Both names are "
+     "already in the stem sentence, so search loses nothing."),
+    (_DH + (21,), "text", r"but-2-ene-1,4-diol ketobutanedioic acid ", "", 1,
+     "figure-borne captions."),
+    # --- Q27: statements table = [number | text], statement 3's figure in the
+    #     SAME cell as its text (user, 2026-10-10: it was splitting into a third
+    #     column). Also squares up row 1, which had a phantom leading cell.
+    (_DH + (27,), "html",
+     r'<table class="qt center"><tr><td></td>'
+     r'(<td><p class="qstem">1</p></td><td>(?:(?!</tr>).)*?</td>)</tr>'
+     r'(<tr><td><p class="qstem">2</p></td><td>(?:(?!</tr>).)*?</td>)<td></td></tr>'
+     r'<tr>(<td><p class="qstem">3</p></td><td><p class="qstem">The predominant(?:(?!</p>).)*?)</p></td>'
+     r'<td>(<div class="fig">figure</div>)</td></tr></table>',
+     '<table class="qt center"><tr>\\1</tr>\\2</tr><tr>\\3</p>\\4</td></tr></table>', 1,
+     "statements table squared to two columns; the zwitterion placeholder moves "
+     "into statement 3's own cell (DOM order unchanged: it is still the 4th "
+     "figure)."),
 ])
 
 

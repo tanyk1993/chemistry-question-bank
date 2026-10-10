@@ -142,6 +142,12 @@ def _para(h: str) -> str:
     # it rather than let the eqn/pre-wrap treatment below turn it into an
     # unexplained gap before the question text.
     body = re.sub(r"^\t+", "", body)
+    # The data-booklet note: house wording and style since 2026-10-11 is
+    # plain (NOT italic), lower-case "data booklet", full stop kept, however
+    # the source typed or italicised it.
+    if re.fullmatch(r"use of the data booklet is relevant to this question\.?",
+                    re.sub(r"<[^>]+>", "", body).strip(), flags=re.I):
+        return '<p class="qstem">Use of the data booklet is relevant to this question.</p>'
     if centred:
         return '<p class="c">%s</p>' % body
     # oxml.py preserves a genuine Word tab as a literal "\t" (never emitted
@@ -339,6 +345,23 @@ def _extra_table(rows: list, state=None) -> list:
         for r in rows:
             out.extend(_blocks(r[0], state))
         return out
+    # A two-column grid whose first column is just 1, 2, 3 ... in order is a
+    # NUMBERED-STATEMENTS list ("Which statements are correct?"), not data.
+    # House style (2026-10-11, bank-wide): ol.stmts, not a table.qt. The text
+    # of each statement becomes the <li>; a figure sharing the cell stays in it.
+    if width == 2 and len(rows) >= 2 and all(
+            _strip_tags(r[0]).strip().rstrip(".)") == str(i + 1)
+            and FIG_SENTINEL not in r[0] for i, r in enumerate(rows)):
+        lis = []
+        for r in rows:
+            blocks = _blocks(r[1], state)
+            if not blocks:
+                break
+            first = re.match(r'<p class="qstem">(.*?)</p>$', blocks[0], flags=re.S)
+            head = first.group(1) if first else blocks[0]
+            lis.append("<li>%s</li>" % (head + "".join(blocks[1:])))
+        else:
+            return ['<ol class="stmts">%s</ol>' % "".join(lis)]
     trs = []
     for r in rows:
         tds = []

@@ -616,6 +616,15 @@
   .textedit .edit-check .warn{ color:#a96f12; }
   .textedit .edit-actions { display:flex; gap:.4rem; flex-wrap:wrap; align-items:center; }
   .textedit .btn-mini:disabled { opacity:.5; cursor:not-allowed; }
+  .textedit .edit-modes { display:flex; gap:.35rem; margin:0 0 .5rem; }
+  .textedit .edit-modes .btn-mini.on { background:var(--teal,#0e7490); border-color:var(--teal,#0e7490); color:#fff; }
+  .textedit .pb-item { margin:0 0 .5rem; }
+  .textedit .pb-label { display:block; font-size:.68rem; letter-spacing:.06em; text-transform:uppercase; color:var(--muted,#5b6b7a); margin:0 0 .15rem; }
+  .textedit textarea.pb { min-height:0; resize:none; overflow:hidden; font:.92rem/1.45 inherit; font-family:inherit; display:block; }
+  .textedit .pb-item.has-err textarea.pb { border-color:#b3261e; }
+  .textedit .pb-err { color:#b3261e; font-size:.78rem; line-height:1.35; margin-top:.15rem; }
+  .textedit .pb-err:empty { display:none; }
+  .textedit .pb-note { font-size:.78rem; color:var(--muted,#5b6b7a); margin:0 0 .5rem; }
   .textedit .edit-preview { margin-top:.6rem; padding:.55rem .7rem .65rem; border:1px dashed var(--line,#c8ccd2);
     border-radius:8px; background:#fff; }
   .qtchip { display:inline-flex; align-items:center; gap:.35rem; font-size:.8rem;
@@ -1405,13 +1414,187 @@
     return { text: applied.length ? text : (ct || ''), applied, skipped };
   }
 
-  // Panel opens under the stem. Save writes content_html, the patched content_text and the
-  // edit trail; the very first edit also stores the original so it can be restored.
+  // ---- plain-text editing: edit only the words, never the markup ----
+  // The stored HTML is split into "boxes" (one per paragraph / list item / table cell). Each box
+  // shows only its readable text; equations, figures and line breaks appear as locked glyphs.
+  // When the admin changes the text, the difference is spliced into the ORIGINAL HTML string
+  // at the exact positions of the changed words, so every tag, attribute and untouched byte
+  // stays as it was. A change that would cross a formatting boundary or touch a locked item
+  // is refused (with the reason) instead of guessed.
+  const PT_VOID  = new Set(['br','img','hr','input','meta','link','col','wbr','source','area','base','embed','param','track']);
+  const PT_BLOCK = new Set(['p','div','li','td','th','tr','ul','ol','table','thead','tbody','tfoot','h1','h2','h3','h4','h5','h6','blockquote','pre','caption','dd','dt','dl','section','article']);
+  const PT_FMT   = new Set(['sub','sup','b','i','u','em','strong','span','a','small','mark','s','strike','code']);
+  const PT_LOCKCLS = ['frac','fnum','fden','sqrt','rad','stk','fig'];
+  const PT_ENT = { nbsp:' ', amp:'&', lt:'<', gt:'>', quot:'"', apos:"'", deg:'°', plusmn:'±', times:'×',
+    middot:'·', minus:'−', divide:'÷', rarr:'→', larr:'←', harr:'↔', ndash:'–', mdash:'—',
+    lsquo:'‘', rsquo:'’', ldquo:'“', rdquo:'”', hellip:'…', le:'≤', ge:'≥', ne:'≠' };
+  const PT_LOCK_CH = '◇', PT_FIG_CH = '▣', PT_BR_CH = '↵';
+
+  function ptDecodeEnt(name){
+    if(name[0] === '#'){
+      const n = name[1] === 'x' || name[1] === 'X' ? parseInt(name.slice(2), 16) : parseInt(name.slice(1), 10);
+      return n > 0 && n < 0x10000 && !(n >= 0xD800 && n < 0xE000) ? String.fromCharCode(n) : null;
+    }
+    if(Object.prototype.hasOwnProperty.call(PT_ENT, name)) return PT_ENT[name];
+    return null;
+  }
+  // Raw text node -> one cell per character: { ch, rs, re, run, lock }.
+  function ptCells(raw, base, run){
+    const out = [], re = /&(#x?[0-9a-fA-F]+|[A-Za-z][A-Za-z0-9]*);/g;
+    let last = 0, m;
+    const plain = (from, to) => { for(let i = from; i < to; i++) out.push({ ch: raw[i], rs: base + i, re: base + i + 1, run, lock: false }); };
+    while((m = re.exec(raw))){
+      plain(last, m.index);
+      const d = ptDecodeEnt(m[1]);
+      if(d !== null) out.push({ ch: d, rs: base + m.index, re: base + m.index + m[0].length, run, lock: false });
+      else out.push({ ch: PT_LOCK_CH, rs: base + m.index, re: base + m.index + m[0].length, run, lock: true });
+      last = m.index + m[0].length;
+    }
+    plain(last, raw.length);
+    return out;
+  }
+  function ptModel(html){
+    html = html || '';
+    const parts = html.split(/(<[^>]*>)/);
+    const stack = []; let uid = 0, brk = 0, off = 0, lockDepth = 0;
+    const runs = [];
+    const blockLabel = t => !t ? 'Text' : t === 'p' ? 'Paragraph' : t === 'li' ? 'List item' : (t === 'td' || t === 'th') ? 'Table cell' : /^h\d$/.test(t) ? 'Heading' : 'Text';
+    const nearestBlock = () => { for(let i = stack.length - 1; i >= 0; i--) if(PT_BLOCK.has(stack[i].tag)) return stack[i].tag; return null; };
+    for(const part of parts){
+      const start = off; off += part.length;
+      if(!part) continue;
+      if(part[0] === '<' && part[part.length - 1] === '>'){
+        if(/^<!--/.test(part) || /^<!/.test(part) || /^<\?/.test(part)) continue;
+        const close = part[1] === '/';
+        const tm = /^<\/?\s*([A-Za-z][A-Za-z0-9-]*)/.exec(part);
+        if(!tm) continue;
+        const tag = tm[1].toLowerCase();
+        if(close){
+          let i = stack.length - 1; while(i >= 0 && stack[i].tag !== tag) i--;
+          if(i >= 0){ const popped = stack.splice(i); popped.forEach(e => { if(e.locked) lockDepth--; }); }
+          if(PT_BLOCK.has(tag) && lockDepth === 0) brk++;
+          continue;
+        }
+        const selfClose = PT_VOID.has(tag) || /\/\s*>$/.test(part);
+        const cm = /\bclass\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(part);
+        const classes = cm ? (cm[1] || cm[2] || '').split(/\s+/) : [];
+        const isLock = lockDepth === 0 && (tag === 'script' || tag === 'style' || classes.some(c => PT_LOCKCLS.includes(c)));
+        if(lockDepth === 0){
+          if(PT_BLOCK.has(tag)) brk++;
+          if(tag === 'br') runs.push({ kind: 'lock', glyph: PT_BR_CH, brk, lockId: ++uid });
+          else if(tag === 'img') runs.push({ kind: 'lock', glyph: PT_FIG_CH, brk, lockId: ++uid });
+          else if(isLock) runs.push({ kind: 'lock', glyph: classes.includes('fig') ? PT_FIG_CH : PT_LOCK_CH, brk, lockId: ++uid });
+        }
+        if(!selfClose){
+          stack.push({ tag, locked: isLock, fmt: PT_FMT.has(tag) ? tag : '' });
+          if(isLock) lockDepth++;
+        }
+        continue;
+      }
+      if(lockDepth > 0) continue;
+      const run = { kind: 'text', brk, raw: part, rs: start, fmt: stack.map(e => e.fmt).filter(Boolean).join('>'), blockTag: nearestBlock() };
+      run.cells = ptCells(part, start, run);
+      runs.push(run);
+    }
+    // group consecutive runs of the same block segment into boxes
+    const boxes = []; let cur = null;
+    for(const r of runs){
+      if(!cur || cur.brk !== r.brk){ cur = { brk: r.brk, blockTag: r.blockTag || null, cells: [] }; boxes.push(cur); }
+      if(r.kind === 'lock') cur.cells.push({ ch: r.glyph, lock: true, run: r, rs: -1, re: -1 });
+      else { if(!cur.cells.some(c => !c.lock)) cur.blockTag = r.blockTag; cur.cells.push(...r.cells); }
+    }
+    const kept = [];
+    for(const b of boxes){
+      // trim whitespace at both ends (it is layout, not content)
+      let a = 0, z = b.cells.length;
+      while(a < z && !b.cells[a].lock && /\s/.test(b.cells[a].ch)) a++;
+      while(z > a && !b.cells[z - 1].lock && /\s/.test(b.cells[z - 1].ch)) z--;
+      b.cells = b.cells.slice(a, z);
+      if(!b.cells.some(c => !c.lock && /\S/.test(c.ch))) continue;
+      b.text = b.cells.map(c => c.lock ? c.ch : (/[\r\n\t]/.test(c.ch) ? ' ' : c.ch)).join('');
+      b.label = blockLabel(b.blockTag);
+      kept.push(b);
+    }
+    return { html, boxes: kept };
+  }
+  const PT_TOKEN = /[\p{L}\p{N}_]+|\s+|[^\p{L}\p{N}_\s]/gu;
+  function ptTokens(s){ const t = []; let m; PT_TOKEN.lastIndex = 0; while((m = PT_TOKEN.exec(s))) t.push({ s: m[0], at: m.index }); return t; }
+  // token-level diff -> list of { a0, a1, b0, b1 } character ranges, trimmed to the exact change
+  function ptHunks(a, b){
+    const A = ptTokens(a), B = ptTokens(b), n = A.length, m = B.length;
+    const w = m + 1, L = new Uint32Array((n + 1) * w);
+    for(let i = n - 1; i >= 0; i--) for(let j = m - 1; j >= 0; j--)
+      L[i * w + j] = A[i].s === B[j].s ? L[(i + 1) * w + j + 1] + 1 : Math.max(L[(i + 1) * w + j], L[i * w + j + 1]);
+    const hunks = []; let i = 0, j = 0, open = null;
+    const flush = () => { if(open){ hunks.push(open); open = null; } };
+    const aEnd = k => k < n ? A[k].at : a.length, bEnd = k => k < m ? B[k].at : b.length;
+    while(i < n || j < m){
+      if(i < n && j < m && A[i].s === B[j].s){ flush(); i++; j++; continue; }
+      if(!open) open = { a0: aEnd(i), a1: aEnd(i), b0: bEnd(j), b1: bEnd(j) };
+      if(j < m && (i >= n || L[i * w + j + 1] >= L[(i + 1) * w + j])){ j++; open.b1 = bEnd(j); }
+      else { i++; open.a1 = aEnd(i); }
+    }
+    flush();
+    return hunks.map(h => {
+      let x = h.a0, y = h.b0;
+      while(x < h.a1 && y < h.b1 && a[x] === b[y]){ x++; y++; }
+      let p = h.a1, q = h.b1;
+      while(p > x && q > y && a[p - 1] === b[q - 1]){ p--; q--; }
+      return { a0: x, a1: p, b0: y, b1: q };
+    }).filter(h => h.a1 > h.a0 || h.b1 > h.b0);
+  }
+  function ptEnc(s){ return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/ /g, '&nbsp;'); }
+  // texts[i] = new text for model.boxes[i]. Returns { html, errors: [{ box, msg }] }.
+  function ptApply(model, texts){
+    const edits = [], errors = [];
+    model.boxes.forEach((box, bi) => {
+      const nt = String(texts[bi] == null ? box.text : texts[bi]).replace(/\r?\n/g, ' ');
+      if(nt === box.text) return;
+      for(const h of ptHunks(box.text, nt)){
+        const repl = nt.slice(h.b0, h.b1);
+        if(h.a1 > h.a0){
+          const cs = box.cells.slice(h.a0, h.a1);
+          if(cs.some(c => c.lock)){ errors.push({ box: bi, msg: 'That change touches an equation, figure, symbol or line break (◇ ▣ ↵). Use HTML (advanced) for it.' }); continue; }
+          if(cs.some(c => c.run !== cs[0].run)){ errors.push({ box: bi, msg: 'That change crosses a formatting change (subscript, italic, bold…). Change fewer characters at a time, or use HTML (advanced).' }); continue; }
+          edits.push({ s: cs[0].rs, e: cs[cs.length - 1].re, t: ptEnc(repl) });
+        } else {
+          const l = box.cells[h.a0 - 1], r = box.cells[h.a0];
+          const lok = l && !l.lock, rok = r && !r.lock;
+          let pos;
+          if(lok && rok){
+            if(l.run === r.run) pos = l.re;
+            else if(l.run.fmt === r.run.fmt) pos = l.re;
+            else pos = !l.run.fmt ? l.re : (!r.run.fmt ? r.rs : l.re);
+          } else if(lok) pos = l.re;
+          else if(rok) pos = r.rs;
+          else { errors.push({ box: bi, msg: 'Nowhere safe to insert text here (next to an equation, figure or line break). Use HTML (advanced).' }); continue; }
+          edits.push({ s: pos, e: pos, t: ptEnc(repl) });
+        }
+      }
+    });
+    edits.sort((x, y) => y.s - x.s || y.e - x.e);
+    let html = model.html;
+    for(const e of edits) html = html.slice(0, e.s) + e.t + html.slice(e.e);
+    return { html, errors };
+  }
+
+  // Panel opens under the stem. Two ways to edit the same draft: plain boxes (words only,
+  // the default) or the raw HTML (advanced). The HTML textarea is always the single source of
+  // truth for the draft, so the markup check, preview, search-text patch and Save are shared.
+  // Save writes content_html, the patched content_text and the edit trail; the very first
+  // edit also stores the original so it can be restored.
   function textEditor(q, getStem, replaceStem){
     const wrap = document.createElement('div'); wrap.className = 'textedit';
-    const h = document.createElement('h4'); h.textContent = 'Edit question text (HTML)';
-    const ta = document.createElement('textarea'); ta.value = q.content_html || '';
+    const h = document.createElement('h4'); h.textContent = 'Edit question text';
+    const modes = document.createElement('div'); modes.className = 'edit-modes';
+    const mPlain = document.createElement('button'); mPlain.className = 'btn-mini on'; mPlain.textContent = 'Plain text';
+    const mHtml  = document.createElement('button'); mHtml.className = 'btn-mini'; mHtml.textContent = 'HTML (advanced)';
+    modes.append(mPlain, mHtml);
+    const ta = document.createElement('textarea'); ta.value = q.content_html || ''; ta.className = 'html-ta hidden';
     ta.spellcheck = true; ta.setAttribute('aria-label', 'Question HTML');
+    const plain = document.createElement('div'); plain.className = 'plainbox';
+    const legend = document.createElement('div'); legend.className = 'pb-note';
+    legend.textContent = 'Edit the words only. ◇ equation or symbol, ▣ figure, ↵ line break are locked — leave them in place.';
     const check = document.createElement('div'); check.className = 'edit-check';
     const actions = document.createElement('div'); actions.className = 'edit-actions';
     const save = document.createElement('button'); save.className = 'btn-mini'; save.textContent = 'Save';
@@ -1425,14 +1608,57 @@
     const prevBody = document.createElement('div');
     prevBox.append(ph, prevBody);
 
-    let timer = null, busy = false;
+    let timer = null, busy = false, plainMode = true, model = null, boxEls = [], plainErrors = [];
+    const fit = t => { t.style.height = 'auto'; t.style.height = (t.scrollHeight + 2) + 'px'; };
+    const fitAll = () => boxEls.forEach(b => fit(b.ta));
+    const showPlainErrors = () => boxEls.forEach((b, i) => {
+      const e = plainErrors.filter(x => x.box === i).map(x => x.msg);
+      b.err.textContent = e.join(' '); b.item.classList.toggle('has-err', e.length > 0);
+    });
+    const renderPlain = () => {
+      model = ptModel(ta.value); plainErrors = []; boxEls = [];
+      plain.replaceChildren();
+      if(!model.boxes.length){
+        const n = document.createElement('div'); n.className = 'pb-note';
+        n.textContent = 'No editable text found here. Use HTML (advanced).'; plain.append(n); return;
+      }
+      model.boxes.forEach((box, i) => {
+        const item = document.createElement('div'); item.className = 'pb-item';
+        const lab = document.createElement('label'); lab.className = 'pb-label'; lab.textContent = box.label + ' ' + (i + 1);
+        const t = document.createElement('textarea'); t.className = 'pb'; t.rows = 1; t.value = box.text;
+        t.spellcheck = true; t.setAttribute('aria-label', box.label + ' ' + (i + 1));
+        const err = document.createElement('div'); err.className = 'pb-err';
+        t.addEventListener('keydown', e => { if(e.key === 'Enter') e.preventDefault(); });
+        t.addEventListener('input', () => {
+          fit(t); status.className = 'edit-status'; status.textContent = '';
+          const r = ptApply(model, boxEls.map(b => b.ta.value));
+          ta.value = r.html; plainErrors = r.errors; showPlainErrors();
+          clearTimeout(timer); timer = setTimeout(refresh, 150);
+        });
+        item.append(lab, t, err); plain.append(item); boxEls.push({ ta: t, err, item });
+      });
+    };
+    const setMode = toPlain => {
+      plainMode = toPlain;
+      mPlain.classList.toggle('on', toPlain); mHtml.classList.toggle('on', !toPlain);
+      ta.classList.toggle('hidden', toPlain); plain.classList.toggle('hidden', !toPlain); legend.classList.toggle('hidden', !toPlain);
+      if(toPlain){ renderPlain(); fitAll(); }
+      refresh();
+    };
+    mPlain.addEventListener('click', () => { if(!plainMode) setMode(true); });
+    mHtml.addEventListener('click', () => { if(plainMode) setMode(false); });
+
     const refresh = () => {
       const draft = ta.value, orig = q.content_html || '';
       const { blocks, warns } = compareMarkup(orig, draft);
-      check.className = 'edit-check ' + (blocks.length ? 'bad' : 'ok');
-      save.disabled = busy || draft === orig || blocks.length > 0;
-      save.title = blocks.length ? 'Fix the blocked changes first' : '';
-      if(draft === orig){
+      const bad = blocks.length > 0 || plainErrors.length > 0;
+      check.className = 'edit-check ' + (bad ? 'bad' : 'ok');
+      save.disabled = busy || draft === orig || bad;
+      save.title = bad ? 'Fix the blocked changes first' : '';
+      if(plainErrors.length){
+        check.innerHTML = "<b>Can't apply in plain-text mode:</b><ul>" +
+          plainErrors.map(x => `<li>${esc(model.boxes[x.box].label + ' ' + (x.box + 1) + ': ' + x.msg)}</li>`).join('') + '</ul>';
+      } else if(draft === orig){
         check.className = 'edit-check ok'; check.textContent = 'No changes yet.';
       } else {
         let t = blocks.length
@@ -1452,11 +1678,15 @@
     // annotateParts is idempotent; re-run it on the preview so part hover works there too
     const refreshHover = () => prevBody.querySelectorAll('.stem').forEach(r => annotateParts(r, q));
     ta.addEventListener('input', () => { status.className = 'edit-status'; status.textContent = ''; clearTimeout(timer); timer = setTimeout(refresh, 150); });
-    reset.addEventListener('click', () => { ta.value = q.content_html || ''; status.textContent = ''; refresh(); });
+    reset.addEventListener('click', () => {
+      ta.value = q.content_html || ''; status.className = 'edit-status'; status.textContent = '';
+      if(plainMode){ renderPlain(); fitAll(); }
+      refresh();
+    });
     save.addEventListener('click', async () => {
       const draft = ta.value, orig = q.content_html || '';
-      if(busy || draft === orig || compareMarkup(orig, draft).blocks.length) return;
-      busy = true; save.disabled = true; status.className = 'edit-status'; status.textContent = 'Saving\u2026';
+      if(busy || plainErrors.length || draft === orig || compareMarkup(orig, draft).blocks.length) return;
+      busy = true; save.disabled = true; status.className = 'edit-status'; status.textContent = 'Saving…';
       const sp = patchSearchText(q.content_text, orig, draft);
       const payload = {
         content_html: draft, content_text: sp.text,
@@ -1486,10 +1716,13 @@
       status.className = 'edit-status ok';
       status.textContent = 'Saved. The original text is kept.' +
         (sp.skipped.length ? ' Search text was not changed for ' + sp.skipped.length + ' edit(s).' : '');
+      if(plainMode){ renderPlain(); fitAll(); }
       refresh();
     });
     close.addEventListener('click', () => { clearTimeout(timer); wrap.remove(); });
-    wrap.append(h, ta, check, actions, status, prevBox);
+    wrap.append(h, modes, legend, plain, ta, check, actions, status, prevBox);
+    wrap.fitAll = fitAll;
+    renderPlain();
     refresh();
     return wrap;
   }
@@ -1502,6 +1735,7 @@
       if(panel && panel.isConnected){ panel.remove(); panel = null; return; }
       panel = textEditor(q, getStem, replaceStem);
       getStem().after(panel);
+      requestAnimationFrame(() => panel && panel.fitAll && panel.fitAll());
     });
     return b;
   }

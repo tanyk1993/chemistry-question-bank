@@ -616,6 +616,9 @@
   .textedit .edit-check .warn{ color:#a96f12; }
   .textedit .edit-actions { display:flex; gap:.4rem; flex-wrap:wrap; align-items:center; }
   .textedit .btn-mini:disabled { opacity:.5; cursor:not-allowed; }
+  .edited-bar { display:inline-flex; align-items:center; gap:.35rem; }
+  .edited-badge { font-size:.68rem; letter-spacing:.06em; text-transform:uppercase; color:#8a5a00;
+    background:#fff4d6; border:1px solid #ecd49a; border-radius:999px; padding:.1rem .5rem; }
   .textedit .edit-modes { display:flex; gap:.35rem; margin:0 0 .5rem; }
   .textedit .edit-modes .btn-mini.on { background:var(--teal,#0e7490); border-color:var(--teal,#0e7490); color:#fff; }
   .textedit .pb-item { margin:0 0 .5rem; }
@@ -1726,6 +1729,54 @@
     return wrap;
   }
 
+  // "Edited" marker + one-click restore of the saved originals (admin only). Reverting the
+  // question text also reverses the search-text patch; once no original is left the edit
+  // trail is cleared.
+  function editedBar(q, hooks){
+    const box = document.createElement('span'); box.className = 'edited-bar';
+    const FIELDS = [
+      { col: 'content_html', orig: 'content_html_original', label: 'question text' },
+      { col: 'worked_solution', orig: 'worked_solution_original', label: 'solution' }
+    ];
+    box.render = () => {
+      box.replaceChildren();
+      const todo = FIELDS.filter(f => q[f.orig] != null);
+      if(!todo.length) return;
+      const badge = document.createElement('span'); badge.className = 'edited-badge'; badge.textContent = 'Edited';
+      badge.title = q.edited_at ? 'Edited by an admin on ' + new Date(q.edited_at).toLocaleString() : 'Edited by an admin';
+      box.append(badge);
+      todo.forEach(f => {
+        const b = document.createElement('button'); b.className = 'btn-mini'; b.textContent = 'Revert ' + f.label;
+        b.title = 'Restore the original ' + f.label + ' as first ingested';
+        b.addEventListener('click', async () => {
+          if(!window.confirm('Restore the original ' + f.label + '? Your edit to it will be discarded.')) return;
+          b.disabled = true;
+          const other = FIELDS.find(x => x !== f);
+          const lastOne = q[other.orig] == null;
+          const payload = {}; payload[f.col] = q[f.orig]; payload[f.orig] = null;
+          let sp = null;
+          if(f.col === 'content_html'){ sp = patchSearchText(q.content_text, q.content_html, q[f.orig]); payload.content_text = sp.text; }
+          payload.edited_at = lastOne ? null : new Date().toISOString();
+          payload.edited_by = lastOne ? null : ME.id;
+          const { data, error } = await sb.from('questions').update(payload).eq('id', q.id).eq('edited_at', q.edited_at).select('id, edited_at');
+          if(error || !data || !data.length){
+            b.disabled = false;
+            window.alert('Not restored: ' + (error ? error.message : 'this question was changed since the page loaded. Reload and try again.'));
+            return;
+          }
+          q[f.col] = payload[f.col]; q[f.orig] = null;
+          if(sp) q.content_text = payload.content_text;
+          q.edited_at = lastOne ? null : (data[0].edited_at || payload.edited_at); q.edited_by = payload.edited_by;
+          hooks.closePanels(); hooks[f.col](); box.render();
+          if(sp && sp.skipped.length) window.alert('Restored. Search text was not changed for ' + sp.skipped.length + ' part(s).');
+        });
+        box.append(b);
+      });
+    };
+    box.render();
+    return box;
+  }
+
   function editTextButton(q, getAnchor, F){
     const b = document.createElement('button'); b.className = 'btn-mini'; b.textContent = F.button;
     b.title = F.tip;
@@ -2017,18 +2068,28 @@
     const tools=document.createElement('div');
     tools.style.cssText='display:flex;align-items:center;gap:.4rem;margin-top:.5rem;';
     tools.appendChild(flagButton(q));
+    let bar = null;
+    const barRender = () => { if(bar) bar.render(); };
     if(ME.isAdmin && q.content_html) tools.appendChild(editTextButton(q, () => stem, {
       col: 'content_html', origCol: 'content_html_original', search: true, title: 'Edit question text',
       button: 'Edit text', tip: 'Admin: edit this question\u2019s text', hover: '.stem',
-      build: html => buildStem(q, html), afterSave: html => replaceStem(buildStem(q, html))
+      build: html => buildStem(q, html), afterSave: html => { replaceStem(buildStem(q, html)); barRender(); }
     }));
     if(ME.isAdmin && q.worked_solution) tools.appendChild(editTextButton(q, () => tools, {
       col: 'worked_solution', origCol: 'worked_solution_original', search: false, title: 'Edit worked solution',
       button: 'Edit solution', tip: 'Admin: edit this worked solution\u2019s text', hover: '.ws',
       build: html => { const d = document.createElement('div'); d.className = 'ws'; d.innerHTML = html;
                        resolveAssets(d, q.assets); annotateParts(d, q); return d; },
-      afterSave: () => { if(wsRefresh) wsRefresh(); }
+      afterSave: () => { if(wsRefresh) wsRefresh(); barRender(); }
     }));
+    if(ME.isAdmin){
+      bar = editedBar(q, {
+        content_html: () => replaceStem(buildStem(q, q.content_html)),
+        worked_solution: () => { if(wsRefresh) wsRefresh(); },
+        closePanels: () => el.querySelectorAll('.textedit').forEach(n => n.remove())
+      });
+      tools.appendChild(bar);
+    }
     el.appendChild(tools);
     const chips=qtypeChips(q); if(chips && !ME.isAdmin) el.appendChild(chips);
     if(ME.isAdmin){ el.appendChild(tagEditor(q)); el.appendChild(typeEditor(q)); }

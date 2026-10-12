@@ -607,6 +607,10 @@
     font:.8rem/1.45 ui-monospace,"IBM Plex Mono",Menlo,Consolas,monospace; tab-size:2; }
   .textedit .edit-check { margin:.45rem 0; font-size:.82rem; line-height:1.4; }
   .textedit .edit-check ul { margin:.2rem 0 0; padding-left:1.2rem; }
+  .textedit .edit-status { margin:.45rem 0 0; font-size:.82rem; line-height:1.4; }
+  .textedit .edit-status:empty { display:none; }
+  .textedit .edit-status.ok  { color:var(--green,#137a52); }
+  .textedit .edit-status.bad { color:#b3261e; }
   .textedit .edit-check.ok   { color:var(--green,#137a52); }
   .textedit .edit-check.bad  { color:#b3261e; }
   .textedit .edit-check .warn{ color:#a96f12; }
@@ -807,7 +811,7 @@
     const { data, error } = await sb
       .from('questions')
       .select(`id, type, section_label, question_number, content_text, content_html, options, answer_key, status,
-               worked_solution,
+               worked_solution, edited_at, edited_by, content_html_original, worked_solution_original,
                papers ( school, year, level, paper_number, paper_name, assessment_type, source_path ),
                question_assets ( storage_path, slot, ordinal, display_width_pt ),
                question_topics ( topics ( id, code, name, ordinal, syllabus ) ),
@@ -1331,8 +1335,79 @@
     return { blocks, warns };
   }
 
-  // Panel opens under the stem. Saving arrives in the next chunk, so Save is inert here.
-  function textEditor(q, getStem){
+
+  // ---- keeping content_text (the search text) in step with an edit ----
+  // content_text is NOT the plain text of content_html: it leaves out figure placeholders,
+  // collapses whitespace and spells some characters differently (the HTML has a Greek
+  // delta + italic H where content_text has the increment sign). Regenerating it from the
+  // edited HTML would silently change what search sees, so instead the words the admin
+  // actually changed are patched into the EXISTING content_text, located with a few words
+  // of context. A change that cannot be located exactly once is reported and left alone.
+  function plainWords(html){
+    const doc = new DOMParser().parseFromString('<body>'+(html||'')+'</body>', 'text/html');
+    doc.body.querySelectorAll('.fig, img, script, style').forEach(n => n.remove());
+    doc.body.querySelectorAll('p,div,li,tr,td,th,br,ol,ul,table,h1,h2,h3,h4').forEach(n => { n.before(' '); n.after(' '); });
+    return (doc.body.textContent || '').split(/\s+/).filter(Boolean);
+  }
+  function wordDiff(a, b){                       // ranges where a and b differ (LCS based)
+    const n = a.length, m = b.length;
+    const dp = Array.from({length:n+1}, () => new Uint16Array(m+1));
+    for(let i=n-1;i>=0;i--) for(let j=m-1;j>=0;j--)
+      dp[i][j] = a[i]===b[j] ? dp[i+1][j+1]+1 : Math.max(dp[i+1][j], dp[i][j+1]);
+    const hunks = []; let i=0, j=0, hi=-1, hj=-1;
+    while(i<n || j<m){
+      if(i<n && j<m && a[i]===b[j]){
+        if(hi>=0){ hunks.push({ai:hi, aj:i, bi:hj, bj:j}); hi=-1; }
+        i++; j++;
+      } else {
+        if(hi<0){ hi=i; hj=j; }
+        if(j<m && (i>=n || dp[i][j+1] >= dp[i+1][j])) j++; else i++;
+      }
+    }
+    if(hi>=0) hunks.push({ai:hi, aj:n, bi:hj, bj:m});
+    return hunks;
+  }
+  function findWhole(text, needle){              // positions where needle sits on word boundaries
+    const out = []; let from = 0, k;
+    while((k = text.indexOf(needle, from)) !== -1){
+      const before = k === 0 || text[k-1] === ' ';
+      const after = k + needle.length === text.length || text[k + needle.length] === ' ';
+      if(before && after) out.push(k);
+      from = k + 1;
+    }
+    return out;
+  }
+  function patchSearchText(ct, origHtml, draftHtml){
+    const A = plainWords(origHtml), B = plainWords(draftHtml);
+    const hunks = wordDiff(A, B);
+    let text = (ct || '').replace(/\s+/g, ' ').trim();
+    const applied = [], skipped = [];
+    hunks.forEach(h => {
+      const oldW = A.slice(h.ai, h.aj), newW = B.slice(h.bi, h.bj);
+      const label = (oldW.join(' ') || '(nothing)') + ' → ' + (newW.join(' ') || '(removed)');
+      let done = false, why = 'not found in the search text';
+      for(let k = 1; k <= 4 && !done; k++){
+        // earlier hunks are already applied, so the words before are the NEW ones
+        const pre = B.slice(Math.max(0, h.bi - k), h.bi), post = A.slice(h.aj, h.aj + k);
+        const search = [...pre, ...oldW, ...post].join(' ');
+        if(!search) break;
+        const hits = findWhole(text, search);
+        if(hits.length === 1){
+          const repl = [...pre, ...newW, ...post].join(' ');
+          text = text.slice(0, hits[0]) + repl + text.slice(hits[0] + search.length);
+          applied.push(label); done = true;
+        } else if(hits.length > 1){ why = 'matches more than one place'; }
+        else if(k === 1){ why = 'not found in the search text'; break; }
+        else break;
+      }
+      if(!done) skipped.push(label + ' (' + why + ')');
+    });
+    return { text: applied.length ? text : (ct || ''), applied, skipped };
+  }
+
+  // Panel opens under the stem. Save writes content_html, the patched content_text and the
+  // edit trail; the very first edit also stores the original so it can be restored.
+  function textEditor(q, getStem, replaceStem){
     const wrap = document.createElement('div'); wrap.className = 'textedit';
     const h = document.createElement('h4'); h.textContent = 'Edit question text (HTML)';
     const ta = document.createElement('textarea'); ta.value = q.content_html || '';
@@ -1340,20 +1415,23 @@
     const check = document.createElement('div'); check.className = 'edit-check';
     const actions = document.createElement('div'); actions.className = 'edit-actions';
     const save = document.createElement('button'); save.className = 'btn-mini'; save.textContent = 'Save';
-    save.disabled = true; save.title = 'Saving is not wired up yet';
+    save.disabled = true;
     const reset = document.createElement('button'); reset.className = 'btn-mini'; reset.textContent = 'Reset to stored text';
     const close = document.createElement('button'); close.className = 'btn-mini'; close.textContent = 'Close';
     actions.append(save, reset, close);
+    const status = document.createElement('div'); status.className = 'edit-status'; status.setAttribute('aria-live','polite');
     const prevBox = document.createElement('div'); prevBox.className = 'edit-preview';
     const ph = document.createElement('h4'); ph.textContent = 'Preview of your draft';
     const prevBody = document.createElement('div');
     prevBox.append(ph, prevBody);
 
-    let timer = null;
+    let timer = null, busy = false;
     const refresh = () => {
       const draft = ta.value, orig = q.content_html || '';
       const { blocks, warns } = compareMarkup(orig, draft);
       check.className = 'edit-check ' + (blocks.length ? 'bad' : 'ok');
+      save.disabled = busy || draft === orig || blocks.length > 0;
+      save.title = blocks.length ? 'Fix the blocked changes first' : '';
       if(draft === orig){
         check.className = 'edit-check ok'; check.textContent = 'No changes yet.';
       } else {
@@ -1361,6 +1439,11 @@
           ? '<b>Blocked — structure changed:</b><ul>' + blocks.map(x=>`<li>${esc(x)}</li>`).join('') + '</ul>'
           : '<b>Markup check passed:</b> figures, tables, equations and layout blocks are unchanged.';
         if(warns.length) t += `<div class="warn">Check these: <ul>${warns.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`;
+        if(!blocks.length){
+          const sp = patchSearchText(q.content_text, orig, draft);
+          if(sp.applied.length) t += `<div>Search text will be updated: <ul>${sp.applied.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`;
+          if(sp.skipped.length) t += `<div class="warn">Search text will NOT change for: <ul>${sp.skipped.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`;
+        }
         check.innerHTML = t;
       }
       prevBody.replaceChildren(buildStem(q, draft));
@@ -1368,21 +1451,56 @@
     };
     // annotateParts is idempotent; re-run it on the preview so part hover works there too
     const refreshHover = () => prevBody.querySelectorAll('.stem').forEach(r => annotateParts(r, q));
-    ta.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(refresh, 150); });
-    reset.addEventListener('click', () => { ta.value = q.content_html || ''; refresh(); });
+    ta.addEventListener('input', () => { status.className = 'edit-status'; status.textContent = ''; clearTimeout(timer); timer = setTimeout(refresh, 150); });
+    reset.addEventListener('click', () => { ta.value = q.content_html || ''; status.textContent = ''; refresh(); });
+    save.addEventListener('click', async () => {
+      const draft = ta.value, orig = q.content_html || '';
+      if(busy || draft === orig || compareMarkup(orig, draft).blocks.length) return;
+      busy = true; save.disabled = true; status.className = 'edit-status'; status.textContent = 'Saving\u2026';
+      const sp = patchSearchText(q.content_text, orig, draft);
+      const payload = {
+        content_html: draft, content_text: sp.text,
+        edited_at: new Date().toISOString(), edited_by: ME.id,
+        content_html_original: q.content_html_original != null ? q.content_html_original : orig
+      };
+      // Optimistic concurrency on the small edited_at column (comparing the whole HTML would
+      // blow the URL length limit): a first edit needs edited_at IS NULL, a later one needs
+      // the value we loaded. Zero rows back = someone else edited it, or the write was refused.
+      let qy = sb.from('questions').update(payload).eq('id', q.id);
+      qy = q.edited_at ? qy.eq('edited_at', q.edited_at) : qy.is('edited_at', null);
+      const { data, error } = await qy.select('id, edited_at');
+      busy = false;
+      if(error){
+        status.className = 'edit-status bad'; status.textContent = 'Not saved: ' + error.message;
+        refresh(); return;
+      }
+      if(!data || !data.length){
+        status.className = 'edit-status bad';
+        status.textContent = 'Not saved: this question was changed since the page loaded, or you no longer have permission. Reload and try again.';
+        refresh(); return;
+      }
+      q.content_html = draft; q.content_text = payload.content_text;
+      q.edited_at = data[0].edited_at || payload.edited_at; q.edited_by = ME.id;
+      q.content_html_original = payload.content_html_original;
+      replaceStem(buildStem(q, draft));
+      status.className = 'edit-status ok';
+      status.textContent = 'Saved. The original text is kept.' +
+        (sp.skipped.length ? ' Search text was not changed for ' + sp.skipped.length + ' edit(s).' : '');
+      refresh();
+    });
     close.addEventListener('click', () => { clearTimeout(timer); wrap.remove(); });
-    wrap.append(h, ta, check, actions, prevBox);
+    wrap.append(h, ta, check, actions, status, prevBox);
     refresh();
     return wrap;
   }
 
-  function editTextButton(q, getStem){
+  function editTextButton(q, getStem, replaceStem){
     const b = document.createElement('button'); b.className = 'btn-mini'; b.textContent = 'Edit text';
     b.title = 'Admin: edit this question’s text';
     let panel = null;
     b.addEventListener('click', () => {
       if(panel && panel.isConnected){ panel.remove(); panel = null; return; }
-      panel = textEditor(q, getStem);
+      panel = textEditor(q, getStem, replaceStem);
       getStem().after(panel);
     });
     return b;
@@ -1587,8 +1705,17 @@
       }
     }
 
-    const stem = buildStem(q, q.content_html);
+    let stem = buildStem(q, q.content_html);
     el.appendChild(stem);
+    // Admin save swaps the stem in place. Carry over the Show-answer highlight, which is
+    // a .correct class stamped on the old nodes by the toggle.
+    const replaceStem = ns => {
+      stem.querySelectorAll('[data-k].correct').forEach(o => {
+        const t = ns.querySelector('[data-k="' + o.getAttribute('data-k') + '"]');
+        if(t) t.classList.add('correct');
+      });
+      stem.replaceWith(ns); stem = ns;
+    };
 
     const opts=q.options||{};
     if(!q.content_html && Object.keys(opts).length){
@@ -1650,7 +1777,7 @@
     const tools=document.createElement('div');
     tools.style.cssText='display:flex;align-items:center;gap:.4rem;margin-top:.5rem;';
     tools.appendChild(flagButton(q));
-    if(ME.isAdmin && q.content_html) tools.appendChild(editTextButton(q, () => stem));
+    if(ME.isAdmin && q.content_html) tools.appendChild(editTextButton(q, () => stem, replaceStem));
     el.appendChild(tools);
     const chips=qtypeChips(q); if(chips && !ME.isAdmin) el.appendChild(chips);
     if(ME.isAdmin){ el.appendChild(tagEditor(q)); el.appendChild(typeEditor(q)); }

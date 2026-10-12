@@ -597,6 +597,23 @@
   .tagedit select, .tagedit input { padding:.3rem .45rem; border:1px solid var(--line,#c8ccd2);
     border-radius:6px; font-size:.85rem; }
   .muted-note { font-size:.8rem; color:var(--muted,#8a9099); }
+  /* admin text editor */
+  .textedit { margin-top:.6rem; padding:.6rem .7rem .7rem; border:1px solid var(--line,#dde3e9);
+    border-left:4px solid var(--teal,#0e7490); border-radius:8px; background:#f8fbfc; }
+  .textedit h4 { margin:0 0 .4rem; font-size:.72rem; text-transform:uppercase;
+    letter-spacing:.08em; color:var(--muted,#5b6b7a); }
+  .textedit textarea { width:100%; min-height:11rem; resize:vertical; padding:.5rem .6rem;
+    border:1px solid var(--line,#c8ccd2); border-radius:6px; background:#fff; color:var(--ink);
+    font:.8rem/1.45 ui-monospace,"IBM Plex Mono",Menlo,Consolas,monospace; tab-size:2; }
+  .textedit .edit-check { margin:.45rem 0; font-size:.82rem; line-height:1.4; }
+  .textedit .edit-check ul { margin:.2rem 0 0; padding-left:1.2rem; }
+  .textedit .edit-check.ok   { color:var(--green,#137a52); }
+  .textedit .edit-check.bad  { color:#b3261e; }
+  .textedit .edit-check .warn{ color:#a96f12; }
+  .textedit .edit-actions { display:flex; gap:.4rem; flex-wrap:wrap; align-items:center; }
+  .textedit .btn-mini:disabled { opacity:.5; cursor:not-allowed; }
+  .textedit .edit-preview { margin-top:.6rem; padding:.55rem .7rem .65rem; border:1px dashed var(--line,#c8ccd2);
+    border-radius:8px; background:#fff; }
   .qtchip { display:inline-flex; align-items:center; gap:.35rem; font-size:.8rem;
     border-radius:999px; padding:.15rem .5rem; border:1px solid; }
   .qt-physical { background:#e8f5ec; border-color:#b7ddc4; color:#1c6b3c; }
@@ -1270,98 +1287,114 @@
     return b;
   }
 
-  function card(q){
-    const el = document.createElement('article'); el.className='qcard';
 
-    const head = document.createElement('div'); head.className='qhead';
-    q.topics.forEach(t=>{
-      const grp  = TOPIC_GROUPS.get(topicKey(t));
-      const shared = grp && grp.syllabuses.size > 1;
-      const cls  = shared ? 'shared' : (t.syllabus==='H1' ? 'h1' : 'h2');
-      head.insertAdjacentHTML('beforeend',
-        `<span class="cell ${cls}">
-           <span class="c-code">${esc(t.syllabus)}</span>
-           <span class="c-name">${esc(t.name)}</span>
-         </span>`);
+  // ---------- admin: edit question text (chunk 1: panel, preview, markup guard) ----------
+  // The guard compares the STRUCTURE of the stored HTML with the draft. Grammar fixes touch
+  // words, not structure, so any change to figures, tables, equation markup, parts, option
+  // blocks or lists is BLOCKED; changes to emphasis/sub-/superscripts only WARN (a mark-
+  // bearing <u> or a subscript fix can be legitimate). Both sides are parsed the same way,
+  // so a stray tag the browser would repair shows up as a count difference, not silence.
+  const GUARD_BLOCK = {
+    'img':'images', '.fig':'figure placeholders', 'table':'tables', 'tr':'table rows',
+    'td':'table cells', 'th':'table header cells', '.frac':'fractions', '.fnum':'fraction numerators',
+    '.fden':'fraction denominators', '.sqrt':'roots', '.rad':'root radicands', '.stk':'stacked symbols',
+    '.part':'worked-solution parts', '.lab':'part labels', '.qpart':'question parts', '.pl':'part labels',
+    '.opts':'option blocks', '.opt':'options', '.optgrid':'option grids', '.optrow':'option rows',
+    'ol':'numbered lists', 'ul':'bullet lists', 'li':'list items', '.eqn':'aligned equations',
+    '.figcap':'figure captions', 'div':'div blocks'
+  };
+  const GUARD_WARN = {
+    'sup':'superscripts', 'sub':'subscripts', 'u':'underlines', 'b':'bold runs', 'i':'italic runs',
+    'strong':'strong runs', 'em':'emphasis runs', 'br':'line breaks', 'p':'paragraphs',
+    'span':'spans', '.el':'element-l italics'
+  };
+  function markupSignature(html){
+    const doc = new DOMParser().parseFromString('<body>'+(html||'')+'</body>', 'text/html');
+    const count = {};
+    [...Object.keys(GUARD_BLOCK), ...Object.keys(GUARD_WARN)].forEach(sel=>{
+      count[sel] = doc.body.querySelectorAll(sel).length;
     });
-    // A flagged DBQ with no topic is expected (it resists the LOs), so the banner
-    // stands in for the amber badge; the Untagged filter still finds it.
-    if(!q.topics.length && !isDbq(q)){
-      head.insertAdjacentHTML('beforeend',
-        `<span class="cell untagged" title="No topic tag — not matched to any learning objective">
-           <span class="c-code">—</span>
-           <span class="c-name">untagged</span>
-         </span>`);
-    }
-    if(q.los.length){
-      const los = document.createElement('div'); los.className='los';
-      // The chip shows only section_code, so the same code tagged on several parts (or
-      // under two LOs sharing a code) would repeat. Show it once; keep every distinct
-      // objective text in the hover title.
-      const seen = new Map();
-      q.los.forEach(l=>{
-        const key = (l.syllabus||'') + '|' + l.section_code;
-        const full = (l.syllabus? l.syllabus+' ':'')+(l.text||'');
-        if(seen.has(key)){
-          const e = seen.get(key);
-          if(!e.titles.includes(full)){ e.titles.push(full); e.el.title = e.titles.join('\n'); }
-          return;
-        }
-        const s=document.createElement('span');
-        s.className='lo ' + (l.syllabus==='H1' ? 'h1' : 'h2');
-        s.textContent=l.section_code;
-        s.title=full;
-        seen.set(key, {el:s, titles:[full]});
-        los.appendChild(s);
-      });
-      head.appendChild(los);
-    }
-    if(isDbq(q)) el.appendChild(dbqBanner());
-    el.appendChild(head);
+    const assets = [...doc.body.querySelectorAll('img')]
+      .map(im => im.getAttribute('data-asset') || im.getAttribute('src') || '').sort();
+    return { count, assets };
+  }
+  function compareMarkup(origHtml, draftHtml){
+    const a = markupSignature(origHtml), b = markupSignature(draftHtml);
+    const blocks = [], warns = [];
+    Object.entries(GUARD_BLOCK).forEach(([sel,name])=>{
+      if(a.count[sel] !== b.count[sel]) blocks.push(`${name}: ${a.count[sel]} → ${b.count[sel]}`);
+    });
+    if(a.assets.join('|') !== b.assets.join('|')) blocks.push('the set of image files referenced changed');
+    Object.entries(GUARD_WARN).forEach(([sel,name])=>{
+      if(a.count[sel] !== b.count[sel]) warns.push(`${name}: ${a.count[sel]} → ${b.count[sel]}`);
+    });
+    return { blocks, warns };
+  }
 
-    if(q.paper){
-      const p=q.paper;
-      const l1=[p.school, p.year].filter(Boolean).join(' ');
-      // paper_name is free text set by an admin ("WA2"); only fall back to
-      // P{n} for genuinely numbered papers, so a WA isn't labelled "P2".
-      const pname = p.paper_name || (p.paper_number ? 'P'+p.paper_number : null);
-      // MCQ and structured questions share numbering within a paper, so the
-      // question type has to appear or "WA2 Q1" is ambiguous.
-      // section_label is free text an admin sets ('MCQ', 'SQ', ...). Fall back to
-      // the question type only when it hasn't been filled in.
-      const sect = q.section_label || (q.type==='mcq' ? 'MCQ' : null);
-      const qlabel = q.question_number
-        ? [sect, (sect ? '' : 'Q') + q.question_number].filter(Boolean).join(' ')
-        : null;
-      const l2=[p.level, pname, qlabel].filter(Boolean).join(' ');
-      if(l1||l2){
-        const src=document.createElement('div'); src.className='source';
-        if(l1){
-          let a;
-          if(p.source_path){
-            a=document.createElement('a'); a.textContent=l1; a.href='#';
-            a.title='Open the original paper';
-            a.addEventListener('click', async e=>{
-              e.preventDefault(); a.style.opacity='.5';
-              try{
-                const { data, error } = await sb.storage.from('source-papers')
-                  .createSignedUrl(p.source_path, 60);
-                if(error || !data?.signedUrl) throw error || new Error('no url');
-                window.open(data.signedUrl,'_blank','noopener');
-              }catch(err){ console.error('source paper:',err);
-                a.title="Couldn't open the paper - it may not be uploaded yet."; }
-              finally{ a.style.opacity=''; }
-            });
-          } else { a=document.createElement('div'); a.textContent=l1; }
-          src.appendChild(a);
-        }
-        if(l2){ const b=document.createElement('div'); b.className='source-sub'; b.textContent=l2; src.appendChild(b); }
-        el.appendChild(src);
+  // Panel opens under the stem. Saving arrives in the next chunk, so Save is inert here.
+  function textEditor(q, getStem){
+    const wrap = document.createElement('div'); wrap.className = 'textedit';
+    const h = document.createElement('h4'); h.textContent = 'Edit question text (HTML)';
+    const ta = document.createElement('textarea'); ta.value = q.content_html || '';
+    ta.spellcheck = true; ta.setAttribute('aria-label', 'Question HTML');
+    const check = document.createElement('div'); check.className = 'edit-check';
+    const actions = document.createElement('div'); actions.className = 'edit-actions';
+    const save = document.createElement('button'); save.className = 'btn-mini'; save.textContent = 'Save';
+    save.disabled = true; save.title = 'Saving is not wired up yet';
+    const reset = document.createElement('button'); reset.className = 'btn-mini'; reset.textContent = 'Reset to stored text';
+    const close = document.createElement('button'); close.className = 'btn-mini'; close.textContent = 'Close';
+    actions.append(save, reset, close);
+    const prevBox = document.createElement('div'); prevBox.className = 'edit-preview';
+    const ph = document.createElement('h4'); ph.textContent = 'Preview of your draft';
+    const prevBody = document.createElement('div');
+    prevBox.append(ph, prevBody);
+
+    let timer = null;
+    const refresh = () => {
+      const draft = ta.value, orig = q.content_html || '';
+      const { blocks, warns } = compareMarkup(orig, draft);
+      check.className = 'edit-check ' + (blocks.length ? 'bad' : 'ok');
+      if(draft === orig){
+        check.className = 'edit-check ok'; check.textContent = 'No changes yet.';
+      } else {
+        let t = blocks.length
+          ? '<b>Blocked — structure changed:</b><ul>' + blocks.map(x=>`<li>${esc(x)}</li>`).join('') + '</ul>'
+          : '<b>Markup check passed:</b> figures, tables, equations and layout blocks are unchanged.';
+        if(warns.length) t += `<div class="warn">Check these: <ul>${warns.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`;
+        check.innerHTML = t;
       }
-    }
+      prevBody.replaceChildren(buildStem(q, draft));
+      refreshHover();
+    };
+    // annotateParts is idempotent; re-run it on the preview so part hover works there too
+    const refreshHover = () => prevBody.querySelectorAll('.stem').forEach(r => annotateParts(r, q));
+    ta.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(refresh, 150); });
+    reset.addEventListener('click', () => { ta.value = q.content_html || ''; refresh(); });
+    close.addEventListener('click', () => { clearTimeout(timer); wrap.remove(); });
+    wrap.append(h, ta, check, actions, prevBox);
+    refresh();
+    return wrap;
+  }
 
+  function editTextButton(q, getStem){
+    const b = document.createElement('button'); b.className = 'btn-mini'; b.textContent = 'Edit text';
+    b.title = 'Admin: edit this question’s text';
+    let panel = null;
+    b.addEventListener('click', () => {
+      if(panel && panel.isConnected){ panel.remove(); panel = null; return; }
+      panel = textEditor(q, getStem);
+      getStem().after(panel);
+    });
+    return b;
+  }
+
+  // Builds the question-stem DOM for q from a given HTML string (null = fall back to
+  // content_text). card() calls it with the stored content_html; the admin editor calls
+  // it with the textarea's draft, so the preview goes through the SAME pipeline
+  // (asset resolution, figure placement, option grids, answer highlighting) as the card.
+  function buildStem(q, html){
     const stem=document.createElement('div'); stem.className='stem';
-    if(q.content_html){ stem.innerHTML=q.content_html; }   // formatted display layer
+    if(html){ stem.innerHTML=html; }   // formatted display layer
     else stem.textContent=q.content_text||'';
 
     resolveAssets(stem, q.assets);
@@ -1461,6 +1494,100 @@
       }
     }
     markOptions(stem);
+    return stem;
+  }
+
+  function card(q){
+    const el = document.createElement('article'); el.className='qcard';
+
+    const head = document.createElement('div'); head.className='qhead';
+    q.topics.forEach(t=>{
+      const grp  = TOPIC_GROUPS.get(topicKey(t));
+      const shared = grp && grp.syllabuses.size > 1;
+      const cls  = shared ? 'shared' : (t.syllabus==='H1' ? 'h1' : 'h2');
+      head.insertAdjacentHTML('beforeend',
+        `<span class="cell ${cls}">
+           <span class="c-code">${esc(t.syllabus)}</span>
+           <span class="c-name">${esc(t.name)}</span>
+         </span>`);
+    });
+    // A flagged DBQ with no topic is expected (it resists the LOs), so the banner
+    // stands in for the amber badge; the Untagged filter still finds it.
+    if(!q.topics.length && !isDbq(q)){
+      head.insertAdjacentHTML('beforeend',
+        `<span class="cell untagged" title="No topic tag — not matched to any learning objective">
+           <span class="c-code">—</span>
+           <span class="c-name">untagged</span>
+         </span>`);
+    }
+    if(q.los.length){
+      const los = document.createElement('div'); los.className='los';
+      // The chip shows only section_code, so the same code tagged on several parts (or
+      // under two LOs sharing a code) would repeat. Show it once; keep every distinct
+      // objective text in the hover title.
+      const seen = new Map();
+      q.los.forEach(l=>{
+        const key = (l.syllabus||'') + '|' + l.section_code;
+        const full = (l.syllabus? l.syllabus+' ':'')+(l.text||'');
+        if(seen.has(key)){
+          const e = seen.get(key);
+          if(!e.titles.includes(full)){ e.titles.push(full); e.el.title = e.titles.join('\n'); }
+          return;
+        }
+        const s=document.createElement('span');
+        s.className='lo ' + (l.syllabus==='H1' ? 'h1' : 'h2');
+        s.textContent=l.section_code;
+        s.title=full;
+        seen.set(key, {el:s, titles:[full]});
+        los.appendChild(s);
+      });
+      head.appendChild(los);
+    }
+    if(isDbq(q)) el.appendChild(dbqBanner());
+    el.appendChild(head);
+
+    if(q.paper){
+      const p=q.paper;
+      const l1=[p.school, p.year].filter(Boolean).join(' ');
+      // paper_name is free text set by an admin ("WA2"); only fall back to
+      // P{n} for genuinely numbered papers, so a WA isn't labelled "P2".
+      const pname = p.paper_name || (p.paper_number ? 'P'+p.paper_number : null);
+      // MCQ and structured questions share numbering within a paper, so the
+      // question type has to appear or "WA2 Q1" is ambiguous.
+      // section_label is free text an admin sets ('MCQ', 'SQ', ...). Fall back to
+      // the question type only when it hasn't been filled in.
+      const sect = q.section_label || (q.type==='mcq' ? 'MCQ' : null);
+      const qlabel = q.question_number
+        ? [sect, (sect ? '' : 'Q') + q.question_number].filter(Boolean).join(' ')
+        : null;
+      const l2=[p.level, pname, qlabel].filter(Boolean).join(' ');
+      if(l1||l2){
+        const src=document.createElement('div'); src.className='source';
+        if(l1){
+          let a;
+          if(p.source_path){
+            a=document.createElement('a'); a.textContent=l1; a.href='#';
+            a.title='Open the original paper';
+            a.addEventListener('click', async e=>{
+              e.preventDefault(); a.style.opacity='.5';
+              try{
+                const { data, error } = await sb.storage.from('source-papers')
+                  .createSignedUrl(p.source_path, 60);
+                if(error || !data?.signedUrl) throw error || new Error('no url');
+                window.open(data.signedUrl,'_blank','noopener');
+              }catch(err){ console.error('source paper:',err);
+                a.title="Couldn't open the paper - it may not be uploaded yet."; }
+              finally{ a.style.opacity=''; }
+            });
+          } else { a=document.createElement('div'); a.textContent=l1; }
+          src.appendChild(a);
+        }
+        if(l2){ const b=document.createElement('div'); b.className='source-sub'; b.textContent=l2; src.appendChild(b); }
+        el.appendChild(src);
+      }
+    }
+
+    const stem = buildStem(q, q.content_html);
     el.appendChild(stem);
 
     const opts=q.options||{};
@@ -1523,6 +1650,7 @@
     const tools=document.createElement('div');
     tools.style.cssText='display:flex;align-items:center;gap:.4rem;margin-top:.5rem;';
     tools.appendChild(flagButton(q));
+    if(ME.isAdmin && q.content_html) tools.appendChild(editTextButton(q, () => stem));
     el.appendChild(tools);
     const chips=qtypeChips(q); if(chips && !ME.isAdmin) el.appendChild(chips);
     if(ME.isAdmin){ el.appendChild(tagEditor(q)); el.appendChild(typeEditor(q)); }

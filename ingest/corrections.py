@@ -550,6 +550,16 @@ LEADIN_MOVES = {
     ("CJC", "H2", "P2", 2024, 2, "(c)"):
         "'The structure of phosphorus(V) sulfide, P4S10, ...' introduces (d); "
         "printed between (c)'s [1] and (d).",
+    # DHS 2024 H2 P3 (2026-10-11)
+    ("DHS", "H2", "P3", 2024, 2, "(b)(iii)"):
+        "'There are three different types of 3,4-dimethylhexane molecule' (X, Y, Z) "
+        "introduces (b)(iv) and (b)(v); printed between (b)(iii)'s [2] and (b)(iv).",
+    ("DHS", "H2", "P3", 2024, 2, "(d)(i)"):
+        "The NO2 decomposition lead-in (equation and rate constant) introduces "
+        "(d)(ii); printed between (d)(i)'s [2] and (d)(ii).",
+    ("DHS", "H2", "P3", 2024, 5, "(d)(i)"):
+        "'The formation of the organoboron intermediate ... one-step mechanism' "
+        "introduces (d)(ii); printed between (d)(i)'s [1] and (d)(ii).",
 }
 
 
@@ -845,8 +855,15 @@ def inline_assets(school, level, paper, year, qnum) -> list:
 
 
 _CP2 = ("CJC", "H2", "P2", 2024)
+_D3 = ("DHS", "H2", "P3", 2024)
 
 CORRECTIONS = [
+    # ---- DHS 2024 H2 P3 (2026-10-11)
+    (_D3, r"[ \t]*<br>[ \t]*", " ",
+     "Soft line breaks (w:br) typed to wrap a sentence at the printed margin "
+     "(1(d)(i) 'seen in / Fig. 1.3', 1(d)(iii) 'for / steps 1 and 2', 3(d) "
+     "'C9H10O3. / Q effervesces'). No genuine break uses <br> here.",
+     "housekeeping, same as ASRJC/CJC/DHS P2"),
     # ---- CJC 2024 H2 P2 (2026-10-08)
     (_CP2, r"[ \t]*<br>[ \t]*", " ",
      "Soft line breaks (w:br) typed to wrap a sentence at the printed margin "

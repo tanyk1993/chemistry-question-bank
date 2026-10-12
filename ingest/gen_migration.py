@@ -100,6 +100,7 @@ def main(outdir: str, dest: str):
         add("UPDATE questions SET worked_solution = %s%s%s"
             % (TAG, sols[q], TAG))
         add(" WHERE id = '%s'" % qid)
+        add("   AND edited_at IS NULL  -- never overwrite an admin's hand edit")
         add(" RETURNING id, question_number, length(worked_solution) AS ws_chars;")
         add("")
     add("-- ---------------------------------------------------------------")

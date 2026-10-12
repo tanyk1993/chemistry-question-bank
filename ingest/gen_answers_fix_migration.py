@@ -88,6 +88,7 @@ def main(ws_json: str, dest: str, *, school: str = "ACJC", year: int = 2024,
         add("  FROM papers p")
         add(" WHERE p.id = q.paper_id AND %s" % WHERE)
         add("   AND q.type = '%s' AND q.question_number = %d" % (qtype, q))
+        add("   AND q.edited_at IS NULL  -- never overwrite an admin's hand edit")
         add(" RETURNING q.question_number, length(q.worked_solution) AS html_chars;")
         add("")
 

@@ -105,6 +105,7 @@ def main(outdir: str, qnums: str, dest: str, prev: str | None = None, *,
         add("  FROM papers p")
         add(" WHERE p.id = q.paper_id AND %s" % where)
         add("   AND q.type = 'mcq' AND q.question_number = %d" % q)
+        add("   AND q.edited_at IS NULL  -- never overwrite an admin's hand edit")
         add(" RETURNING q.question_number, length(q.content_html) AS html_chars,")
         add("           q.content_search IS NOT NULL AS searchable;")
         add("")

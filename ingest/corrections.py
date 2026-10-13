@@ -436,6 +436,20 @@ MCQ_FIXUPS.extend([
 
 
 
+# --- HCI 2024 H2 P1 (2026-10-12) -----------------------------------------
+_HC = ("HCI", "H2", "P1", 2024)
+MCQ_FIXUPS.extend([
+    # Q13: the graph's x-axis title is typed text right after the picture. The
+    # user's snip carries BOTH axis titles, so the typed duplicate goes (the
+    # same ruling as DHS P1 Q13/Q21). The paragraph also holds a second
+    # CENTRE sentinel mid-line, which Postgres would refuse as a NUL byte.
+    (_HC + (13,), "html", r'<p class="c">\x00C\x00\s*time / min</p>\n?', "", 1,
+     "'time / min' is inside the user's graph snip; typed duplicate removed."),
+    (_HC + (13,), "text", r"graph below\. time / min ", "graph below. ", 1,
+     "same axis title, in the search text."),
+])
+
+
 def no_option_text(school, level, paper, year) -> set:
     """Question numbers whose options exist only as labels in a figure."""
     return NO_OPTION_TEXT.get((school, level, paper, year), set())

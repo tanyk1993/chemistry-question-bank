@@ -245,7 +245,13 @@ def sym_to_text(font: str, char: str) -> str:
     """
     table = {"symbol": SYMBOL, "wingdings": WINGDINGS,
               "wingdings 2": WINGDINGS_2,
-              "mt extra": MT_EXTRA}.get((font or "").strip().lower())
+              "mt extra": MT_EXTRA,
+              # Euclid Extra: MathType's own copy of MT Extra's layout, first
+              # seen on HCI 2024 H2 P1 Q16 (PbI2(s) <=> Pb2+(aq) + 2I-(aq)).
+              # The school's Word PDF prints an EMPTY BOX at that glyph (the
+              # font was not embedded), so the box is the school's defect, not
+              # ours; the context (a stated equilibrium) fixes the identity.
+              "euclid extra": MT_EXTRA}.get((font or "").strip().lower())
     if table is None:
         raise UnknownSymbol(f"unmapped w:sym font {font!r} (char {char!r})")
     key = (char or "").strip().upper()

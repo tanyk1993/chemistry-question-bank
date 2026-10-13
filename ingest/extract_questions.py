@@ -369,7 +369,10 @@ def main(argv=None):
     problems = audit.charset_gate(
         extracted, a.pdf,
         # The running footer repeats on every page and belongs to none of them.
-        ignore_re=[r"\u00a9\s*Raffles Institution\s*\d{4}", r"9729/01/S/\d+"],
+        ignore_re=[r"\u00a9\s*Raffles Institution\s*\d{4}", r"9729/01/S/\d+",
+                   # HCI's footer (HCI 2024 H2 P1)
+                   r"\u00a9\s*Hwa Chong Institution\s*\d{4}",
+                   r"9729/01/C2 Preliminary Examination"],
         first_page=a.first_page, last_page=last)
     real, expected = audit.classify(problems)
 

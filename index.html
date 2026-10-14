@@ -217,8 +217,8 @@
   /* An option's figure and its caption are one unit: "constant V" means nothing
      three options away from the graph it describes. Stacked in a column so the
      caption sits under its own diagram. */
-  .stem .optbody{display:flex;flex-direction:column;align-items:center;gap:.15rem}
-  .stem .optcap{font-size:.88rem;color:var(--ink);text-align:center}
+  .stem .optbody{display:flex;flex-direction:column;align-items:flex-start;gap:.15rem}
+  .stem .optcap{font-size:.88rem;color:var(--ink);text-align:center;align-self:center}
   /* A text-only option sitting next to figure options (see optGrid's
      textLetters) -- same white-card weight as .optrow img's border/radius/
      background so the option set reads as one list, not diagrams-plus-text. */

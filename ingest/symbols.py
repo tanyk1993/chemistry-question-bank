@@ -34,6 +34,7 @@ SYMBOL = {
     "F0B4": "×",   # 0xB4 multiply             x ; "2.3 x 10^-4 s"
     "F0B7": "•",   # 0xB7 bullet               . ; the RADICAL DOT in .OH -- the
                         #   single highest-consequence entry in this table.
+    "F02B": "+",   # 0x2B plus -- HCI 2024 H2 P2 answers: Symbol-font "+" in a typed equation
     "F02D": "−",   # 0x2D minus                - ; "8e-" (true minus, not hyphen)
     "F0B0": "°",   # 0xB0 degree               ; "bond angle: 120"
     "F061": "α",   # 0x61 alpha -- ASRJC 2024 H2 P2 Table 2.1 header "α-carboxyl group" /

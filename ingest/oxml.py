@@ -482,8 +482,18 @@ def paragraph_tokens(p):
             yield from _omml_tokens(child)
         elif ln in ("hyperlink", "smartTag", "sdt", "ins"):
             yield from _flush_combine()
-            for sub in child.iter():
-                if etree.QName(sub).localname == "r" and sub.getparent() is child:
+            # An INLINE content control (<w:sdt>, e.g. the Google Docs
+            # "goog_rdk_*" wrappers HCI 2024 H2 P2 carries around its
+            # superscripts) keeps its runs one level down, in
+            # <w:sdtContent>. Reading only direct-child runs dropped every
+            # such run silently ("mol dm", "OH", Table 5.1's values).
+            holder = child
+            if ln == "sdt":
+                holder = child.find(Wq + "sdtContent")
+                if holder is None:
+                    continue
+            for sub in holder:
+                if etree.QName(sub).localname == "r":
                     yield from _tokens_from_run(sub)
         elif ln in ("pPr", "bookmarkStart", "bookmarkEnd", "proofErr",
                     "commentRangeStart", "commentRangeEnd", "del"):

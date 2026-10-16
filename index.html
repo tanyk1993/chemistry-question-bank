@@ -635,6 +635,29 @@
   .qt-physical { background:#e8f5ec; border-color:#b7ddc4; color:#1c6b3c; }
   .qt-organic  { background:#f2ecfb; border-color:#d5c4ee; color:#5b3a99; }
   .qt-general  { background:#f1f3f5; border-color:#d6dae0; color:#4a5158; }
+  .qt-inorganic { background:#e2f1f4; border-color:#b5d9e1; color:#0b5c72; }
+  .morebar { text-align:center; padding:.8rem 0 1.2rem; }
+  .qm-hit { background:#fff3bf; border-radius:4px; box-shadow:0 0 0 2px #fff3bf; }
+  #bt { max-width:980px; margin:0 auto; padding:1.5rem 1.25rem 4rem; }
+  #bt h2 { margin:0 0 .3rem; font-size:1.15rem; }
+  #bt .sub { color:var(--muted); font-size:.88rem; margin:0 0 1rem; }
+  #bt label { display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--muted); font-weight:600; margin-bottom:.4rem; }
+  .bt-controls { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; margin-bottom:.9rem; }
+  #bt-count { margin:.2rem 0 1rem; }
+  .bt-group { margin:0 0 1.4rem; }
+  .bt-group > h3 { font-size:.95rem; margin:0 0 .5rem; display:flex; align-items:center; gap:.5rem; }
+  .bt-row { border:1px solid var(--line); border-radius:10px; background:var(--card); margin-bottom:.5rem; }
+  .bt-head { display:block; width:100%; text-align:left; background:none; border:0; padding:.65rem .8rem; font:inherit; color:var(--ink); }
+  .bt-head:hover { background:#f7fafb; border-radius:10px; }
+  .bt-title { font-weight:600; }
+  .bt-sub { font-size:.82rem; color:var(--muted); margin-top:.2rem; display:flex; flex-wrap:wrap; gap:.3rem .6rem; align-items:center; }
+  .bt-match { font-weight:600; color:#0b5c72; }
+  .bt-chip { font-size:.74rem; border:1px solid var(--line); border-radius:999px; padding:.05rem .45rem; background:var(--paper); }
+  .bt-body { padding:0 .6rem .7rem; }
+  .bt-body .qcard { margin:0; box-shadow:none; }
+  .bt-toggle { display:inline-block; margin:.1rem 0 .6rem; font-size:.82rem; color:var(--teal); background:none; border:0; padding:0; text-decoration:underline; }
+  .qcard.bt-focus .qpart.bt-fold { display:none; }
   .qtchip button { border:0; background:none; cursor:pointer; font-weight:700;
     line-height:1; color:inherit; opacity:.65; }
   .qtchip button:hover { opacity:1; }
@@ -671,6 +694,7 @@
     <div class="spacer"></div>
     <span id="whoami" class="whoami"></span>
     <span class="adminbar">
+      <button id="typebtn" class="btn-ghost">Browse by type</button>
       <button id="adminbtn" class="btn-ghost hidden">Admin</button>
       <button id="signout" class="btn-ghost">Sign out</button>
     </span>
@@ -728,9 +752,20 @@
       <div class="loading">Loading questions…</div>
     </section>
   </main>
+  <section id="bt" class="hidden" aria-label="Browse by type">
+    <h2>Browse by type</h2>
+    <p class="sub">Pick a topic and a question type to see the questions with a matching part.</p>
+    <div class="bt-controls">
+      <div><label for="bt-topic">Topic</label><select id="bt-topic"><option value="">All topics</option></select></div>
+      <div id="bt-lowrap" class="hidden"><label for="bt-lo">Learning objective</label><select id="bt-lo"><option value="">All objectives</option></select></div>
+      <div><label for="bt-type">Question type</label><select id="bt-type"><option value="">All types</option></select></div>
+    </div>
+    <div id="bt-count" class="count"></div>
+    <div id="bt-results"></div>
+  </section>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script>
 <script>
   // ---- config (anon key is safe in frontend; RLS guards the data) ----
   const SUPABASE_URL  = "https://pnnbbnumcnalpbipovik.supabase.co";
@@ -743,12 +778,14 @@
 
   const $ = s => document.querySelector(s);
   const gate = $('#gate'), app = $('#app');
-  let ALL = [];  // loaded questions
+  let ALL = [];  // loaded questions (light fields until hydrate() fills a card's heavy ones)
+  let BYID = new Map();
   // boot() and onAuthStateChange are independent entry points: the auth event can
   // fire before boot's getSession() await resolves, so both reach enterApp and the
   // whole question set is fetched twice (which duplicated the topic dropdown).
   // Let the first one win; showGate() clears it so signing back in still works.
   let ENTERED = false;
+  let ME_READY = Promise.resolve();
 
   // ---------------- auth ----------------
   async function boot(){
@@ -764,10 +801,13 @@
     ME.id = session?.user?.id || null;
     ME.email = session?.user?.email || null;
     if(!ME.id) return;
-    const { data } = await sb.from('profiles').select('role').eq('id', ME.id).maybeSingle();
+    // Independent queries, so run them together instead of one after the other.
+    const [{ data }, { data:mine }] = await Promise.all([
+      sb.from('profiles').select('role').eq('id', ME.id).maybeSingle(),
+      sb.from('flags').select('question_id').eq('status','open')
+    ]);
     ME.isAdmin = String(data?.role||'') === 'admin';
     document.getElementById('adminbtn').classList.toggle('hidden', !ME.isAdmin);
-    const { data:mine } = await sb.from('flags').select('question_id').eq('status','open');
     MY_FLAGS = new Set((mine||[]).map(f=>f.question_id));
   }
 
@@ -800,9 +840,11 @@
     if(ENTERED) return;
     ENTERED = true;
     gate.classList.add('hidden'); app.classList.remove('hidden');
-    await loadMe(session).catch(e=>console.warn('role lookup failed', e));
     $('#whoami').textContent = session.user.email || '';
-    await loadQuestions();
+    // The role lookup and the question list don't depend on each other; the heavy
+    // per-question fetch (hydrate) waits on ME_READY before it needs ME.isAdmin.
+    ME_READY = loadMe(session).catch(e=>console.warn('role lookup failed', e));
+    await Promise.all([ME_READY, loadQuestions()]);
   }
   $('#signin').addEventListener('click', signIn);
   async function signIn(){
@@ -814,18 +856,19 @@
     // on success the browser redirects to Google; we only reach here on error
     if(error){ msg.textContent = "Couldn't start Google sign-in — please try again."; msg.className='msg error'; }
   }
-  $('#signout').addEventListener('click', async ()=>{ await sb.auth.signOut(); ALL=[]; showGate(); });
+  $('#signout').addEventListener('click', async ()=>{ await sb.auth.signOut(); ALL=[]; SEARCH_CACHE.clear(); BT_READY=false; showGate(); });
 
   // ---------------- data ----------------
   async function loadQuestions(){
     const results = $('#results');
     results.innerHTML = '<div class="loading">Loading questions…</div>';
+    // LIGHT list: only what filtering and the card header need. The heavy fields
+    // (question HTML, worked solution, options, images) are fetched per page by
+    // hydrate() when cards are about to be drawn.
     const { data, error } = await sb
       .from('questions')
-      .select(`id, type, section_label, question_number, content_text, content_html, options, answer_key, status,
-               worked_solution, edited_at, edited_by, content_html_original, worked_solution_original,
+      .select(`id, type, section_label, question_number, status,
                papers ( school, year, level, paper_number, paper_name, assessment_type, source_path ),
-               question_assets ( storage_path, slot, ordinal, display_width_pt ),
                question_topics ( topics ( id, code, name, ordinal, syllabus ) ),
                question_los ( part_label, learning_objectives ( id, section_code, text, syllabus, topic_id ) ),
                question_question_types ( part_label, question_types ( id, code, name, area ) )`)
@@ -836,32 +879,67 @@
         'Check your connection and that you\'re signed in, then reload.</div>';
       console.error(error); return;
     }
-    // The bucket is colleague-only, so a public URL may not resolve. Ask for a
-    // signed URL and fall back to the public one if signing isn't needed.
-    const paths = [...new Set((data||[]).flatMap(q =>
-      (q.question_assets||[]).map(a => a.storage_path)).filter(Boolean))];
+    ALL = (data||[]).map(q => ({
+      ...q,
+      paper: q.papers || null,
+      assets: [],
+      topics: (q.question_topics||[]).map(x=>x.topics).filter(Boolean),
+      los: (q.question_los||[]).map(x=>x.learning_objectives).filter(Boolean),
+      los_raw: (q.question_los||[]),
+      qtypes: (q.question_question_types||[]),
+      _full: false
+    }));
+    BYID = new Map(ALL.map(q => [q.id, q]));
+    BT_READY = false;
+    buildTopicFilter(); buildLoFilter().then(render);
+  }
+
+  // ---------------- per-page heavy fetch ----------------
+  // Fetch the heavy fields for just the questions about to be drawn, and sign only
+  // their images. Signed URLs last an hour, so a card older than 50 minutes is
+  // refreshed the next time it is drawn.
+  const HYDRATE_COLS = 'id, content_html, content_text, options, answer_key, worked_solution, edited_at, edited_by';
+  const needsHydrate = q => !q._full || (Date.now() - (q._at||0) > 50*60*1000);
+  async function hydrate(list){
+    const need = list.filter(needsHydrate);
+    if(!need.length) return;
+    await ME_READY;
+    const cols = HYDRATE_COLS + (ME.isAdmin ? ', content_html_original, worked_solution_original' : '');
+    const { data, error } = await sb.from('questions')
+      .select(cols + ', question_assets ( storage_path, slot, ordinal, display_width_pt )')
+      .in('id', need.map(q => q.id));
+    if(error) throw error;
+    const paths = [...new Set((data||[]).flatMap(r =>
+      (r.question_assets||[]).map(a => a.storage_path)).filter(Boolean))];
     const SIGNED = new Map();
     if(paths.length){
       try{
-        const { data:sg } = await sb.storage.from('question-assets')
-          .createSignedUrls(paths, 60*60);
+        const { data:sg } = await sb.storage.from('question-assets').createSignedUrls(paths, 60*60);
         (sg||[]).forEach(r => { if(r.signedUrl) SIGNED.set(r.path, r.signedUrl); });
       }catch(err){ console.warn('signing assets failed, falling back to public', err); }
     }
     const assetUrl = p => SIGNED.get(p) ||
       sb.storage.from('question-assets').getPublicUrl(p).data.publicUrl;
-    ALL = (data||[]).map(q => ({
-      ...q,
-      paper: q.papers || null,
-      assets: (q.question_assets||[])
-        .slice().sort((a,b)=>(a.ordinal||0)-(b.ordinal||0))
-        .map(a => ({ ...a, url: assetUrl(a.storage_path) })),
-      topics: (q.question_topics||[]).map(x=>x.topics).filter(Boolean),
-      los: (q.question_los||[]).map(x=>x.learning_objectives).filter(Boolean),
-      los_raw: (q.question_los||[]),
-      qtypes: (q.question_question_types||[])
-    }));
-    buildTopicFilter(); buildLoFilter().then(render);
+    (data||[]).forEach(r => {
+      const q = BYID.get(r.id); if(!q) return;
+      Object.assign(q, r, {
+        assets: (r.question_assets||[]).slice().sort((a,b)=>(a.ordinal||0)-(b.ordinal||0))
+                  .map(a => ({ ...a, url: assetUrl(a.storage_path) })),
+        _full: true, _at: Date.now()
+      });
+    });
+  }
+
+  // Keyword search runs in the database over the full question text (search_questions).
+  const SEARCH_CACHE = new Map();
+  async function searchIds(kw){
+    const k = kw.toLowerCase();
+    if(SEARCH_CACHE.has(k)) return SEARCH_CACHE.get(k);
+    const { data, error } = await sb.rpc('search_questions', { kw });
+    if(error) throw error;
+    const ids = new Set(data||[]);
+    SEARCH_CACHE.set(k, ids);
+    return ids;
   }
   // A topic's code is only unique WITHIN a syllabus: H1 '3' is Theories of Acids and
   // Bases, H2 '3' is The Gaseous State. Keying on code alone made them collide and
@@ -950,7 +1028,9 @@
   }
 
   // ---------------- render + filter ----------------
-  $('#kw').addEventListener('input', render);
+  // Debounced: the search runs in the database, so wait for a pause in typing.
+  let KW_TIMER = null;
+  $('#kw').addEventListener('input', ()=>{ clearTimeout(KW_TIMER); KW_TIMER = setTimeout(render, 300); });
   $('#topicGroup').addEventListener('change', async e=>{
     const cb = e.target; if(cb.tagName !== 'INPUT') return;
     const all = [...$('#topicGroup').querySelectorAll('input')];
@@ -984,7 +1064,11 @@
     render();
   });
 
-  function render(){
+  const PAGE = 15;
+  let RENDER_SEQ = 0, CUR_SHOWN = [], CUR_N = 0;
+
+  async function render(){
+    const seq = ++RENDER_SEQ;
     const kw = $('#kw').value.trim().toLowerCase();
     const lo = $('#lo') ? $('#lo').value : '';
     const box = $('#results');
@@ -993,6 +1077,17 @@
       box.innerHTML = '<div class="empty"><b>Pick a topic or paper, or type a search to begin.</b><br>'+
         'Filter by topic, paper or Data-based on the left, or search for a reagent, formula, or term.</div>';
       return;
+    }
+    let hits = null;
+    if(kw){
+      try{ hits = await searchIds(kw); }
+      catch(err){
+        if(seq !== RENDER_SEQ) return;
+        console.error(err);
+        box.innerHTML = '<div class="empty"><b>Search failed.</b><br>Check your connection and try again.</div>';
+        return;
+      }
+      if(seq !== RENDER_SEQ) return;
     }
     const shown = ALL.filter(q=>{
       if(UNTAGGED_ON){ if(q.topics.length) return false; }
@@ -1006,14 +1101,8 @@
       if(DBQ_ON && !isDbq(q)) return false;
       if(lo && !(q.los||[]).some(l=>l && l.id===lo)) return false;
       if(PAPER_SEL.size && !PAPER_SEL.has(String(q.paper?.paper_number||''))) return false;
-      if(!kw) return true;
-      const hay = [
-        q.content_text,
-        Object.values(q.options||{}).join(' '),
-        q.los.map(l=>l.section_code+' '+l.text).join(' '),
-        q.topics.map(t=>t.name).join(' ')
-      ].join(' ').toLowerCase();
-      return hay.includes(kw);
+      if(hits && !hits.has(q.id)) return false;
+      return true;
     });
     $('#count').innerHTML = `<b>${shown.length}</b> of ${ALL.length} question${ALL.length===1?'':'s'}`;
     if(!shown.length){
@@ -1021,8 +1110,59 @@
         'Try a broader keyword or a different topic.</div>';
       return;
     }
+    CUR_SHOWN = shown; CUR_N = 0;
     box.innerHTML = '';
-    shown.forEach(q => box.appendChild(card(q)));
+    await appendPage(seq);
+  }
+
+  // Draw the next PAGE cards (fetching their heavy fields first) and, if more remain,
+  // a "Show more" button under them.
+  function failCard(label, why){
+    const d = document.createElement('div'); d.className = 'empty';
+    d.innerHTML = `<b>Couldn't display ${esc(label)}.</b><br>${esc(why)}`;
+    return d;
+  }
+  async function appendPage(seq){
+    const box = $('#results');
+    const old = box.querySelector('.morebar'); if(old) old.remove();
+    const batch = CUR_SHOWN.slice(CUR_N, CUR_N + PAGE);
+    let ph = null;
+    if(batch.some(needsHydrate)){
+      ph = document.createElement('div'); ph.className = 'loading'; ph.textContent = 'Loading questions…';
+      box.appendChild(ph);
+    }
+    try{ await hydrate(batch); }
+    catch(err){
+      if(seq !== RENDER_SEQ) return;
+      console.error(err);
+      if(ph) ph.remove();
+      const e = document.createElement('div'); e.className = 'empty morebar';
+      e.innerHTML = '<b>Couldn\'t load these questions.</b><br>';
+      const b = document.createElement('button'); b.className = 'btn-ghost'; b.textContent = 'Try again';
+      b.addEventListener('click', ()=>appendPage(RENDER_SEQ));
+      e.appendChild(b); box.appendChild(e);
+      return;
+    }
+    if(seq !== RENDER_SEQ) return;
+    if(ph) ph.remove();
+    batch.forEach(q => {
+      // Never fail silently: a question that can't be drawn says so, with the reason.
+      const label = (q.paper ? [q.paper.school, q.paper.year, q.paper.paper_name || (q.paper.paper_number ? 'P'+q.paper.paper_number : '')].filter(Boolean).join(' ') + ' ' : '') + 'Q' + (q.question_number||'?');
+      if(!q._full){
+        box.appendChild(failCard(label, 'the server did not return this question\'s text')); return;
+      }
+      try{ box.appendChild(card(q)); }
+      catch(err){ console.error('card failed', q.id, err); box.appendChild(failCard(label, (err && err.message) || String(err))); }
+    });
+    CUR_N += batch.length;
+    if(CUR_N < CUR_SHOWN.length){
+      const left = CUR_SHOWN.length - CUR_N;
+      const bar = document.createElement('div'); bar.className = 'morebar';
+      const b = document.createElement('button'); b.className = 'btn-ghost';
+      b.textContent = `Show ${Math.min(PAGE, left)} more (${left} left)`;
+      b.addEventListener('click', ()=>{ b.disabled = true; appendPage(RENDER_SEQ); });
+      bar.appendChild(b); box.appendChild(bar);
+    }
   }
 
   function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
@@ -1107,7 +1247,10 @@
     });
     // Deliberately no early return on an empty map: re-annotating after a tag edit
     // must be able to CLEAR a label whose last tag was just removed, not only set.
+    // Browse-by-type: q._hit holds the part labels that matched, highlighted while a row is open.
+    const hits = new Set((q._hit || []).map(l => String(l).replace(/^\d+/,'')));
     root.querySelectorAll('.part .lab, .qpart > .pl').forEach(lab=>{
+      lab.classList.toggle('qm-hit', hits.has(lab.textContent.trim()));
       const los = byPart.get(lab.textContent.trim());
       if(!los || !los.length){
         lab.classList.remove('has-lo'); lab.removeAttribute('title'); return;
@@ -2091,7 +2234,6 @@
       tools.appendChild(bar);
     }
     el.appendChild(tools);
-    const chips=qtypeChips(q); if(chips && !ME.isAdmin) el.appendChild(chips);
     if(ME.isAdmin){ el.appendChild(tagEditor(q)); el.appendChild(typeEditor(q)); }
 
     return el;
@@ -2169,6 +2311,208 @@
     document.getElementById('newemail').value=''; document.getElementById('newnote').value='';
     loadAllowlist();
   });
+
+
+  // ---------------- Browse by type (topic / LO / question type) ----------------
+  // Runs entirely on the light list: each part's type tag and LO tags carry the same part_label,
+  // and a part's topic comes from the LOs tagged on that same part (the join the SQL used).
+  let BT_PARTS = null;           // [{ q, label, type, los:[LO] }]  one per (part, type)
+  let BT_READY = false;
+  const BT_TOPICKEY = new Map(), BT_TOPICNAME = new Map();   // topic id -> key / name
+
+  function btBuildIndex(){
+    BT_TOPICKEY.clear(); BT_TOPICNAME.clear();
+    ALL.forEach(q => q.topics.forEach(t => { BT_TOPICKEY.set(t.id, topicKey(t)); BT_TOPICNAME.set(t.id, t.name); }));
+    BT_PARTS = [];
+    ALL.forEach(q => {
+      const losBy = new Map();
+      (q.los_raw||[]).forEach(r => {
+        if(!r.part_label || !r.learning_objectives) return;
+        if(!losBy.has(r.part_label)) losBy.set(r.part_label, []);
+        losBy.get(r.part_label).push(r.learning_objectives);
+      });
+      (q.qtypes||[]).forEach(r => {
+        if(!r.part_label || !r.question_types) return;          // whole-question flags (Data-based) are not parts
+        BT_PARTS.push({ q, label:r.part_label, type:r.question_types, los: losBy.get(r.part_label) || [] });
+      });
+    });
+  }
+  const btFirstBracket = l => { const m = String(l).replace(/^\d+/,'').match(/^\([^)]*\)/); return m ? m[0] : String(l); };
+
+  function btMatching(topicKeyVal, loId){
+    return BT_PARTS.filter(x => {
+      if(loId && !x.los.some(l => l.id === loId)) return false;
+      if(topicKeyVal && !x.los.some(l => BT_TOPICKEY.get(l.topic_id) === topicKeyVal)) return false;
+      return true;
+    });
+  }
+
+  function btFillTopics(){
+    const sel = $('#bt-topic'); const keep = sel.value;
+    sel.innerHTML = '<option value="">All topics</option>';
+    [...TOPIC_GROUPS.values()].sort((a,b) => (a.ordinal - b.ordinal) || a.name.localeCompare(b.name)).forEach(e => {
+      const o = document.createElement('option'); o.value = e.key;
+      o.textContent = e.name + (e.syllabuses.size === 1 ? ` (${[...e.syllabuses][0]})` : '');
+      sel.appendChild(o);
+    });
+    sel.value = [...sel.options].some(o => o.value === keep) ? keep : '';
+  }
+
+  async function btFillLos(){
+    const wrap = $('#bt-lowrap'), sel = $('#bt-lo');
+    const tk = $('#bt-topic').value, grp = TOPIC_GROUPS.get(tk);
+    sel.innerHTML = '<option value="">All objectives</option>';
+    if(!tk || !grp){ wrap.classList.add('hidden'); return; }
+    let cat = [];
+    try{ cat = await loadCatalogue(); }catch(err){ console.warn('LO catalogue failed', err); wrap.classList.add('hidden'); return; }
+    const present = new Set();
+    BT_PARTS.forEach(x => x.los.forEach(l => { if(grp.topicIds.has(l.topic_id)) present.add(l.id); }));
+    const mine = cat.filter(lo => present.has(lo.id)).sort(byCode);
+    if(!mine.length){ wrap.classList.add('hidden'); return; }
+    mine.forEach(lo => {
+      const o = document.createElement('option'); o.value = lo.id;
+      const txt = String(lo.text||'').replace(/\s+/g,' ').trim();
+      o.textContent = `${lo.section_code||''} ${txt.length>78 ? txt.slice(0,78)+'…' : txt}`.trim();
+      o.title = txt; sel.appendChild(o);
+    });
+    wrap.classList.remove('hidden');
+  }
+
+  async function btFillTypes(){
+    const cat = await loadTypes();
+    const sel = $('#bt-type'), keep = sel.value;
+    const parts = btMatching($('#bt-topic').value, $('#bt-lo').value);
+    const counts = new Map();
+    parts.forEach(x => counts.set(x.type.id, (counts.get(x.type.id)||0) + 1));
+    sel.innerHTML = '<option value="">All types</option>';
+    cat.forEach(t => {
+      const n = counts.get(t.id); if(!n) return;
+      const o = document.createElement('option'); o.value = t.id; o.textContent = `${t.name} (${n})`; sel.appendChild(o);
+    });
+    sel.value = [...sel.options].some(o => o.value === keep) ? keep : '';
+  }
+
+  function btQLabel(q){
+    const p = q.paper || {};
+    const pname = p.paper_name || (p.paper_number ? 'P'+p.paper_number : '');
+    const sect = q.section_label || (q.type === 'mcq' ? 'MCQ' : null);
+    const ql = q.question_number ? [sect, (sect ? '' : 'Q') + q.question_number].filter(Boolean).join(' ') : '';
+    return { a: [p.school, p.year].filter(Boolean).join(' '), b: [p.level, pname, ql].filter(Boolean).join(' ') };
+  }
+
+  async function btRender(){
+    const box = $('#bt-results'); const tk = $('#bt-topic').value, loId = $('#bt-lo').value, typeId = $('#bt-type').value;
+    ALL.forEach(q => { q._hit = null; });
+    if(!tk && !typeId){
+      $('#bt-count').textContent = '';
+      box.innerHTML = '<div class="empty"><b>Pick a topic or a question type to begin.</b></div>'; return;
+    }
+    const cat = await loadTypes();
+    let parts = btMatching(tk, loId);
+    if(typeId) parts = parts.filter(x => x.type.id === typeId);
+    // one row per question per type: the matching part labels
+    const groups = new Map();           // typeId -> Map(qid -> {q, labels:Set, los:Map})
+    parts.forEach(x => {
+      if(!groups.has(x.type.id)) groups.set(x.type.id, new Map());
+      const g = groups.get(x.type.id);
+      if(!g.has(x.q.id)) g.set(x.q.id, { q:x.q, labels:new Set(), los:new Map() });
+      const e = g.get(x.q.id); e.labels.add(x.label);
+      x.los.forEach(l => e.los.set(l.id, l));
+    });
+    const nQ = new Set(parts.map(x => x.q.id)).size;
+    $('#bt-count').innerHTML = `<b>${nQ}</b> question${nQ===1?'':'s'} · <b>${new Set(parts.map(x => x.q.id+'|'+x.label)).size}</b> part${parts.length===1?'':'s'}`;
+    if(!parts.length){ box.innerHTML = '<div class="empty"><b>No questions match.</b></div>'; return; }
+    box.innerHTML = '';
+    const order = (a,b) => {
+      const pa = a.q.paper||{}, pb = b.q.paper||{};
+      return String(pa.school||'').localeCompare(String(pb.school||'')) || ((pa.year||0)-(pb.year||0)) ||
+             ((pa.paper_number||0)-(pb.paper_number||0)) || ((a.q.question_number||0)-(b.q.question_number||0));
+    };
+    cat.forEach(t => {
+      const g = groups.get(t.id); if(!g) return;
+      const sec = document.createElement('div'); sec.className = 'bt-group';
+      if(!typeId){
+        const nparts = [...g.values()].reduce((n,e) => n + e.labels.size, 0);
+        const h = document.createElement('h3');
+        h.innerHTML = `<span class="qtchip qt-${esc(t.area||'general')}">${esc(t.name)}</span><span class="muted-note">${nparts} part${nparts===1?'':'s'}</span>`;
+        sec.appendChild(h);
+      }
+      [...g.values()].sort(order).forEach(e => sec.appendChild(btRow(e, tk)));
+      box.appendChild(sec);
+    });
+  }
+
+  function btRow(e, selectedTopicKey){
+    const q = e.q, labels = [...e.labels].sort((a,b)=>a.localeCompare(b, undefined, {numeric:true}));
+    const row = document.createElement('div'); row.className = 'bt-row';
+    const head = document.createElement('button'); head.type = 'button'; head.className = 'bt-head';
+    const L = btQLabel(q);
+    // other topics this question touches (its other parts), so a synoptic question is visible as such
+    const here = new Set(labels);
+    const others = new Set();
+    (q.los_raw||[]).forEach(r => {
+      if(!r.part_label || here.has(r.part_label) || !r.learning_objectives) return;
+      const id = r.learning_objectives.topic_id, k = BT_TOPICKEY.get(id);
+      if(k && k !== selectedTopicKey) others.add(BT_TOPICNAME.get(id));
+    });
+    const los = [...e.los.values()].sort(byCode).map(l => l.section_code);
+    head.innerHTML =
+      `<div class="bt-title">${esc(L.a)}${L.b ? ' · ' + esc(L.b) : ''}</div>` +
+      `<div class="bt-sub"><span class="bt-match">Matches: ${esc(labels.join(', '))}</span>` +
+      [...new Set(los)].map(c => `<span class="bt-chip">${esc(c)}</span>`).join('') +
+      (others.size ? `<span>Also covers: ${esc([...others].sort().join(', '))}</span>` : '') + `</div>`;
+    row.appendChild(head);
+    let body = null;
+    head.addEventListener('click', async () => {
+      if(body){ body.remove(); body = null; q._hit = null; return; }
+      body = document.createElement('div'); body.className = 'bt-body';
+      body.innerHTML = '<div class="loading">Loading…</div>'; row.appendChild(body);
+      try{ await hydrate([q]); }
+      catch(err){ console.error(err); if(body){ body.innerHTML = ''; body.appendChild(failCard(L.a + ' ' + L.b, 'could not load this question')); } return; }
+      if(!body) return;                                         // closed while loading
+      body.innerHTML = '';
+      if(!q._full){ body.appendChild(failCard(L.a + ' ' + L.b, 'the server did not return this question\'s text')); return; }
+      q._hit = labels;
+      let c;
+      try{ c = card(q); }catch(err){ console.error('card failed', q.id, err); body.appendChild(failCard(L.a + ' ' + L.b, (err && err.message) || String(err))); return; }
+      // Focus: keep the opening passage and the whole top-level part(s) that matched; fold the rest.
+      // Parts are hidden, never removed, so figure order and numbering stay intact.
+      const want = new Set(labels.map(btFirstBracket));
+      let folded = 0;
+      c.querySelectorAll('.stem .qpart').forEach(pt => {
+        const pl = pt.querySelector(':scope > .pl'); if(!pl) return;
+        if(!want.has(btFirstBracket(pl.textContent.trim()))){ pt.classList.add('bt-fold'); folded++; }
+      });
+      if(folded){
+        c.classList.add('bt-focus');
+        const t = document.createElement('button'); t.type = 'button'; t.className = 'bt-toggle';
+        const word = [...want].join(' ');
+        t.textContent = 'Show full question';
+        t.addEventListener('click', () => {
+          const on = c.classList.toggle('bt-focus');
+          t.textContent = on ? 'Show full question' : 'Show only part ' + word;
+        });
+        body.appendChild(t);
+      }
+      body.appendChild(c);
+    });
+    return row;
+  }
+
+  async function btOpen(){
+    if(!BT_READY){ btBuildIndex(); BT_READY = true; btFillTopics(); await btFillLos(); await btFillTypes(); }
+    await btRender();
+  }
+  function showBrowse(on){
+    $('#bt').classList.toggle('hidden', !on);
+    document.querySelector('main').classList.toggle('hidden', on);
+    $('#typebtn').textContent = on ? 'Back to questions' : 'Browse by type';
+    if(on) btOpen(); else ALL.forEach(q => { q._hit = null; });
+  }
+  $('#typebtn').addEventListener('click', () => showBrowse($('#bt').classList.contains('hidden')));
+  $('#bt-topic').addEventListener('change', async () => { await btFillLos(); await btFillTypes(); btRender(); });
+  $('#bt-lo').addEventListener('change', async () => { await btFillTypes(); btRender(); });
+  $('#bt-type').addEventListener('change', () => btRender());
 
   boot();
 </script>

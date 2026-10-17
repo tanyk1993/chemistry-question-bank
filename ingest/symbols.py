@@ -43,6 +43,7 @@ SYMBOL = {
     "F062": "β",   # 0x62 beta -- ASRJC 2024 H2 P2 Q4 stem: "N" + subscript alpha / beta labels
                         #   (N-alpha, N-beta of nicotinamide); the rendered page shows Greek letters.
     "F070": "π",   # 0x70 pi
+    "F072": "\u03c1",   # 0x72 rho -- JPJC 2024 H2 P1 answers Q5: "p = \u03c1RT/Mr"
     "F020": " ",   # 0x20 space -- ASRJC 2024 H2 P3 answers Q5(b)(i): "t\u00bd is constant at" + [F020] + \u2248 440 min;
                         #   the Symbol-font space between the words and the \u2248 sign.
     "F064": "\u03b4",   # 0x64 delta (lowercase) -- ASRJC 2024 H2 P3 answers Q5(c)(iii): "do not have \u03b4+".
@@ -252,7 +253,12 @@ def sym_to_text(font: str, char: str) -> str:
               # The school's Word PDF prints an EMPTY BOX at that glyph (the
               # font was not embedded), so the box is the school's defect, not
               # ours; the context (a stated equilibrium) fixes the identity.
-              "euclid extra": MT_EXTRA}.get((font or "").strip().lower())
+              "euclid extra": MT_EXTRA,
+              # "Chemical" (ChemDraw-era font): 0x3D is the equilibrium arrow.
+              # First seen JPJC 2024 H2 P1 answers Q18, the Word PDF prints it
+              # as a plain '=' between [Cu(H2O)6]2+ + 4Cl- and [CuCl4]2- + 6H2O;
+              # a reversible ligand exchange, so the arrow is used (flagged).
+              "chemical": {"F03D": "\u21cc"}}.get((font or "").strip().lower())
     if table is None:
         raise UnknownSymbol(f"unmapped w:sym font {font!r} (char {char!r})")
     key = (char or "").strip().upper()

@@ -448,6 +448,9 @@
     vertical-align:top; }
   table.cmp td { text-align:left; }
   table.opts-table td.ol { font-weight:700; background:#f4f5f7; }
+  /* sentence options (one text column after the letter) read left-aligned;
+     value grids with 2+ columns (dH/dS, step 1/step 2 ...) stay centred */
+  table.opts-table td.ol:nth-last-child(2) + td { text-align:left; }
   .opts-inline { margin:.7em 0 0 .2em; }
   .opts-inline .opt { margin:.3em 0; }
   .opts-inline .ol { font-weight:700; display:inline-block; width:1.5em; }

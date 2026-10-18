@@ -237,6 +237,10 @@ def main(argv=None):
                    # CJC's running footer ("9729/02 CJC JC2 Preliminary
                    # Examination 2024  [Turn over]") -- page furniture.
                    r"9729/0\d CJC JC2 Preliminary Examination \d{4}",
+                   # JPJC's running footer ("© Jurong Pioneer Junior College
+                   # 9729/02/J2 PRELIMINARY EXAM/2024  [Turn Over]").
+                   r"©\s*Jurong Pioneer Junior College",
+                   r"9729/0\d/J2 PRELIMINARY EXAM/\d{4}",
                    r"ASRJC JC2 PRELIM \d{4}", r"9729/0\d/H2",
                    r"ANDERSON SERANGOON JUNIOR COLLEGE",
                    r"\d{4} JC ?2 PRELIMINARY EXAMINATION",

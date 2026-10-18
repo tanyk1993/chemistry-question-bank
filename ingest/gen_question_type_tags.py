@@ -7,8 +7,12 @@ proposed_type, second_type, ...), validates every row, and writes two SQL files:
     question_type_tags_DRYRUN.sql   (ends in ROLLBACK)
     question_type_tags_COMMIT.sql   (identical, ends in COMMIT)
 
-Rows: one `primary` per part, plus one `second` row where second_type is set.
-The whole-question Data-based / data_analysis_novel tags are NOT loaded here.
+Rows: one `primary` per part, plus one `second` row where second_type is set, plus
+one more `second` row (type code data_analysis_novel, "Data analysis & novel contexts")
+where the OPTIONAL column data_analysis_novel is Y. Blank or N = no row; anything else
+(e.g. "?") is refused, so every part must be decided before loading. Sheets without the
+column behave exactly as before. The whole-question Data-based flag is NOT loaded here
+(see gen_databased_migration.py).
 
 The SQL is ONE DO block plus a final summary SELECT: no temp tables, because the
 Supabase SQL editor commits per statement. Questions are found by
@@ -47,6 +51,7 @@ TYPE_CODES = {
     "Draw structure, diagram or product": "draw_structure",
     "Sketch graph + data processing": "sketch_graph",
 }
+DAN_CODE = "data_analysis_novel"   # written from the optional CSV column data_analysis_novel (Y)
 
 
 def die(title, items):
@@ -89,9 +94,12 @@ def main():
         if prim not in TYPE_CODES: bad.append(f"{desc}: unknown proposed_type {prim!r}"); continue
         if sec and sec not in TYPE_CODES: bad.append(f"{desc}: unknown second_type {sec!r}"); continue
         if sec == prim: bad.append(f"{desc}: second_type equals the primary"); continue
+        dan = (r.get("data_analysis_novel") or "").strip().upper()
+        if dan not in ("", "Y", "N"): bad.append(f"{desc}: data_analysis_novel must be Y, N or blank, got {dan!r}"); continue
         seen[(school, year, paper, qn, label)] += 1
         loads.append((school, year, paper, qn, label, TYPE_CODES[prim], "primary"))
         if sec: loads.append((school, year, paper, qn, label, TYPE_CODES[sec], "second"))
+        if dan == "Y": loads.append((school, year, paper, qn, label, DAN_CODE, "second"))
     if bad: die("rows that do not validate", bad)
     if not loads: die("no rows selected", [])
     dups = [f"{k} x{n}" for k, n in seen.items() if n > 1]
@@ -150,7 +158,7 @@ TEMPLATE = """-- Question-type tags, structured papers, part level: @@N_P@@ prim
 -- paper's LO tags. Pre-flight refuses unless: role column exists; all @@N_CODES@@ type codes
 -- exist; every question resolves to exactly one structured question; none already has a
 -- part-level type tag (a second run is refused); and any --lo-match count agrees.
--- Data-based / data_analysis_novel rows are NOT written.
+-- The whole-question Data-based flag is NOT written here.
 
 BEGIN;
 

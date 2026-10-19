@@ -258,7 +258,11 @@ def sym_to_text(font: str, char: str) -> str:
               # First seen JPJC 2024 H2 P1 answers Q18, the Word PDF prints it
               # as a plain '=' between [Cu(H2O)6]2+ + 4Cl- and [CuCl4]2- + 6H2O;
               # a reversible ligand exchange, so the arrow is used (flagged).
-              "chemical": {"F03D": "\u21cc"}}.get((font or "").strip().lower())
+              # 0x2C is the standard-state (plimsoll) sign: first seen JPJC 2024
+              # H2 P3 (Table 4.1 "\u0394Hf\u29b5", Q4(c)(ii) "\u0394H\u29b5 = x", Q5(d)(i) "E\u29b5"). The
+              # school's Word PDF substitutes SymbolMT and prints a bare comma-like
+              # dot there, so the identity comes from the chemistry (flagged).
+              "chemical": {"F03D": "\u21cc", "F02C": "\u29b5"}}.get((font or "").strip().lower())
     if table is None:
         raise UnknownSymbol(f"unmapped w:sym font {font!r} (char {char!r})")
     key = (char or "").strip().upper()

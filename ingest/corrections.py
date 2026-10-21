@@ -835,6 +835,19 @@ GLYPH_PICTURES = [
      "\\1",
      "Q4(b)(iii): the same pair of structures is anchored twice (at the start and at "
      "the end of the part); the printed page shows ONE picture, below the question line"),
+    # --- ACJC 2026 H2 P2 (2026-10-20) -----------------------------------
+    (("ACJC", "H2", "P2", 2026),
+     r"(H<sub>2</sub>O) \x00FIG\x00  (HOOCCH=CHCOO<sup>−</sup> \+ H<sub>3</sub>O)",
+     "\\1 ⇌ \\2",
+     "Q1 equation 1.1 equilibrium arrow (a drawn harpoon pair)"),
+    (("ACJC", "H2", "P2", 2026),
+     r"(H<sub>2</sub>O) \x00FIG\x00  (<sup>−</sup>OOCCH=CHCOO)",
+     "\\1 ⇌ \\2",
+     "Q1 equation 1.2 equilibrium arrow"),
+    (("ACJC", "H2", "P2", 2026),
+     r"(2CH<sub>3</sub>CH<sub>2</sub>OH\(g\)) \x00FIG\x00 (CH<sub>3</sub>COOCH<sub>2</sub>CH<sub>3</sub>\(g\))",
+     "\\1 ⇌ \\2",
+     "Q4(b) equation 4.2 equilibrium arrow"),
 ]
 
 

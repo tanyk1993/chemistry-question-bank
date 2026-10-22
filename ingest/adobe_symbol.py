@@ -38,6 +38,7 @@ ADOBE_SYMBOL = {
     0x70: "π",   # pi
     0x71: "θ",   # theta (Adobe Symbol "theta" = 0x71)
     0x73: "σ",   # sigma
+    0xA5: "\u221e",   # infinity (Adobe Symbol "infinity" = 0xA5)
     0xAE: "→",   # arrowright
     0xB0: "°",   # degree
     0xB4: "×",   # multiply

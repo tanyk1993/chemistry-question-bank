@@ -848,6 +848,11 @@ GLYPH_PICTURES = [
      r"(2CH<sub>3</sub>CH<sub>2</sub>OH\(g\)) \x00FIG\x00 (CH<sub>3</sub>COOCH<sub>2</sub>CH<sub>3</sub>\(g\))",
      "\\1 ⇌ \\2",
      "Q4(b) equation 4.2 equilibrium arrow"),
+    # --- ACJC 2026 H2 P3 (2026-10-21) -----------------------------------
+    (("ACJC", "H2", "P3", 2026),
+     r'(PC<i class="el">l</i><sub>5</sub>\(g\)) <sub> </sub>\x00FIG\x00<sub>\s*</sub>(PC<i class="el">l</i><sub>3</sub>\(g\))',
+     "\\1 \u21cc \\2",
+     "Q2(c) thermal decomposition of PCl5: equilibrium arrow (a drawn harpoon pair)"),
 ]
 
 

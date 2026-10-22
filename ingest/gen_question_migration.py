@@ -71,7 +71,7 @@ def _lit(s: str) -> str:
 
 def main(outdir: str, keyfile: str, dest: str, *,
         school: str = "RI", year: int = 2024, paper: int = 1, level: str = "H2",
-        assessment: str = "prelim"):
+        assessment: str = "prelim", is_prelim: bool = True):
     SCHOOL, YEAR, PAPER, LEVEL, ASSESSMENT = school, year, paper, level, assessment
     out = Path(outdir)
     rows = json.loads((out / "questions.json").read_text(encoding="utf-8"))
@@ -140,8 +140,9 @@ def main(outdir: str, keyfile: str, dest: str, *,
     add("WITH p AS (")
     add("  INSERT INTO papers (school, year, paper_number, level, paper_name,")
     add("                      is_prelim, assessment_type, status, source_type)")
-    add("  VALUES (%s, %d, %d, '%s', NULL, true, '%s', 'approved', 'docx')"
-        % (_lit(SCHOOL), YEAR, PAPER, LEVEL, ASSESSMENT))
+    add("  VALUES (%s, %d, %d, '%s', NULL, %s, '%s', 'approved', 'docx')"
+        % (_lit(SCHOOL), YEAR, PAPER, LEVEL, "true" if is_prelim else "false",
+           ASSESSMENT))
     add("  RETURNING id")
     add(")")
     if plan:
@@ -228,6 +229,9 @@ if __name__ == "__main__":
     ap.add_argument("--paper", type=int, default=1)
     ap.add_argument("--level", default="H2")
     ap.add_argument("--assessment", default="prelim")
+    ap.add_argument("--not-prelim", action="store_true",
+                    help="papers.is_prelim = false (e.g. a real A Level paper)")
     a = ap.parse_args()
     main(a.outdir, a.keyfile, a.dest, school=a.school, year=a.year,
-        paper=a.paper, level=a.level, assessment=a.assessment)
+        paper=a.paper, level=a.level, assessment=a.assessment,
+        is_prelim=not a.not_prelim)

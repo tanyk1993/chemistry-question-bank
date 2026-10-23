@@ -60,7 +60,8 @@ def _lit(s: str) -> str:
 
 
 def main(outdir: str, qnums: str, dest: str, prev: str | None = None, *,
-        school: str = "RI", year: int = 2024, paper: int = 1, level: str = "H2"):
+        school: str = "RI", year: int = 2024, paper: int = 1, level: str = "H2",
+        no_assets: bool = False):
     SCHOOL, YEAR, PAPER, LEVEL = school, year, paper, level
     rows = {r["question_number"]: r for r in json.loads(
         (Path(outdir) / "questions.json").read_text(encoding="utf-8"))}
@@ -108,50 +109,56 @@ def main(outdir: str, qnums: str, dest: str, prev: str | None = None, *,
         add("   AND q.edited_at IS NULL  -- never overwrite an admin's hand edit")
         add(" RETURNING q.question_number, length(q.content_html) AS html_chars,")
         add("           q.content_search IS NOT NULL AS searchable;")
+        add("-- Expect 1 row. 0 rows = Q%d was hand-edited in the admin (edited_at set) and was skipped." % q)
         add("")
 
-    qsel = ("SELECT q.id FROM questions q JOIN papers p ON p.id = q.paper_id\n"
-            "         WHERE %s AND q.type = 'mcq'\n"
-            "           AND q.question_number IN (%s)"
-            % (where, ", ".join(str(q) for q in want)))
-    add("-- Resync the asset rows for these questions -- see the module note.")
-    add("DELETE FROM question_assets WHERE question_id IN (")
-    add("  " + qsel.replace("\n", "\n  "))
-    add(");")
-    add("")
-    arows = [a for a in plan if a["question"] in set(want)]
-    if arows:
-        add("INSERT INTO question_assets (question_id, slot, storage_path, ordinal)")
-        add("SELECT q.id, a.slot, a.path, a.ord")
-        add("  FROM questions q JOIN papers p ON p.id = q.paper_id")
-        add("  JOIN (VALUES")
-        add(",\n".join(
-            "    (%d, %s, %s, %d)" % (a["question"], _lit(a["slot"]),
-                                      _lit(a["storage_path"]), a["ordinal"])
-            for a in sorted(arows, key=lambda a: (a["question"], a["ordinal"]))))
-        add("  ) AS a(qn, slot, path, ord) ON a.qn = q.question_number")
-        add(" WHERE %s AND q.type = 'mcq'" % where)
-        add("RETURNING question_id, slot, storage_path, ordinal;")
-        add("-- Expect %d asset row(s) returned." % len(arows))
+    if no_assets:
+        add("-- TEXT-ONLY PATCH: question_assets is NOT touched (same files, slots and ordinals;")
+        add("-- any display_width_pt already set stays).")
+        add("")
     else:
-        add("-- No assets planned for any patched question: the DELETE is all.")
-    add("")
-    # An ORPHAN warning is only worth printing for a figure that actually went
-    # away. Without the previous plan to compare against, every question that
-    # never had a figure reads as one that just lost them, and a warning that
-    # cries wolf on three questions out of seven gets skimmed past on the one
-    # that matters.
-    if prev:
-        old = json.loads(
-            (Path(prev) / "asset_plan.json").read_text(encoding="utf-8"))
-        now = {(a["question"], a["storage_path"]) for a in plan}
-        gone = sorted({(a["question"], a["storage_path"]) for a in old
-                       if a["question"] in set(want)} - now)
-        for q, path in gone:
-            add("-- ORPHANED BY THIS PATCH: Q%d's %s is no longer referenced."
-                " Delete the object from the bucket by hand." % (q, path))
-        if gone:
-            add("")
+        qsel = ("SELECT q.id FROM questions q JOIN papers p ON p.id = q.paper_id\n"
+                "         WHERE %s AND q.type = 'mcq'\n"
+                "           AND q.question_number IN (%s)"
+                % (where, ", ".join(str(q) for q in want)))
+        add("-- Resync the asset rows for these questions -- see the module note.")
+        add("DELETE FROM question_assets WHERE question_id IN (")
+        add("  " + qsel.replace("\n", "\n  "))
+        add(");")
+        add("")
+        arows = [a for a in plan if a["question"] in set(want)]
+        if arows:
+            add("INSERT INTO question_assets (question_id, slot, storage_path, ordinal)")
+            add("SELECT q.id, a.slot, a.path, a.ord")
+            add("  FROM questions q JOIN papers p ON p.id = q.paper_id")
+            add("  JOIN (VALUES")
+            add(",\n".join(
+                "    (%d, %s, %s, %d)" % (a["question"], _lit(a["slot"]),
+                                          _lit(a["storage_path"]), a["ordinal"])
+                for a in sorted(arows, key=lambda a: (a["question"], a["ordinal"]))))
+            add("  ) AS a(qn, slot, path, ord) ON a.qn = q.question_number")
+            add(" WHERE %s AND q.type = 'mcq'" % where)
+            add("RETURNING question_id, slot, storage_path, ordinal;")
+            add("-- Expect %d asset row(s) returned." % len(arows))
+        else:
+            add("-- No assets planned for any patched question: the DELETE is all.")
+        add("")
+        # An ORPHAN warning is only worth printing for a figure that actually went
+        # away. Without the previous plan to compare against, every question that
+        # never had a figure reads as one that just lost them, and a warning that
+        # cries wolf on three questions out of seven gets skimmed past on the one
+        # that matters.
+        if prev:
+            old = json.loads(
+                (Path(prev) / "asset_plan.json").read_text(encoding="utf-8"))
+            now = {(a["question"], a["storage_path"]) for a in plan}
+            gone = sorted({(a["question"], a["storage_path"]) for a in old
+                           if a["question"] in set(want)} - now)
+            for q, path in gone:
+                add("-- ORPHANED BY THIS PATCH: Q%d's %s is no longer referenced."
+                    " Delete the object from the bucket by hand." % (q, path))
+            if gone:
+                add("")
     add("-- Flip to COMMIT when the above looks right.")
     add("ROLLBACK;")
     add("")
@@ -185,6 +192,8 @@ if __name__ == "__main__":
     ap.add_argument("--year", type=int, default=2024)
     ap.add_argument("--paper", type=int, default=1)
     ap.add_argument("--level", default="H2")
+    ap.add_argument("--no-assets", action="store_true")
     a = ap.parse_args()
     main(a.outdir, a.qnums, a.dest, a.prev,
-        school=a.school, year=a.year, paper=a.paper, level=a.level)
+        school=a.school, year=a.year, paper=a.paper, level=a.level,
+        no_assets=a.no_assets)

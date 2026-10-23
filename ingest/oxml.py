@@ -365,6 +365,21 @@ def _omml_tokens(el):
                 yield text, (Style(set(style) | {mark}) if mark else style), raw
         return
 
+    if ln == "eqArr":                               # a stack of equation lines
+        # Each m:e is one line (ASRJC 2026 H2 P1 Q6's working). Emitted with a
+        # "\x00NL\x00" marker between lines; the caller decides how to lay them out.
+        first = True
+        for ch in el:
+            if etree.QName(ch).localname != "e":
+                continue
+            if not "".join(ch.itertext()).strip():
+                continue
+            if not first:
+                yield "\x00NL\x00", EMPTY, True
+            first = False
+            yield from _omml_tokens(ch)
+        return
+
     if ln.endswith("Pr") or ln in ("ctrlPr",):
         return
 

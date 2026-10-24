@@ -1362,6 +1362,67 @@ CORRECTIONS = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# ASRJC 2026 H2 P3 (2026-10-24) -- LOCAL, UNPUSHED (user: hold every ingest/
+# change until the paper is finished).
+_A3_26 = ("ASRJC", "H2", "P3", 2026)
+_KF = ('<span class="frac"><span class="fnum">[Ni(NH<sub>3</sub>)<sub>6</sub><sup>2+</sup>]</span>'
+       '<span class="fden">[Ni(H<sub>2</sub>O)<sub>6</sub><sup>2+</sup>][NH<sub>3</sub>]<sup>6</sup></span></span>')
+GLYPH_PICTURES.extend([
+    (_A3_26,
+     r"(6NH<sub>3</sub>\(aq\))\s+\x00FIG\x00\s+(\[Ni\(NH<sub>3</sub>\)<sub>6</sub>\]<sup>2\+</sup>\(aq\))",
+     "\\1 ⇌ \\2",
+     "Q1(b) Kstab equilibrium arrow (a drawn harpoon pair, ChemWindow object)"),
+    (_A3_26,
+     r"(<i>K</i><sub>stab</sub>  = )\x00FIG\x00",
+     "\\1" + _KF.replace("\\", "\\\\"),
+     "Q1(b) the Kstab fraction is a MathType object with no text layer (the extractor dropped it); "
+     "typed from the printed page: [Ni(NH3)6 2+] over [Ni(H2O)6 2+][NH3]^6"),
+    (_A3_26,
+     r"(EDTA<sup>4−</sup>\(aq\))\s+\x00FIG\x00\s+(\[Ni\(EDTA\)\]<sup>2−</sup>\(aq\))",
+     "\\1 ⇌ \\2",
+     "Q1(b)(iii) equilibrium arrow (a drawn harpoon pair)"),
+    (_A3_26,
+     r"\x00FIG\x00\nYou can use N\s+N to represent",
+     'You can use <img data-asset="ASRJC_H2_P3_Q1_biv_2026.png" alt=""> to represent',
+     "Q1(b)(iv): the N-arc-N ligand symbol is a small 120 x 36 picture floating over typed 'N   N'; Word anchors "
+     "it in the PREVIOUS paragraph. It becomes an INLINE image (corrections.INLINE_ASSETS) and the typed "
+     "'N N' goes."),
+    (_A3_26,
+     r"(2N<sub>2</sub>O<sub>5</sub>)\x00FIG\x00 (4NO<sub>2</sub>)",
+     "\\1 → \\2",
+     "Q4(d) decomposition forward arrow (a drawn arrow object)"),
+])
+INLINE_ASSETS[_A3_26] = [(1, "(b)(iv)", "biv")]
+CORRECTIONS.extend([
+    (_A3_26,
+     r'<table class="qt"><tr><td>\x00FIG\x00</td><td>\x00FIG\x00</td><td>\x00FIG\x00</td></tr>'
+     r'<tr><td><b>P</b></td><td><b>Q</b></td><td><b>R</b></td></tr></table>',
+     "\x00C\x00\x00FIG\x00",
+     "Q2(b): the three structures and their P / Q / R labels sit in a borderless 2-row table; snipped as ONE "
+     "image that already carries the labels, so the typed label row goes.",
+     "combined-snip convention (ACJC 2026 P3 Q1(a)); confirm"),
+    (_A3_26,
+     r'<table class="qt"><tr><td>\x00FIG\x00</td><td>\x00FIG\x00</td></tr></table>(\n\x00C\x00<b>Fig\. 2\.2</b>)',
+     "\x00C\x00\x00FIG\x00\\1",
+     "Q2(d) Fig. 2.2: the two representations of pyrrole sit side by side in a borderless table; snipped as ONE "
+     "image. The 'Fig. 2.2' caption stays typed.",
+     "combined-snip convention; confirm"),
+    (_A3_26,
+     r'<table class="qt"><tr><td>step 1</td><td>\x00FIG\x00</td></tr><tr><td>step 2</td><td>\x00FIG\x00</td></tr></table>',
+     "\x00C\x00\x00FIG\x00",
+     "Q4(b) Fig. 4.2: steps 1 and 2 (typed step labels + two scheme objects) snipped as ONE image; the "
+     "'Fig. 4.2' caption stays typed.",
+     "combined-snip convention (ACJC 2026 P3 Q1(e) Fig. 1.3); confirm"),
+    (_A3_26,
+     r'<table class="qt"><tr><td>step 3</td><td>\x00FIG\x00</td></tr><tr><td>step 4</td><td>\x00FIG\x00</td></tr>'
+     r'<tr><td>step 5</td><td>\x00FIG\x00</td></tr></table>',
+     "\x00C\x00\x00FIG\x00",
+     "Q4(b) Fig. 4.3: steps 3, 4 and 5 snipped as ONE image; the 'Fig. 4.3' caption stays typed.",
+     "combined-snip convention; confirm"),
+])
+
+
 def apply(html: str, scope: tuple | None = None) -> tuple[str, list[str]]:
     """Return (corrected_html, [descriptions of what changed]).
 

@@ -66,7 +66,8 @@ def _lit(s: str) -> str:
 
 def main(outdir: str, dest: str, *,
         school: str = "RI", year: int = 2024, paper: int = 2, level: str = "H2",
-        assessment: str = "prelim", skip_assets: bool = True):
+        assessment: str = "prelim", skip_assets: bool = True,
+        is_prelim: bool = True):
     SCHOOL, YEAR, PAPER, LEVEL, ASSESSMENT = school, year, paper, level, assessment
     out = Path(outdir)
     rows = json.loads((out / "questions.json").read_text(encoding="utf-8"))
@@ -123,8 +124,9 @@ def main(outdir: str, dest: str, *,
     add("WITH p AS (")
     add("  INSERT INTO papers (school, year, paper_number, level, paper_name,")
     add("                      is_prelim, assessment_type, status, source_type)")
-    add("  VALUES (%s, %d, %d, '%s', NULL, true, '%s', 'approved', 'docx')"
-        % (_lit(SCHOOL), YEAR, PAPER, LEVEL, ASSESSMENT))
+    add("  VALUES (%s, %d, %d, '%s', NULL, %s, '%s', 'approved', 'docx')"
+        % (_lit(SCHOOL), YEAR, PAPER, LEVEL, "true" if is_prelim else "false",
+           ASSESSMENT))
     add("  RETURNING id")
     add(")")
     if plan:
@@ -217,7 +219,9 @@ if __name__ == "__main__":
                          "asset_plan.json has rows, because a hand-cropped "
                          "paper's plan can exist before the images do. Pass "
                          "--skip-assets=false once the crops are uploaded.")
+    ap.add_argument("--not-prelim", action="store_true",
+                    help="papers.is_prelim = false (e.g. a real A Level paper)")
     a = ap.parse_args()
     main(a.outdir, a.dest, school=a.school, year=a.year,
         paper=a.paper, level=a.level, assessment=a.assessment,
-        skip_assets=a.skip_assets)
+        skip_assets=a.skip_assets, is_prelim=not a.not_prelim)

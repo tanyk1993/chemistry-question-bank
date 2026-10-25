@@ -236,6 +236,104 @@ NO_OPTION_TEXT = {
 }
 
 
+# CJC 2026 H2 P1 (2026-10-25) -------------------------------------------------
+# Declared after looking at the rendered Word PDF page by page. The user snips
+# every figure by hand; this only says how many placeholders each question has.
+_CJ26 = ("CJC", "H2", "P1", 2026)
+
+# Q5's table of successive ionisation energies has its rows labelled A and B.
+# That is stem DATA; the real options A-D are the four paragraphs after the
+# statements. Without this the table is read as the option table.
+DATA_TABLE_QUESTIONS = {_CJ26: {5}}
+
+DROPPED_FIGURES.update({
+    (*_CJ26, 9): {2: "The Boltzmann graph is ONE printed picture: the axes and "
+                     "curves (block #1) and the two E<sub>a</sub> labels with "
+                     "their dotted lines (block #2) are separate Word shapes. "
+                     "The user snips them together; block #1 keeps the "
+                     "placeholder."},
+})
+GLYPH_FIGURES.update({
+    # the equilibrium arrow drawn as a shape group inside the Q18 equation line
+    (*_CJ26, 18): {1: "\u21cc"},
+})
+
+
+_DB = "Use of the Data Booklet is relevant to this question."
+_PLS = '<span class="stk post"><span><span class="pl-sym">\u29b5</span></span><span>%s</span></span>'
+MCQ_FIXUPS.extend([
+    # search text: table cells ran together
+    (_CJ26 + (4,), "text", r"isomersboiling point / \u00b0C hexane68\.7 2\u2013methylpentane60\.0 "
+     r"2,2\u2013dimethylbutane49\.7",
+     "isomers | boiling point / \u00b0C hexane | 68.7 2\u2013methylpentane | 60.0 "
+     "2,2\u2013dimethylbutane | 49.7", 1, "table cells run together in the search text."),
+    (_CJ26 + (5,), "text", r"A5801820274011600148001840023300 B9402050297041406590788014900",
+     "A | 580 | 1820 | 2740 | 11600 | 14800 | 18400 | 23300 "
+     "B | 940 | 2050 | 2970 | 4140 | 6590 | 7880 | 14900", 1,
+     "table cells run together in the search text."),
+    (_CJ26 + (18,), "text", r"metal sulfideKsp / mol2 dm\u20126 PbS9\.04 \u00d7 10\u201229 FeS4\.90 \u00d7 10\u201218",
+     "metal sulfide | Ksp / mol2 dm\u20126 PbS | 9.04 \u00d7 10\u201229 FeS | 4.90 \u00d7 10\u201218", 1,
+     "table cells run together in the search text."),
+    # Q8: the standard-state sign sits OVER the f / c subscript, as printed
+    (_CJ26 + (8,), "html", r"<i><sup>\u29b5 </sup></i><sub>f </sub>", _PLS % "f", 3,
+     "standard-state sign stacked over the subscript f, as printed."),
+    (_CJ26 + (8,), "html", r"<i><sup>\u29b5 </sup></i><sub>c </sub>", _PLS % "c", 1,
+     "standard-state sign stacked over the subscript c, as printed."),
+    (_CJ26 + (8,), "text", r"\u29b5 f \(", "\u29b5f (", 3, "stray space in the search text."),
+    (_CJ26 + (8,), "text", r"\u29b5 c \(", "\u29b5c (", 1, "stray space in the search text."),
+    # Q16 / Q20: a stacked pair with a BLANK line (the source's blank
+    # super/subscript slot) is just a plain sub/superscript
+    (_CJ26 + (16,), "html", r'CO<span class="stk post"><span> </span><span>3</span></span>\+ NH',
+     "CO<sub>3</sub> + NH", 1, "H2CO3 printed with a blank charge slot; plain subscript."),
+    (_CJ26 + (20,), "html", r'cm<span class="stk post"><span>3</span><span> </span></span>of',
+     "cm<sup>3</sup> of", 1, "cm3 printed with a blank subscript slot; plain superscript."),
+    # Q21: the structures are snipped WITH their two names, so the typed caption
+    # line goes (same ruling as CJC 2024 H2 P1 Q3, ASRJC 2024 H2 P1 Q18/Q24)
+    (_CJ26 + (21,), "html", r'<p class="qstem eqn">\s*Methylbenzene\s+\(3-nitrophenyl\)methanol</p>\n?', "", 1,
+     "the two names are inside the user's snip; typed caption line removed."),
+    (_CJ26 + (21,), "text", r"Methylbenzene \(3-nitrophenyl\)methanol ", "", 1,
+     "same caption, in the search text."),
+])
+MCQ_FIXUPS.append((_CJ26 + (8,), "html", r"SO<sub>2\.</sub> </li>", "SO<sub>2</sub>.</li>", 1,
+                  "the full stop was typed inside the subscript."))
+MCQ_FIXUPS.extend([
+    # user ruling 2026-10-25: the source's capital I is a typo for a small l
+    (_CJ26 + (1,), "html", r"kJ moI<sup>-1</sup>", "kJ mol<sup>-1</sup>", 1, "moI -> mol (user, 2026-10-25)."),
+    (_CJ26 + (1,), "text", r"kJ moI-1", "kJ mol-1", 1, "moI -> mol in the search text."),
+    (_CJ26 + (1,), "opt:B", r"kJ moI-1", "kJ mol-1", 1, "moI -> mol in option B."),
+    # user ruling 2026-10-25: render the density unit correctly
+    (_CJ26 + (30,), "html", r"g cm\u203e<sup>3</sup>", "g cm<sup>\u20133</sup>", 1, "density unit g cm-3 (user, 2026-10-25)."),
+    (_CJ26 + (30,), "text", r"g cm\u203e3", "g cm\u20133", 1, "density unit in the search text."),
+])
+# user 2026-10-25 (Q8 screenshot): a bold TAB typed before the first line of a stem
+# renders as an indent; the school's page has none.
+for _q in (4, 8, 27, 28):
+    MCQ_FIXUPS.append((_CJ26 + (_q,), "html", r'<p class="qstem eqn"><b>\t</b>',
+                       '<p class="qstem eqn">', 1,
+                       "leading bold tab removed (renders as a first-line indent)."))
+# formatting audit 2026-10-25 (user: "check the formatting of all the questions")
+MCQ_FIXUPS.extend([
+    # a degree sign set as a SUPERSCRIPT is raised twice ("boiling point / \u02daC")
+    (_CJ26 + (4,), "html", r"<sup>\u00b0</sup>C", "\u00b0C", 1, "degree sign was also superscripted."),
+    (_CJ26 + (30,), "html", r"<sup>\u00b0</sup>C", "\u00b0C", 1, "degree sign was also superscripted."),
+    # a typed tab in the middle of a stem paragraph (white-space:pre-wrap shows it as a gap)
+    (_CJ26 + (5,), "html", r"below, \t", "below, ", 1, "stray tab inside the stem."),
+    (_CJ26 + (18,), "html", r"above\?\t</p>", "above?</p>", 1, "stray trailing tab in the stem."),
+    # the school's own worked-solution copy heads the table "Step 1 / 2 / 3"
+    (_CJ26 + (21,), "html", r"<td>step ([123])</td>", r"<td>Step \1</td>", 3, "table headings capitalised (school's solutions copy)."),
+    (_CJ26 + (21,), "text", r"\bstep 1 \| step 2 \| step 3\b", "Step 1 | Step 2 | Step 3", 1, "table headings in the search text."),
+])
+for _q in (6, 7, 27, 28, 30):
+    MCQ_FIXUPS.append((_CJ26 + (_q,), "text", re.escape(_DB),
+                       "Use of the data booklet is relevant to this question.", 1,
+                       "house wording (style-guide addendum 2026-10-11)."))
+
+
+def data_table_questions(school, level, paper, year) -> set:
+    """Question numbers whose lettered table is stem data, not the options."""
+    return DATA_TABLE_QUESTIONS.get((school, level, paper, year), set())
+
+
 _EMPTY_FRAC = ('<span class="frac"><span class="fnum"></span>'
                '<span class="fden"></span></span>')
 

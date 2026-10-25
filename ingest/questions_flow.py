@@ -126,7 +126,10 @@ OFFICE = "urn:schemas-microsoft-com:office:office"
 #: or "25 C" (a temperature) from being mistaken for question 1 or question 25.
 #: A number glued to a chemical LOCANT also starts a question ("222-bromobutane"
 #: = Q22 + "2-bromobutane", CJC 2024 H2 P1): the digit-then-dash lookahead.
-QSTART = re.compile(r"^(\d{1,2})\s{0,4}(?=[A-Z(]|\d[\u2012\u2013\u2010\u2011\-])")
+# CJC 2026 H2 P1 Q20 opens "2020 cm3 of a gaseous hydrocarbon": the typed number
+# is glued to a quantity that starts with a digit, so a unit may follow the
+# digits instead of a capital letter. The caller still demands number == expected.
+QSTART = re.compile(r"^(\d{1,2})\s{0,4}(?=[A-Z(]|\d[\u2012\u2013\u2010\u2011\-]|\d+\s?cm)")
 
 _LETTERS = "ABCD"
 
@@ -532,7 +535,8 @@ def _figure_option_grid(tbl):
     return cells if len(cells) == 4 else None
 
 
-def parse(document_xml, rels_xml, no_option_text=frozenset()):
+def parse(document_xml, rels_xml, no_option_text=frozenset(),
+          data_tables=frozenset()):
     """Return (questions, figures, anomalies) for a paragraph-flow question paper.
 
     `no_option_text` is a set of question numbers whose A-D options exist ONLY
@@ -540,6 +544,11 @@ def parse(document_xml, rels_xml, no_option_text=frozenset()):
     or D corresponds to ..." refers to points printed on the graph). They get
     four empty options and the whole span as the stem, instead of being dropped
     for having no option markers.
+
+    `data_tables` is a set of question numbers whose Word table is STEM DATA
+    even though its first column holds bare letters (CJC 2026 H2 P1 Q5: a table
+    of successive ionisation energies whose rows are labelled A and B). Without
+    it the table is read as the option table and the real options are lost.
 
     Same contract as `questions.parse()` -- see that module's docstring for
     the return shape and handoff SS7's ordinal rule. Callers that need to
@@ -585,7 +594,7 @@ def parse(document_xml, rels_xml, no_option_text=frozenset()):
             if g:
                 grid = (tbl, g)
                 break
-        for tbl in ([] if grid else tbls):
+        for tbl in ([] if (grid or qnum in data_tables) else tbls):
             rows = tbl.findall("w:tr", NS)
             opt_rows = [(i, _split_options(tr.findall("w:tc", NS)))
                        for i, tr in enumerate(rows)]

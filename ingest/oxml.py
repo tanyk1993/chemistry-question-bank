@@ -382,7 +382,9 @@ def _omml_tokens(el):
 
     # Word's spell/grammar-check markers carry no content (first met in ASRJC 2026 H2 P3's
     # suggested solutions, inside a fraction in an answer)
-    if ln.endswith("Pr") or ln in ("ctrlPr", "proofErr"):
+    # (bookmarkStart/End: first met inside a fraction of CJC 2026 H2 P1's Q18 solution)
+    if ln.endswith("Pr") or ln in ("ctrlPr", "proofErr", "bookmarkStart",
+                                   "bookmarkEnd"):
         return
 
     raise ValueError("unhandled OMML element <m:%s>" % ln)

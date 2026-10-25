@@ -240,6 +240,8 @@ def main(argv=None):
     questions, figures, anomalies, shape = parse(
         unz / "word/document.xml", unz / "word/_rels/document.xml.rels",
         no_option_text=corrections.no_option_text(
+            a.school, a.level, a.paper, a.year),
+        data_tables=corrections.data_table_questions(
             a.school, a.level, a.paper, a.year))
     print("detected document shape: %s" % shape)
     for q in questions:

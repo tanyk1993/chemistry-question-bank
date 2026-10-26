@@ -646,6 +646,18 @@
   #bt .sub { color:var(--muted); font-size:.88rem; margin:0 0 1rem; }
   #bt label { display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.08em;
     color:var(--muted); font-weight:600; margin-bottom:.4rem; }
+  .bt-labrow { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:.4rem; }
+  .bt-cap { font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:600; }
+  .bt-clear { background:none; border:0; padding:0; font-size:.75rem; color:var(--teal); text-decoration:underline; }
+  #bt .bt-list, #bt .bt-papers { display:flex; flex-direction:column; gap:.4rem; }
+  #bt .bt-list { max-height:13rem; overflow-y:auto; padding:.1rem .35rem .1rem 0; }
+  #bt .bt-list.bt-tall { max-height:18rem; }
+  #bt .bt-list .check-item, #bt .bt-papers .check-item, #bt .bt-narrow { display:flex; align-items:flex-start; gap:.55rem; text-transform:none;
+    letter-spacing:0; font-weight:400; font-size:.88rem; color:var(--ink); margin:0; line-height:1.25; cursor:pointer; }
+  #bt .bt-list .check-item input, #bt .bt-narrow input { margin-top:.12rem; }
+  #bt .bt-narrow { margin-top:.6rem; }
+  #bt .bt-zero { color:var(--muted); }
+  #bt .bt-grp { font-size:.72rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin:.3rem 0 0; }
   .bt-controls { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; margin-bottom:.9rem; }
   #bt-count { margin:.2rem 0 1rem; }
   .bt-group { margin:0 0 1.4rem; }
@@ -653,6 +665,8 @@
   .bt-row { border:1px solid var(--line); border-radius:10px; background:var(--card); margin-bottom:.5rem; }
   .bt-head { display:block; width:100%; text-align:left; background:none; border:0; padding:.65rem .8rem; font:inherit; color:var(--ink); }
   .bt-head:hover { background:#f7fafb; border-radius:10px; }
+  .bt-bar:hover{ background:#f7fafb; border-radius:10px; }   /* the shading covers the whole row, button included */
+  .bt-bar:hover .bt-head{ background:none; }
   .bt-title { font-weight:600; }
   .bt-sub { font-size:.82rem; color:var(--muted); margin-top:.2rem; display:flex; flex-wrap:wrap; gap:.3rem .6rem; align-items:center; }
   .bt-match { font-weight:600; color:#0b5c72; }
@@ -664,6 +678,46 @@
   .qtchip button { border:0; background:none; cursor:pointer; font-weight:700;
     line-height:1; color:inherit; opacity:.65; }
   .qtchip button:hover { opacity:1; }
+  /* ==== WS-EXPORT CSS BEGIN: worksheet basket (script: WS-EXPORT) ==== */
+  .bt-bar{ display:flex; align-items:stretch; }
+  .bt-bar .bt-head{ flex:1; min-width:0; width:auto; }
+  .ws-add{ flex:none; align-self:center; margin:.4rem .7rem .4rem 0; font:inherit; font-size:.8rem; padding:.3rem .7rem;
+           border:1px solid var(--teal); color:var(--teal); background:#fff; border-radius:999px; cursor:pointer; white-space:nowrap; }
+  .ws-add:hover{ background:var(--teal-soft); }
+  .ws-add.on{ background:var(--teal); color:#fff; }
+  .ws-tray{ position:fixed; left:50%; transform:translateX(-50%); bottom:1rem; z-index:60; display:flex; align-items:center; gap:.7rem;
+            background:var(--ink); color:#fff; padding:.5rem .6rem .5rem 1.1rem; border-radius:999px; box-shadow:0 6px 24px rgba(0,0,0,.28); font-size:.9rem; }
+  .ws-tray.hidden, .ws-panel.hidden, .ws-warn.hidden{ display:none; }
+  .ws-tray button{ font:inherit; font-size:.85rem; border-radius:999px; border:0; padding:.35rem .8rem; cursor:pointer; }
+  .ws-open{ background:#fff; color:var(--ink); font-weight:600; }
+  .ws-clear{ background:transparent; color:#cfd8df; text-decoration:underline; padding:.35rem .4rem !important; }
+  .ws-panel{ position:fixed; inset:0; z-index:70; background:rgba(20,32,46,.45); display:flex; align-items:center; justify-content:center; padding:1rem; }
+  .ws-box{ background:var(--card); border-radius:12px; width:min(680px,100%); max-height:92vh; overflow:auto; padding:1rem 1.2rem 1.2rem; box-shadow:0 12px 40px rgba(0,0,0,.3); }
+  .ws-head{ display:flex; justify-content:space-between; align-items:center; }
+  .ws-head h2{ margin:0 0 .4rem; font-size:1.15rem; }
+  .ws-x{ background:none; border:0; font-size:1.5rem; line-height:1; cursor:pointer; color:var(--muted); }
+  .ws-list{ margin:.4rem 0 .8rem; }
+  .ws-item{ display:flex; align-items:center; gap:.5rem; padding:.45rem 0; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  .ws-info{ flex:1 1 220px; min-width:0; }
+  .ws-what{ color:#0b5c72; font-weight:600; font-size:.85rem; margin-left:.3rem; }
+  .ws-chk{ display:flex; align-items:center; gap:.35rem; font-size:.85rem; color:var(--muted); }
+  .ws-opts{ border:1px solid var(--line); border-radius:8px; margin:0 0 .7rem; padding:.5rem .8rem .7rem; display:grid; gap:.5rem; }
+  .ws-opts legend{ font-size:.8rem; color:var(--muted); padding:0 .3rem; }
+  .ws-opts label{ display:grid; gap:.2rem; font-size:.85rem; }
+  .ws-opts label.ws-chk{ display:flex; }
+  .ws-opts input[type=text], .ws-opts select, .ws-opts input[type=number]{ font:inherit; padding:.35rem .5rem; border:1px solid var(--line); border-radius:6px; background:#fff; }
+  .ws-foot{ display:flex; align-items:center; gap:.8rem; flex-wrap:wrap; }
+  .ws-go{ font:inherit; font-weight:600; background:var(--teal); color:#fff; border:0; border-radius:8px; padding:.55rem 1.1rem; cursor:pointer; }
+  .ws-go:disabled{ opacity:.55; cursor:progress; }
+  .ws-status{ font-size:.85rem; color:var(--muted); }
+  .ws-status.bad{ color:#b42318; }
+  .ws-warn{ margin-top:.8rem; padding:.6rem .8rem; border-radius:8px; background:#fff7e6; border:1px solid #f1d49b; font-size:.85rem; }
+  .ws-warn ul{ margin:.3rem 0 0 1.1rem; padding:0; }
+  .ws-measure{ position:fixed; left:-30000px; top:0; width:760px; visibility:hidden; pointer-events:none; }
+  .ws-sub{ flex:0 0 100%; display:grid; gap:.35rem; padding:.2rem 0 .3rem 1.4rem; }
+  .btn-mini.on{ background:var(--teal-soft); }
+  .ws-foot .ws-go-t{ margin-left:.5rem; }
+  /* ==== WS-EXPORT CSS END ==== */
 </style>
 </head>
 <body>
@@ -757,11 +811,21 @@
   </main>
   <section id="bt" class="hidden" aria-label="Browse by type">
     <h2>Browse by type</h2>
-    <p class="sub">Pick a topic and a question type to see the questions with a matching part.</p>
+    <p class="sub">Tick a topic, a paper and, for P2 and P3, a question type to find questions.</p>
     <div class="bt-controls">
-      <div><label for="bt-topic">Topic</label><select id="bt-topic"><option value="">All topics</option></select></div>
-      <div id="bt-lowrap" class="hidden"><label for="bt-lo">Learning objective</label><select id="bt-lo"><option value="">All objectives</option></select></div>
-      <div><label for="bt-type">Question type</label><select id="bt-type"><option value="">All types</option></select></div>
+      <div><div class="bt-labrow"><span class="bt-cap">Topic</span><button type="button" class="bt-clear" data-clear="topics">clear</button></div>
+        <div class="check-group bt-list" id="bt-topics" role="group" aria-label="Topic"></div>
+        <label class="check-item bt-narrow hidden" id="bt-narrowwrap"><input type="checkbox" id="bt-narrow"> <span id="bt-narrowtxt">Narrow by learning objective</span></label></div>
+      <div id="bt-lowrap" class="hidden"><div class="bt-labrow"><span class="bt-cap">Learning objective</span><button type="button" class="bt-clear" data-clear="los">clear</button></div>
+        <div class="check-group bt-list bt-tall" id="bt-los" role="group" aria-label="Learning objective"></div>
+        <div class="muted-note" style="margin-top:.3rem">Leave a topic's objectives unticked to include all of them. (n) = questions on the ticked papers.</div></div>
+      <div><div class="bt-labrow"><span class="bt-cap">Paper</span></div>
+        <div class="check-group bt-papers" id="bt-paper" role="group" aria-label="Paper">
+          <label class="check-item"><input type="checkbox" value="1"> P1 – Multiple choice</label>
+          <label class="check-item"><input type="checkbox" value="2"> P2 – Structured</label>
+          <label class="check-item"><input type="checkbox" value="3"> P3 – Structured</label></div></div>
+      <div id="bt-typewrap" class="hidden"><div class="bt-labrow"><span class="bt-cap">Question type</span><button type="button" class="bt-clear" data-clear="types">clear</button></div>
+        <div class="check-group bt-list" id="bt-types" role="group" aria-label="Question type"></div></div>
     </div>
     <div id="bt-count" class="count"></div>
     <div id="bt-results"></div>
@@ -893,8 +957,13 @@
       _full: false
     }));
     BYID = new Map(ALL.map(q => [q.id, q]));
+    wsSync();
     BT_READY = false;
-    buildTopicFilter(); buildLoFilter().then(render);
+    buildTopicFilter();
+    // A hiccup fetching the LO catalogue must not leave the main list stuck on "Loading questions…".
+    buildLoFilter().catch(e => console.warn('LO filter failed', e)).then(render);
+    // Browse by type may already be open (opened while the list was still loading): rebuild it from the real data.
+    if(!$('#bt').classList.contains('hidden')) btOpen().catch(e => console.warn('browse refresh failed', e));
   }
 
   // ---------------- per-page heavy fetch ----------------
@@ -2319,6 +2388,9 @@
   // ---------------- Browse by type (topic / LO / question type) ----------------
   // Runs entirely on the light list: each part's type tag and LO tags carry the same part_label,
   // and a part's topic comes from the LOs tagged on that same part (the join the SQL used).
+  let BT_NARROW = false;          // "Narrow by learning objective" ticked
+  const BT_MCQ_PAGE = 30;
+  const BT_SEL = { topics:new Set(), los:new Set(), papers:new Set(), types:new Set() };   // ticked values
   let BT_PARTS = null;           // [{ q, label, type, los:[LO] }]  one per (part, type)
   let BT_READY = false;
   const BT_TOPICKEY = new Map(), BT_TOPICNAME = new Map();   // topic id -> key / name
@@ -2342,57 +2414,100 @@
   }
   const btFirstBracket = l => { const m = String(l).replace(/^\d+/,'').match(/^\([^)]*\)/); return m ? m[0] : String(l); };
 
-  function btMatching(topicKeyVal, loId){
-    return BT_PARTS.filter(x => {
-      if(loId && !x.los.some(l => l.id === loId)) return false;
-      if(topicKeyVal && !x.los.some(l => BT_TOPICKEY.get(l.topic_id) === topicKeyVal)) return false;
-      return true;
-    });
+  const btPaperNo = q => String((q.paper || {}).paper_number || '');
+  const btCmpQ = (a, b) => {
+    const pa = a.paper || {}, pb = b.paper || {};
+    return String(pa.school || '').localeCompare(String(pb.school || '')) || ((pa.year || 0) - (pb.year || 0)) ||
+           ((pa.paper_number || 0) - (pb.paper_number || 0)) || ((a.question_number || 0) - (b.question_number || 0));
+  };
+  const btHasSq = () => BT_SEL.papers.has('2') || BT_SEL.papers.has('3');
+  // Ticked objectives narrow THEIR topic only: a topic with none of its LOs ticked counts as the whole topic.
+  function btLoTopics(){
+    const m = new Set();
+    if(BT_SEL.los.size) LO_CATALOGUE.forEach(lo => { if(BT_SEL.los.has(lo.id)){ const k = BT_TOPICKEY.get(lo.topic_id); if(k) m.add(k); } });
+    return m;
   }
+  function btLoOk(l, loTopics){
+    const k = BT_TOPICKEY.get(l.topic_id);
+    if(BT_SEL.topics.size && !BT_SEL.topics.has(k)) return false;
+    return loTopics.has(k) ? BT_SEL.los.has(l.id) : true;
+  }
+  // structured parts for the ticked topics / objectives / papers (before the type filter)
+  function btMatching(){
+    if(!btHasSq()) return [];
+    const lt = btLoTopics();
+    return BT_PARTS.filter(x => BT_SEL.papers.has(btPaperNo(x.q)) && (!BT_SEL.topics.size || x.los.some(l => btLoOk(l, lt))));
+  }
+  // MCQs carry their LO tags on the whole question (no part label)
+  function btMcqMatching(){
+    if(!BT_SEL.papers.has('1') || !BT_SEL.topics.size) return [];
+    const lt = btLoTopics();
+    return ALL.filter(q => q.type === 'mcq' && q.los.some(l => l && btLoOk(l, lt)));
+  }
+  const btCheck = (value, text, checked, title) => {
+    const l = document.createElement('label'); l.className = 'check-item'; if(title) l.title = title;
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = value; cb.checked = checked;
+    l.appendChild(cb); l.appendChild(document.createTextNode(text)); return l;
+  };
 
   function btFillTopics(){
-    const sel = $('#bt-topic'); const keep = sel.value;
-    sel.innerHTML = '<option value="">All topics</option>';
+    const box = $('#bt-topics');
+    [...BT_SEL.topics].forEach(k => { if(!TOPIC_GROUPS.has(k)) BT_SEL.topics.delete(k); });
+    box.innerHTML = '';
     [...TOPIC_GROUPS.values()].sort((a,b) => (a.ordinal - b.ordinal) || a.name.localeCompare(b.name)).forEach(e => {
-      const o = document.createElement('option'); o.value = e.key;
-      o.textContent = e.name + (e.syllabuses.size === 1 ? ` (${[...e.syllabuses][0]})` : '');
-      sel.appendChild(o);
+      box.appendChild(btCheck(e.key, e.name + (e.syllabuses.size === 1 ? ` (${[...e.syllabuses][0]})` : ''), BT_SEL.topics.has(e.key)));
     });
-    sel.value = [...sel.options].some(o => o.value === keep) ? keep : '';
   }
 
+  // The switch under Topic. Unticking it (or clearing every topic) also drops any ticked objectives, so no hidden filter lingers.
+  function btSyncNarrow(){
+    const wrap = $('#bt-narrowwrap'), cb = $('#bt-narrow');
+    if(!BT_SEL.topics.size){ BT_NARROW = false; BT_SEL.los.clear(); }
+    wrap.classList.toggle('hidden', !BT_SEL.topics.size);
+    cb.checked = BT_NARROW;
+    $('#bt-narrowtxt').textContent = 'Narrow by learning objective' + (BT_NARROW && BT_SEL.los.size ? ` (${BT_SEL.los.size} chosen)` : '');
+  }
+
+  // Every objective of the ticked topics, each with the number of questions on the ticked papers (0 = a gap in the bank).
   async function btFillLos(){
-    const wrap = $('#bt-lowrap'), sel = $('#bt-lo');
-    const tk = $('#bt-topic').value, grp = TOPIC_GROUPS.get(tk);
-    sel.innerHTML = '<option value="">All objectives</option>';
-    if(!tk || !grp){ wrap.classList.add('hidden'); return; }
+    const wrap = $('#bt-lowrap'), box = $('#bt-los'), papers = BT_SEL.papers;
+    box.innerHTML = '';
+    if(!BT_NARROW || !BT_SEL.topics.size){ BT_SEL.los.clear(); wrap.classList.add('hidden'); btSyncNarrow(); return; }
     let cat = [];
-    try{ cat = await loadCatalogue(); }catch(err){ console.warn('LO catalogue failed', err); wrap.classList.add('hidden'); return; }
-    const present = new Set();
-    BT_PARTS.forEach(x => x.los.forEach(l => { if(grp.topicIds.has(l.topic_id)) present.add(l.id); }));
-    const mine = cat.filter(lo => present.has(lo.id)).sort(byCode);
-    if(!mine.length){ wrap.classList.add('hidden'); return; }
-    mine.forEach(lo => {
-      const o = document.createElement('option'); o.value = lo.id;
-      const txt = String(lo.text||'').replace(/\s+/g,' ').trim();
-      o.textContent = `${lo.section_code||''} ${txt.length>78 ? txt.slice(0,78)+'…' : txt}`.trim();
-      o.title = txt; sel.appendChild(o);
+    try{ cat = await loadCatalogue(); }catch(err){ console.warn('LO catalogue failed', err); wrap.classList.add('hidden'); btSyncNarrow(); return; }
+    const cnt = new Map(), add = (id, qid) => { if(!cnt.has(id)) cnt.set(id, new Set()); cnt.get(id).add(qid); };
+    if(!papers.size || papers.has('1')) ALL.forEach(q => { if(q.type === 'mcq') q.los.forEach(l => { if(l) add(l.id, q.id); }); });
+    if(!papers.size || btHasSq()) BT_PARTS.forEach(x => { if(papers.size && !papers.has(btPaperNo(x.q))) return; x.los.forEach(l => add(l.id, x.q.id)); });
+    const listed = new Set(), many = BT_SEL.topics.size > 1;
+    [...TOPIC_GROUPS.values()].filter(g => BT_SEL.topics.has(g.key)).sort((a,b) => (a.ordinal - b.ordinal) || a.name.localeCompare(b.name)).forEach(grp => {
+      const mine = cat.filter(lo => grp.topicIds.has(lo.topic_id)).sort(byCode);
+      if(!mine.length) return;
+      if(many){ const h = document.createElement('div'); h.className = 'bt-grp'; h.textContent = grp.name; box.appendChild(h); }
+      const multi = grp.syllabuses.size > 1;
+      mine.forEach(lo => {
+        const txt = String(lo.text||'').replace(/\s+/g,' ').trim(), n = cnt.has(lo.id) ? cnt.get(lo.id).size : 0;
+        listed.add(lo.id);
+        const l = btCheck(lo.id, `${multi ? lo.syllabus + ' ' : ''}${lo.section_code||''} ${txt.length>120 ? txt.slice(0,120)+'…' : txt} (${n})`.trim(), BT_SEL.los.has(lo.id), txt);
+        if(!n) l.classList.add('bt-zero');
+        box.appendChild(l);
+      });
     });
-    wrap.classList.remove('hidden');
+    [...BT_SEL.los].forEach(id => { if(!listed.has(id)) BT_SEL.los.delete(id); });
+    wrap.classList.toggle('hidden', !listed.size);
+    btSyncNarrow();
   }
 
+  // Question types exist for the structured papers only; MCQs are not typed.
   async function btFillTypes(){
+    const wrap = $('#bt-typewrap'), box = $('#bt-types');
+    wrap.classList.toggle('hidden', !btHasSq());
+    box.innerHTML = '';
+    if(!btHasSq()){ BT_SEL.types.clear(); return; }
     const cat = await loadTypes();
-    const sel = $('#bt-type'), keep = sel.value;
-    const parts = btMatching($('#bt-topic').value, $('#bt-lo').value);
     const counts = new Map();
-    parts.forEach(x => counts.set(x.type.id, (counts.get(x.type.id)||0) + 1));
-    sel.innerHTML = '<option value="">All types</option>';
-    cat.forEach(t => {
-      const n = counts.get(t.id); if(!n) return;
-      const o = document.createElement('option'); o.value = t.id; o.textContent = `${t.name} (${n})`; sel.appendChild(o);
-    });
-    sel.value = [...sel.options].some(o => o.value === keep) ? keep : '';
+    btMatching().forEach(x => counts.set(x.type.id, (counts.get(x.type.id)||0) + 1));
+    [...BT_SEL.types].forEach(id => { if(!counts.get(id)) BT_SEL.types.delete(id); });
+    cat.forEach(t => { const n = counts.get(t.id); if(n) box.appendChild(btCheck(t.id, `${t.name} (${n})`, BT_SEL.types.has(t.id))); });
   }
 
   function btQLabel(q){
@@ -2404,16 +2519,18 @@
   }
 
   async function btRender(){
-    const box = $('#bt-results'); const tk = $('#bt-topic').value, loId = $('#bt-lo').value, typeId = $('#bt-type').value;
+    const box = $('#bt-results'), P = BT_SEL.papers, typeIds = BT_SEL.types;
     ALL.forEach(q => { q._hit = null; });
-    if(!tk && !typeId){
-      $('#bt-count').textContent = '';
-      box.innerHTML = '<div class="empty"><b>Pick a topic or a question type to begin.</b></div>'; return;
-    }
-    const cat = await loadTypes();
-    let parts = btMatching(tk, loId);
-    if(typeId) parts = parts.filter(x => x.type.id === typeId);
-    // one row per question per type: the matching part labels
+    const note = html => { $('#bt-count').textContent = ''; box.innerHTML = '<div class="empty">' + html + '</div>'; };
+    if(!ALL.length) return note('<b>Loading questions…</b><br>This list fills in by itself when they arrive.');
+    if(!P.size) return note('<b>Pick a paper to begin.</b><br>P1 shows the multiple-choice questions; P2 and P3 show structured parts.');
+    const wantMcq = P.has('1'), wantSq = btHasSq(), haveTopic = BT_SEL.topics.size > 0;
+    if(wantMcq && !wantSq && !haveTopic) return note('<b>Pick a topic to see its multiple-choice questions.</b>');
+    if(!haveTopic && !typeIds.size) return note('<b>Pick a topic or a question type to begin.</b>');
+    const mcq = wantMcq ? btMcqMatching().sort(btCmpQ) : [];
+    let parts = wantSq ? btMatching() : [];
+    if(wantSq && typeIds.size) parts = parts.filter(x => typeIds.has(x.type.id));
+    if(wantSq && !haveTopic && !typeIds.size) parts = [];
     const groups = new Map();           // typeId -> Map(qid -> {q, labels:Set, los:Map})
     parts.forEach(x => {
       if(!groups.has(x.type.id)) groups.set(x.type.id, new Map());
@@ -2422,27 +2539,78 @@
       const e = g.get(x.q.id); e.labels.add(x.label);
       x.los.forEach(l => e.los.set(l.id, l));
     });
-    const nQ = new Set(parts.map(x => x.q.id)).size;
-    $('#bt-count').innerHTML = `<b>${nQ}</b> question${nQ===1?'':'s'} · <b>${new Set(parts.map(x => x.q.id+'|'+x.label)).size}</b> part${parts.length===1?'':'s'}`;
-    if(!parts.length){ box.innerHTML = '<div class="empty"><b>No questions match.</b></div>'; return; }
+    const nQ = new Set(parts.map(x => x.q.id)).size, nParts = new Set(parts.map(x => x.q.id+'|'+x.label)).size;
+    const bits = [];
+    if(wantMcq) bits.push(`<b>${mcq.length}</b> multiple-choice`);
+    if(wantSq) bits.push(`<b>${nQ}</b> structured question${nQ===1?'':'s'} · <b>${nParts}</b> part${nParts===1?'':'s'}`);
+    $('#bt-count').innerHTML = bits.join(' · ');
+    if(!mcq.length && !parts.length){ box.innerHTML = '<div class="empty"><b>No questions match.</b></div>'; return; }
     box.innerHTML = '';
-    const order = (a,b) => {
-      const pa = a.q.paper||{}, pb = b.q.paper||{};
-      return String(pa.school||'').localeCompare(String(pb.school||'')) || ((pa.year||0)-(pb.year||0)) ||
-             ((pa.paper_number||0)-(pb.paper_number||0)) || ((a.q.question_number||0)-(b.q.question_number||0));
-    };
+    if(mcq.length){
+      const sec = document.createElement('div'); sec.className = 'bt-group';
+      if(wantSq){
+        const h = document.createElement('h3');
+        h.innerHTML = `<span class="qtchip qt-general">Multiple choice</span><span class="muted-note">${mcq.length} question${mcq.length===1?'':'s'}</span>`;
+        sec.appendChild(h);
+      }
+      btMcqMore(sec, mcq, 0);
+      box.appendChild(sec);
+    }
+    const cat = parts.length ? await loadTypes() : [];
+    const order = (a,b) => btCmpQ(a.q, b.q);
     cat.forEach(t => {
       const g = groups.get(t.id); if(!g) return;
       const sec = document.createElement('div'); sec.className = 'bt-group';
-      if(!typeId){
+      if(typeIds.size !== 1){
         const nparts = [...g.values()].reduce((n,e) => n + e.labels.size, 0);
         const h = document.createElement('h3');
         h.innerHTML = `<span class="qtchip qt-${esc(t.area||'general')}">${esc(t.name)}</span><span class="muted-note">${nparts} part${nparts===1?'':'s'}</span>`;
         sec.appendChild(h);
       }
-      [...g.values()].sort(order).forEach(e => sec.appendChild(btRow(e, tk)));
+      [...g.values()].sort(order).forEach(e => sec.appendChild(btRow(e, BT_SEL.topics)));
       box.appendChild(sec);
     });
+  }
+
+  // MCQ rows are drawn BT_MCQ_PAGE at a time (a topic can hold hundreds); the bar sits under the last row drawn.
+  function btMcqMore(sec, list, n){
+    const old = sec.querySelector(':scope > .morebar'); if(old) old.remove();
+    list.slice(n, n + BT_MCQ_PAGE).forEach(q => sec.appendChild(btMcqRow(q)));
+    const next = n + BT_MCQ_PAGE;
+    if(next < list.length){
+      const left = list.length - next, bar = document.createElement('div'); bar.className = 'morebar';
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn-ghost';
+      b.textContent = `Show ${Math.min(BT_MCQ_PAGE, left)} more (${left} left)`;
+      b.addEventListener('click', () => btMcqMore(sec, list, next));
+      bar.appendChild(b); sec.appendChild(bar);
+    }
+  }
+
+  // A multiple-choice row: title, its LO codes, "+ Worksheet"; click opens the whole question.
+  function btMcqRow(q){
+    const row = document.createElement('div'); row.className = 'bt-row';
+    const head = document.createElement('button'); head.type = 'button'; head.className = 'bt-head';
+    const L = btQLabel(q);
+    const codes = [...new Set(q.los.filter(Boolean).slice().sort(byCode).map(l => l.section_code))];
+    head.innerHTML =
+      `<div class="bt-title">${esc(L.a)}${L.b ? ' · ' + esc(L.b) : ''}</div>` +
+      (codes.length ? `<div class="bt-sub">${codes.map(c => `<span class="bt-chip">${esc(c)}</span>`).join('')}</div>` : '');
+    const bar = document.createElement('div'); bar.className = 'bt-bar';
+    bar.appendChild(head); bar.appendChild(wsAddMcqButton(q));
+    row.appendChild(bar);
+    let body = null;
+    head.addEventListener('click', async () => {
+      if(body){ body.remove(); body = null; return; }
+      body = document.createElement('div'); body.className = 'bt-body';
+      body.innerHTML = '<div class="loading">Loading…</div>'; row.appendChild(body);
+      try{ await hydrate([q]); }
+      catch(err){ console.error(err); if(body){ body.innerHTML = ''; body.appendChild(failCard(L.a + ' ' + L.b, 'could not load this question')); } return; }
+      if(!body) return;
+      body.innerHTML = '';
+      if(!q._full){ body.appendChild(failCard(L.a + ' ' + L.b, 'the server did not return this question\'s text')); return; }
+      try{ body.appendChild(card(q)); }catch(err){ console.error('card failed', q.id, err); body.appendChild(failCard(L.a + ' ' + L.b, (err && err.message) || String(err))); }
+    });
+    return row;
   }
 
   function btRow(e, selectedTopicKey){
@@ -2456,7 +2624,7 @@
     (q.los_raw||[]).forEach(r => {
       if(!r.part_label || here.has(r.part_label) || !r.learning_objectives) return;
       const id = r.learning_objectives.topic_id, k = BT_TOPICKEY.get(id);
-      if(k && k !== selectedTopicKey) others.add(BT_TOPICNAME.get(id));
+      if(k && !(selectedTopicKey && selectedTopicKey.has(k))) others.add(BT_TOPICNAME.get(id));
     });
     const los = [...e.los.values()].sort(byCode).map(l => l.section_code);
     head.innerHTML =
@@ -2464,7 +2632,9 @@
       `<div class="bt-sub"><span class="bt-match">Matches: ${esc(labels.join(', '))}</span>` +
       [...new Set(los)].map(c => `<span class="bt-chip">${esc(c)}</span>`).join('') +
       (others.size ? `<span>Also covers: ${esc([...others].sort().join(', '))}</span>` : '') + `</div>`;
-    row.appendChild(head);
+    const bar = document.createElement('div'); bar.className = 'bt-bar';
+    bar.appendChild(head); bar.appendChild(wsAddButton(q, labels));
+    row.appendChild(bar);
     let body = null;
     head.addEventListener('click', async () => {
       if(body){ body.remove(); body = null; q._hit = null; return; }
@@ -2513,9 +2683,1042 @@
     if(on) btOpen(); else ALL.forEach(q => { q._hit = null; });
   }
   $('#typebtn').addEventListener('click', () => showBrowse($('#bt').classList.contains('hidden')));
-  $('#bt-topic').addEventListener('change', async () => { await btFillLos(); await btFillTypes(); btRender(); });
-  $('#bt-lo').addEventListener('change', async () => { await btFillTypes(); btRender(); });
-  $('#bt-type').addEventListener('change', () => btRender());
+  const btToggle = (set, cb) => { if(cb.checked) set.add(cb.value); else set.delete(cb.value); };
+  $('#bt-topics').addEventListener('change', async e => { if(e.target.tagName !== 'INPUT') return; btToggle(BT_SEL.topics, e.target); await btFillLos(); await btFillTypes(); btRender(); });
+  $('#bt-los').addEventListener('change', async e => { if(e.target.tagName !== 'INPUT') return; btToggle(BT_SEL.los, e.target); btSyncNarrow(); await btFillTypes(); btRender(); });
+  $('#bt-narrow').addEventListener('change', async e => { BT_NARROW = e.target.checked; if(!BT_NARROW) BT_SEL.los.clear(); await btFillLos(); await btFillTypes(); btRender(); });
+  $('#bt-paper').addEventListener('change', async e => { if(e.target.tagName !== 'INPUT') return; btToggle(BT_SEL.papers, e.target); await btFillLos(); await btFillTypes(); btRender(); });
+  $('#bt-types').addEventListener('change', e => { if(e.target.tagName !== 'INPUT') return; btToggle(BT_SEL.types, e.target); btRender(); });
+  document.querySelectorAll('.bt-clear').forEach(b => b.addEventListener('click', async () => {
+    BT_SEL[b.dataset.clear].clear();
+    if(b.dataset.clear === 'topics') btFillTopics();
+    await btFillLos(); await btFillTypes(); btRender();
+    if(b.dataset.clear === 'los' || b.dataset.clear === 'types'){ /* lists were rebuilt unticked */ }
+  }));
+
+  // ==== WS-EXPORT BEGIN: worksheet basket + Word (.docx) export ====
+  // Slice 1: structured questions picked in "Browse by type" -> a student-copy worksheet.
+  // Nothing here touches the database. The question markup is rendered by the app's own
+  // buildStem() into an off-screen box, then converted to Word: layout is MEASURED from that
+  // render (figure sizes, table column widths), so what exports is what the app shows.
+  // The Word library (docx) is loaded from the CDN on first export only.
+  const WS_KEY = 'ws_basket_v1', WS_OPT_KEY = 'ws_opts_v1';
+  const WS_DOCX_URL = 'https://cdn.jsdelivr.net/npm/docx@9.5.1/dist/index.iife.js';
+  let WS_BASKET = [];                       // [{ qid, groups:['(a)','(c)'], whole:false }]
+  const WS_OPTS = { title:'', college:'', line3:'', gap:'normal', nameLine:true, sourceTag:true, space:'auto', linesPerMark:2, mcqBracket:true, restartNums:false, sectionBreak:false };
+
+  function wsLoad(){
+    try{ const s = JSON.parse(localStorage.getItem(WS_KEY) || '[]');
+      if(Array.isArray(s)) WS_BASKET = s.filter(x => x && x.qid && Array.isArray(x.groups)); }catch(e){}
+    try{ const o = JSON.parse(localStorage.getItem(WS_OPT_KEY) || 'null');
+      if(o && typeof o === 'object') Object.keys(WS_OPTS).forEach(k => { if(k in o && typeof o[k] === typeof WS_OPTS[k]) WS_OPTS[k] = o[k]; }); }catch(e){}
+  }
+  function wsSave(){
+    try{ localStorage.setItem(WS_KEY, JSON.stringify(WS_BASKET)); localStorage.setItem(WS_OPT_KEY, JSON.stringify(WS_OPTS)); }catch(e){}
+  }
+  const wsItem = qid => WS_BASKET.find(x => x.qid === qid);
+  const wsHas = (qid, g) => { const it = wsItem(qid); return !!it && (it.whole || it.groups.includes(g)); };
+  function wsAdd(qid, groups){
+    let it = wsItem(qid); if(!it){ it = { qid, groups:[], whole:false }; WS_BASKET.push(it); }
+    groups.forEach(g => { if(!it.groups.includes(g)) it.groups.push(g); });
+    wsChanged();
+  }
+  function wsRemoveGroups(qid, groups){
+    const it = wsItem(qid); if(!it) return;
+    it.groups = it.groups.filter(g => !groups.includes(g));
+    if(!it.groups.length && !it.whole) WS_BASKET = WS_BASKET.filter(x => x !== it);
+    wsChanged();
+  }
+  function wsRemove(qid){ WS_BASKET = WS_BASKET.filter(x => x.qid !== qid); wsChanged(); }
+  function wsChanged(){ wsSave(); wsRefreshUi(); }
+  function wsSync(){                         // after the question list loads: drop anything no longer in the bank
+    WS_BASKET = WS_BASKET.filter(x => BYID.has(x.qid)); wsSave(); wsRefreshUi();
+  }
+
+  const wsQLabel = q => { const p = q.paper || {};
+    return [p.school, p.year].filter(Boolean).join(' ') + ' ' + (p.paper_name || (p.paper_number ? 'P' + p.paper_number : '')) + ' Q' + (q.question_number || '?'); };
+  const wsSortGroups = gs => gs.slice().sort((a,b) => a.localeCompare(b, undefined, { numeric:true }));
+  // TYS-style source tag: [SCHOOL YY/paper/Q(part)]
+  function wsTagText(q, it){
+    const p = q.paper || {}, yy = p.year ? String(p.year).slice(-2) : '';
+    const head = [p.school, yy].filter(Boolean).join(' ') + '/' + (p.paper_number || '') + '/';
+    const gs = (it.whole || !it.groups.length) ? [String(q.question_number)] : wsSortGroups(it.groups).map(g => q.question_number + g);
+    return '[' + head + gs.join(', ') + ']';
+  }
+
+  // ---------- UI: add button on Browse-by-type rows, tray, review panel ----------
+  function wsAddButton(q, labels){
+    const groups = [...new Set(labels.map(btFirstBracket))];
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'ws-add';
+    b._wsRefresh = () => {
+      const on = groups.every(g => wsHas(q.id, g));
+      b.classList.toggle('on', on);
+      b.textContent = on ? '✓ In worksheet' : '+ Worksheet';
+      b.title = on ? 'Remove from worksheet' : 'Add ' + groups.map(g => 'Q' + q.question_number + g).join(', ') + ' to your worksheet';
+    };
+    b.addEventListener('click', e => {
+      e.stopPropagation();
+      if(groups.every(g => wsHas(q.id, g))){ const it = wsItem(q.id); if(it && it.whole) wsRemove(q.id); else wsRemoveGroups(q.id, groups); }
+      else wsAdd(q.id, groups);
+    });
+    b._wsRefresh();
+    return b;
+  }
+
+  // MCQ rows on the Browse tab: the whole question, no part labels.
+  function wsAddMcqButton(q){
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'ws-add'; b.style.margin = '.4rem .7rem .4rem 0';
+    b._wsRefresh = () => {
+      const on = !!wsItem(q.id);
+      b.classList.toggle('on', on);
+      b.textContent = on ? '✓ In worksheet' : '+ Worksheet';
+      b.title = on ? 'Remove from worksheet' : 'Add this question to your worksheet';
+    };
+    b.addEventListener('click', () => { if(wsItem(q.id)) wsRemove(q.id); else { WS_BASKET.push({ qid:q.id, groups:[], whole:true }); wsChanged(); } });
+    b._wsRefresh();
+    return b;
+  }
+  let WS_UI = null;
+  function wsEnsureUi(){
+    if(WS_UI) return WS_UI;
+    const tray = document.createElement('div'); tray.id = 'ws-tray'; tray.className = 'ws-tray hidden';
+    tray.innerHTML = '<span class="ws-count"></span><button type="button" class="ws-open">Review &amp; export</button><button type="button" class="ws-clear" title="Empty the worksheet">Clear</button>';
+    document.body.appendChild(tray);
+    const panel = document.createElement('div'); panel.id = 'ws-panel'; panel.className = 'ws-panel hidden';
+    panel.innerHTML =
+      '<div class="ws-box" role="dialog" aria-label="Worksheet">' +
+      '<div class="ws-head"><h2>Worksheet</h2><button type="button" class="ws-x" aria-label="Close">×</button></div>' +
+      '<div class="ws-list"></div>' +
+      '<fieldset class="ws-opts"><legend>Header</legend>' +
+      '<label>Line 1 <input type="text" id="ws-college" placeholder="optional, e.g. college name"></label>' +
+      '<label>Line 2 <input type="text" id="ws-title" placeholder="optional, e.g. JC2 H2 Chemistry Enrichment Paper 1"></label>' +
+      '<label>Line 3 <input type="text" id="ws-line3" placeholder="optional, e.g. The Periodic Table &amp; Groups"></label>' +
+      '<label class="ws-chk"><input type="checkbox" id="ws-nameline"> Name / class / date line</label></fieldset>' +
+      '<fieldset class="ws-opts"><legend>Options</legend>' +
+      '<label class="ws-chk"><input type="checkbox" id="ws-tag"> Source tag at the bottom of each question, e.g. [ACJC 26/3/3(a)]</label>' +
+      '<label>Answer space <select id="ws-space"><option value="auto">Auto: lines to write on, blank space to work or draw</option><option value="none">None</option></select></label>' +
+      '<label>Answer lines per mark <input type="number" id="ws-lpm" min="1" max="4" step="1" style="width:4.5em"></label>' +
+      '<label>Spacing between parts and questions <select id="ws-gap"><option value="tight">Tight</option><option value="normal">Normal</option><option value="loose">Loose</option></select></label>' +
+      '<label class="ws-chk"><input type="checkbox" id="ws-brk"> Answer bracket ( ) at the right, level with the last option (multiple choice)</label></fieldset>' +
+      '<fieldset class="ws-opts"><legend>Sections</legend>' +
+      '<label class="ws-chk"><input type="checkbox" id="ws-restart"> Number each section separately (a run of multiple-choice, then a run of structured, and so on)</label>' +
+      '<label class="ws-chk"><input type="checkbox" id="ws-break"> Start each section on a new page</label></fieldset>' +
+      '<div class="ws-foot"><button type="button" class="ws-go">Export student copy</button><button type="button" class="ws-go ws-go-t" title="Worked solutions in blue under each part; the MCQ answer goes inside the bracket">Export teacher copy</button><span class="ws-status" role="status"></span></div>' +
+      '<div class="ws-warn hidden"></div>' +
+      '</div>';
+    document.body.appendChild(panel);
+    const $p = s => panel.querySelector(s);
+    tray.querySelector('.ws-open').addEventListener('click', () => wsOpenPanel());
+    tray.querySelector('.ws-clear').addEventListener('click', () => { if(confirm('Remove all questions from the worksheet?')){ WS_BASKET = []; wsChanged(); } });
+    $p('.ws-x').addEventListener('click', () => panel.classList.add('hidden'));
+    panel.addEventListener('click', e => { if(e.target === panel) panel.classList.add('hidden'); });
+    document.addEventListener('keydown', e => { if(e.key === 'Escape') panel.classList.add('hidden'); });
+    const bind = (sel, key, kind) => $p(sel).addEventListener('change', e => {
+      WS_OPTS[key] = kind === 'chk' ? e.target.checked : kind === 'num' ? Math.max(1, Math.min(4, parseInt(e.target.value, 10) || 2)) : e.target.value; wsSave(); });
+    bind('#ws-title', 'title'); bind('#ws-college', 'college'); bind('#ws-line3', 'line3'); bind('#ws-gap', 'gap'); bind('#ws-nameline', 'nameLine', 'chk');
+    bind('#ws-tag', 'sourceTag', 'chk'); bind('#ws-space', 'space'); bind('#ws-lpm', 'linesPerMark', 'num'); bind('#ws-brk', 'mcqBracket', 'chk'); bind('#ws-restart', 'restartNums', 'chk'); bind('#ws-break', 'sectionBreak', 'chk');
+    $p('.ws-go:not(.ws-go-t)').addEventListener('click', () => wsDoExport(false));
+    $p('.ws-go-t').addEventListener('click', () => wsDoExport(true));
+    WS_UI = { tray, panel, $p };
+    return WS_UI;
+  }
+  function wsOpenPanel(){
+    const u = wsEnsureUi();
+    u.$p('#ws-title').value = WS_OPTS.title; u.$p('#ws-college').value = WS_OPTS.college; u.$p('#ws-line3').value = WS_OPTS.line3; u.$p('#ws-gap').value = WS_OPTS.gap;
+    u.$p('#ws-nameline').checked = WS_OPTS.nameLine; u.$p('#ws-tag').checked = WS_OPTS.sourceTag;
+    u.$p('#ws-space').value = WS_OPTS.space; u.$p('#ws-lpm').value = WS_OPTS.linesPerMark; u.$p('#ws-brk').checked = WS_OPTS.mcqBracket; u.$p('#ws-restart').checked = WS_OPTS.restartNums; u.$p('#ws-break').checked = WS_OPTS.sectionBreak;
+    u.$p('.ws-status').textContent = ''; u.$p('.ws-warn').classList.add('hidden');
+    wsRenderList(); u.panel.classList.remove('hidden');
+  }
+  const WS_LINES_OPEN = new Set();       // questions whose answer-line panel is open (survives re-renders of the list)
+  async function wsToggleLines(it, q, row, btn, forceOpen){
+    let sub = row.querySelector(':scope > .ws-lines');
+    if(sub && !forceOpen){ sub.remove(); WS_LINES_OPEN.delete(it.qid); btn.classList.remove('on'); return; }
+    if(sub) sub.remove();
+    sub = document.createElement('div'); sub.className = 'ws-sub ws-lines'; sub.textContent = 'Loading…'; row.appendChild(sub);
+    WS_LINES_OPEN.add(it.qid); btn.classList.add('on');
+    try{ await hydrate([q]); }catch(err){ sub.textContent = 'Could not load this question.'; return; }
+    if(!sub.isConnected) return;
+    const stem = buildStem(q, q.content_html);
+    const seg = wsSegments(stem);
+    const parts = seg.parts.map(pt => { const pl = pt.querySelector(':scope > .pl'), label = pl.textContent.trim(), cont = seg.contOf.get(pt) || [];
+        const mks = wsMarkEls(pt, cont), mt = mks.length === 1 ? mks[0].textContent : '';
+        const dots = WS_DOTS_RX.test([...pt.childNodes].filter(n => n !== pl && !seg.tailSet.has(n)).concat(cont).map(n => n.textContent || '').join(' '));
+        return { label, marks: parseInt((mt.match(/\d+/) || ['0'])[0], 10), dots }; })
+      .filter(x => it.whole || it.groups.includes(btFirstBracket(x.label)));
+    sub.textContent = '';
+    if(!parts.length){ sub.textContent = 'No parts found.'; return; }
+    const head = document.createElement('div'); head.className = 'muted-note';
+    head.textContent = 'Leave a box empty for the automatic amount. 0 = no lines.'; sub.appendChild(head);
+    parts.forEach(pt => {
+      const l = document.createElement('label'); l.className = 'ws-chk';
+      const auto = pt.dots ? 'dots are in the text' : (() => { const sp = wsSpaceFor(q, pt.label, pt.marks, WS_OPTS, null);
+        return !sp ? 'none' : sp.kind === 'blank' ? 'blank space' : sp.n + ' lines'; })();
+      const inp = document.createElement('input'); inp.type = 'number'; inp.min = 0; inp.max = 20; inp.step = 1; inp.style.width = '4.5em';
+      inp.placeholder = pt.dots ? '–' : 'auto'; inp.disabled = pt.dots;
+      inp.value = it.lines && it.lines[pt.label] != null ? it.lines[pt.label] : '';
+      inp.addEventListener('change', () => {
+        const v = inp.value.trim();
+        if(v === ''){ if(it.lines){ delete it.lines[pt.label]; if(!Object.keys(it.lines).length) delete it.lines; } }
+        else { it.lines = it.lines || {}; it.lines[pt.label] = Math.max(0, Math.min(20, parseInt(v, 10) || 0)); }
+        wsSave();
+      });
+      l.appendChild(document.createTextNode(pt.label + (pt.marks ? ' [' + pt.marks + ']' : '') + ' ')); l.appendChild(inp);
+      l.appendChild(document.createTextNode(' auto: ' + auto));
+      sub.appendChild(l);
+    });
+  }
+  // Choose which top-level parts of a structured question go in the worksheet ((a), (b), ...).
+  const WS_PARTS_OPEN = new Set();
+  async function wsToggleParts(it, q, row, btn, forceOpen){
+    let sub = row.querySelector(':scope > .ws-ptsub');
+    if(sub && !forceOpen){ sub.remove(); WS_PARTS_OPEN.delete(it.qid); btn.classList.remove('on'); return; }
+    if(sub) sub.remove();
+    sub = document.createElement('div'); sub.className = 'ws-sub ws-ptsub'; sub.textContent = 'Loading…'; row.appendChild(sub);
+    WS_PARTS_OPEN.add(it.qid); btn.classList.add('on');
+    try{ await hydrate([q]); }catch(err){ sub.textContent = 'Could not load this question.'; return; }
+    if(!sub.isConnected) return;
+    const seg = wsSegments(buildStem(q, q.content_html)), tops = [];
+    seg.parts.forEach(pt => {
+      const pl = pt.querySelector(':scope > .pl'), g = btFirstBracket(pl.textContent.trim());
+      let e = tops.find(x => x.g === g); if(!e){ e = { g, marks:0, text:'' }; tops.push(e); }
+      const cont = seg.contOf.get(pt) || [];
+      wsMarkEls(pt, cont).forEach(m => { e.marks += parseInt((m.textContent.match(/\d+/) || ['0'])[0], 10); });
+      if(!e.text){ const t = [...pt.childNodes].filter(n => n !== pl).map(n => n.textContent || '').join('').trim(); e.text = t.length > 70 ? t.slice(0, 70) + '…' : t; }
+    });
+    sub.textContent = '';
+    if(tops.length < 2){ sub.textContent = tops.length ? 'This question has only one part.' : 'This question has no separate parts.'; return; }
+    const head = document.createElement('div'); head.className = 'muted-note';
+    head.textContent = 'Tick the parts to include. The opening passage always comes with them.'; sub.appendChild(head);
+    tops.forEach(e => {
+      const l = document.createElement('label'); l.className = 'ws-chk';
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = it.whole || it.groups.includes(e.g);
+      cb.addEventListener('change', () => {
+        let gs = it.whole ? tops.map(x => x.g) : it.groups.slice();
+        gs = cb.checked ? (gs.includes(e.g) ? gs : gs.concat(e.g)) : gs.filter(x => x !== e.g);
+        if(!gs.length){ cb.checked = true; head.textContent = 'Keep at least one part (or remove the question).'; return; }
+        it.whole = false; it.groups = gs; wsChanged();
+      });
+      l.appendChild(cb); l.appendChild(document.createTextNode(' ' + e.g + (e.marks ? ' [' + e.marks + ']' : '') + (e.text ? '  ' + e.text : '')));
+      sub.appendChild(l);
+    });
+  }
+  function wsRenderList(){
+    const u = wsEnsureUi(), box = u.$p('.ws-list'); box.innerHTML = '';
+    if(!WS_BASKET.length){ box.innerHTML = '<div class="muted-note">Nothing selected yet. In Browse by type, press “+ Worksheet” on a question.</div>'; return; }
+    WS_BASKET.forEach((it, i) => {
+      const q = BYID.get(it.qid); if(!q) return;
+      const row = document.createElement('div'); row.className = 'ws-item';
+      const isMcq = q.type === 'mcq';
+      const what = isMcq ? 'multiple choice' : it.whole ? 'whole question' : wsSortGroups(it.groups).map(g => q.question_number + g).join(', ');
+      const info = document.createElement('div'); info.className = 'ws-info';
+      info.innerHTML = '<b>' + (i + 1) + '.</b> ' + esc(wsQLabel(q)) + ' <span class="ws-what">' + esc(what) + '</span>';
+      const whole = document.createElement('label'); whole.className = 'ws-chk ws-wholechk';
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!it.whole;
+      cb.addEventListener('change', () => { it.whole = cb.checked; wsChanged(); });
+      whole.appendChild(cb); whole.appendChild(document.createTextNode(' whole question'));
+      const mk = (txt, title, fn, dis) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn-mini'; b.textContent = txt; b.title = title; b.disabled = !!dis; b.addEventListener('click', fn); return b; };
+      const mv = d => () => { const j = i + d; if(j < 0 || j >= WS_BASKET.length) return; [WS_BASKET[i], WS_BASKET[j]] = [WS_BASKET[j], WS_BASKET[i]]; wsChanged(); };
+      row.appendChild(info);
+      if(isMcq){
+        const lay = document.createElement('label'); lay.className = 'ws-chk'; lay.appendChild(document.createTextNode('options '));
+        const sel = document.createElement('select'); sel.title = 'How the answer options are laid out';
+        [['auto','auto'],['inline','one line'],['stacked','stacked'],['2x2','2 × 2']].forEach(([v, t]) => { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); });
+        sel.value = it.layout || 'auto';
+        sel.addEventListener('change', () => { it.layout = sel.value; wsSave(); });
+        lay.appendChild(sel); row.appendChild(lay);
+      } else row.appendChild(whole);
+      if(!isMcq){
+        const pb = mk('Choose parts', 'Tick which parts of this question to include', () => wsToggleParts(it, q, row, pb));
+        row.appendChild(pb);
+        if(WS_PARTS_OPEN.has(it.qid)) wsToggleParts(it, q, row, pb, true);
+        const lb = mk('Answer lines', 'Set how many answer lines each part gets', () => wsToggleLines(it, q, row, lb));
+        row.appendChild(lb);
+        if(WS_LINES_OPEN.has(it.qid)) wsToggleLines(it, q, row, lb, true);
+      }
+      row.appendChild(mk('↑', 'Move up', mv(-1), i === 0)); row.appendChild(mk('↓', 'Move down', mv(1), i === WS_BASKET.length - 1));
+      row.appendChild(mk('Remove', 'Remove from worksheet', () => wsRemove(it.qid)));
+      box.appendChild(row);
+    });
+  }
+  function wsRefreshUi(){
+    const u = wsEnsureUi(), n = WS_BASKET.length;
+    u.tray.classList.toggle('hidden', n === 0);
+    u.tray.querySelector('.ws-count').innerHTML = '<b>' + n + '</b> question' + (n === 1 ? '' : 's') + ' in worksheet';
+    document.querySelectorAll('.ws-add').forEach(b => { if(b._wsRefresh) b._wsRefresh(); });
+    if(!u.panel.classList.contains('hidden')){ if(!n) u.panel.classList.add('hidden'); else wsRenderList(); }
+  }
+
+  // ---------- docx loader ----------
+  async function wsLoadDocx(){
+    if(window.docx && window.docx.Document) return window.docx;
+    await new Promise((res, rej) => {
+      const s = document.createElement('script'); s.src = WS_DOCX_URL; s.onload = res;
+      s.onerror = () => rej(new Error('Could not load the Word library (needs an internet connection).'));
+      document.head.appendChild(s);
+    });
+    if(!(window.docx && window.docx.Document)) throw new Error('The Word library did not start.');
+    return window.docx;
+  }
+
+  // ---------- geometry (A4, 0.8in margins) ----------
+  const WS_PAGE_TW = 11906, WS_MARGIN_TW = 1152, WS_TEXT_TW = WS_PAGE_TW - 2 * WS_MARGIN_TW;   // 9602
+  let WS_INST = 0;                                                                              // numbering instance: bumps at each section when 'number separately' is on
+  const WS_COLS = { num: 420, let: 497, rom: 546 };                                            // question grid; content takes the rest
+  const WS_GAPS = { tight: 0.6, normal: 1, loose: 1.5 };                                      // scale of the template's 299 (between parts) / 367 (between questions)
+  const wsGap = (opts, base) => Math.round(base * (WS_GAPS[opts && opts.gap] || 1));
+  const WS_CELL_PAD = 80;                                                                      // left/right cell padding, twips
+  const TW_PER_PX = 15;                                                                        // 1 css px = 15 twips
+
+  // How much room to leave for an answer, by question type. Tune here.
+  const WS_BLANK_TYPES = new Set(['calculation','draw_structure','sketch_graph','mechanisms',
+    'synthesis_and_functional_group_transformations','structure_elucidation']);
+  function wsSpaceFor(q, label, marks, opts, it){
+    if(it && it.lines && it.lines[label] != null){ const n = it.lines[label]; return n > 0 ? { kind:'lines', n: Math.min(20, n) } : null; }   // set by hand in the review panel
+    if(opts.space === 'none' || !marks) return null;
+    const codes = (q.qtypes || []).filter(r => r.part_label && r.question_types &&
+      String(r.part_label).replace(/^\d+/, '') === label).map(r => r.question_types.code);
+    if(codes.some(c => WS_BLANK_TYPES.has(c))){
+      const draw = codes.some(c => c !== 'calculation' && WS_BLANK_TYPES.has(c));
+      return { kind:'blank', tw: draw ? Math.max(2000, marks * 1000) : Math.max(1500, marks * 700) };
+    }
+    const per = codes.includes('equations_expressions') ? 1 : opts.linesPerMark;
+    return { kind:'lines', n: Math.max(2, Math.min(14, marks * per)) };
+  }
+
+  // ---------- the converter ----------
+  function wsConverter(D, IMG, warn){
+    const numbering = []; let nList = 0;
+    let BASE = null;                                   // default run style for a stretch of content (teacher answers)
+    const setBase = st => { BASE = st; };
+    const AL = D.AlignmentType;
+    const alignOf = el => { const a = getComputedStyle(el).textAlign; return a === 'center' ? AL.CENTER : a === 'right' || a === 'end' ? AL.RIGHT : AL.LEFT; };
+    const BLOCK = new Set(['P','DIV','TABLE','OL','UL','HR','H1','H2','H3','H4','H5','H6','FIGURE','SECTION','ARTICLE','BLOCKQUOTE','PRE']);
+    const isBlockEl = n => n.nodeType === 1 && BLOCK.has(n.tagName);
+
+    // ----- OMML (Word equations) -----
+    const mEl = (name, attrs, kids) => { const el = new D.BuilderElement({ name, attributes: attrs || undefined }); (kids || []).forEach(k => el.addChildElement(k)); return el; };
+    const mVal = v => ({ val:{ key:'m:val', value:v } });
+    const mRun = (text, sty) => mEl('m:r', null, [mEl('m:rPr', null, [mEl('m:sty', mVal(sty || 'p'))])]
+      .concat(BASE && BASE.color ? [mEl('w:rPr', null, [mEl('w:color', { val:{ key:'w:val', value: BASE.color } })])] : [])
+      .concat([mEl('m:t', { space:{ key:'xml:space', value:'preserve' } }, [text])]));
+    function mFin(list){
+      const out = [];
+      for(const d of list){
+        if(d.k === 'r'){ if(d.text) out.push(mRun(d.text, d.sty)); }
+        else if(d.k === 'f') out.push(mEl('m:f', null, [mEl('m:num', null, mFin(d.n)), mEl('m:den', null, mFin(d.d))]));
+        else if(d.k === 'rad') out.push(mEl('m:rad', null, [mEl('m:radPr', null, [mEl('m:degHide', mVal('1'))]), mEl('m:deg', null, []), mEl('m:e', null, mFin(d.e))]));
+        else if(d.k === 'sub') out.push(mEl('m:sSub', null, [mEl('m:e', null, mFin(d.base)), mEl('m:sub', null, mFin(d.sub))]));
+        else if(d.k === 'sup') out.push(mEl('m:sSup', null, [mEl('m:e', null, mFin(d.base)), mEl('m:sup', null, mFin(d.sup))]));
+        else if(d.k === 'subsup') out.push(mEl('m:sSubSup', null, [mEl('m:e', null, mFin(d.base)), mEl('m:sub', null, mFin(d.sub)), mEl('m:sup', null, mFin(d.sup))]));
+        else if(d.k === 'pre') out.push(mEl('m:sPre', null, [mEl('m:sub', null, mFin(d.sub)), mEl('m:sup', null, mFin(d.sup)), mEl('m:e', null, mFin(d.base))]));
+      }
+      return out;
+    }
+    // .stk = two stacked spans (top, bottom). Before a symbol (mass over proton number) it
+    // becomes a Word pre-script on that symbol; after one (the standard-state sign over
+    // "cell") it becomes a stacked sub/superscript. The symbol that follows a pre-stack is
+    // taken from the next text node, so the base letter is not typed twice.
+    function takeSymbol(c){
+      let t = c.nextSibling;
+      while(t && t._copy) t = t._copy;          // trimNodes() may have swapped in a copy of that text node
+      if(!t || t.nodeType !== 3) return '';
+      const m = /^\s*([A-Z][a-z]?)/.exec(t.nodeValue);
+      if(!m) return '';
+      t.nodeValue = t.nodeValue.slice(m[0].length);
+      return m[1];
+    }
+    function stkDesc(c, sty){
+      const sp = [...c.children], top = [], bot = [];
+      const t0 = sp[0], bareSym = t0 && t0.children.length === 1 && t0.firstElementChild.classList.contains('pl-sym') && !t0.textContent.replace('\u29b5', '').trim();
+      if(bareSym) top.push({ k:'r', text:'\u29b5', sty });       // the sign is already the superscript; do not raise it again
+      else if(t0) mKids(t0, sty, top);
+      if(sp[1]) mKids(sp[1], sty, bot);
+      if(c.classList.contains('post')) return { k:'subsup', base:[{ k:'r', text:'\u200b', sty }], sub:bot, sup:top };
+      const sym = takeSymbol(c);
+      return { k:'pre', sub:bot, sup:top, base:[{ k:'r', text: sym || '\u200b', sty }] };
+    }
+    function mKids(node, sty, out){
+      node.childNodes.forEach(c => {
+        if(c.nodeType === 3){ const t = c.nodeValue.replace(/\s+/g, ' '); if(t) out.push({ k:'r', text:t, sty }); return; }
+        if(c.nodeType !== 1) return;
+        const tag = c.tagName, cl = c.classList;
+        if(tag === 'SUB' || tag === 'SUP'){
+          const inner = []; mKids(c, sty, inner);
+          const last = out[out.length - 1];
+          if(last && last.k === 'sub' && tag === 'SUP'){ last.k = 'subsup'; last.sup = inner; return; }
+          if(last && last.k === 'sup' && tag === 'SUB'){ last.k = 'subsup'; last.sub = inner; return; }
+          let base;
+          if(last && last.k === 'r' && last.text){ const ch = last.text.slice(-1); last.text = last.text.slice(0, -1); base = [{ k:'r', text:ch, sty:last.sty }]; }
+          else base = [{ k:'r', text:'​', sty }];
+          out.push(tag === 'SUB' ? { k:'sub', base, sub:inner } : { k:'sup', base, sup:inner });
+        }
+        else if(cl.contains('stk')) out.push(stkDesc(c, sty));
+        else if(cl.contains('frac')){
+          const num = c.querySelector(':scope > .fnum'), den = c.querySelector(':scope > .fden');
+          const n = [], d = []; if(num) mKids(num, sty, n); if(den) mKids(den, sty, d);
+          out.push({ k:'f', n, d });
+        }
+        else if(cl.contains('sqrt')){ const e = []; mKids(c.querySelector(':scope > .rad') || c, sty, e); out.push({ k:'rad', e }); }
+        else if(tag === 'I' || tag === 'EM') mKids(c, 'i', out);
+        else if(tag === 'B' || tag === 'STRONG') mKids(c, 'b', out);
+        else mKids(c, sty, out);
+      });
+    }
+    const mathOf = el => { const w = document.createElement('span'); w.appendChild(el.cloneNode(true));
+      const list = []; mKids(w, 'p', list); return new D.Math({ children: mFin(list) }); };
+
+    // ----- inline runs -----
+    const tr = (text, st0, extra) => { const st = BASE ? Object.assign({}, BASE, st0) : st0; return new D.TextRun(Object.assign({ text,
+      bold: st.b || undefined, italics: st.i || undefined, underline: st.u ? {} : undefined, strike: st.s || undefined,
+      superScript: st.sup || undefined, subScript: st.sub || undefined, color: st.color || undefined, font: st.font || undefined }, extra || {})); };
+    // The l of Al, Cl, Tl is set in Times New Roman italic: in Arial a lower-case l looks like a capital I ("AlCl3" reads "AICI3").
+    // Only when the next character is not a lower-case letter, so words such as Class, Clearly and Alkane are left alone.
+    const trT = (text, st) => {
+      if(st.font === 'Cambria Math' || !/[ACT]l(?![a-z])/.test(text)) return [tr(text, st)];
+      const res = [], rx = /[ACT]l(?![a-z])/g; let last = 0, m;
+      while((m = rx.exec(text))){ const at = m.index + 1; if(at > last) res.push(tr(text.slice(last, at), st)); res.push(tr('l', st, { italics:true, font:'Times New Roman' })); last = at + 1; }
+      if(last < text.length) res.push(tr(text.slice(last), st));
+      return res;
+    };
+    function inl(node, st, out, ctx){
+      if(node.nodeType === 3){
+        let t = node.nodeValue;
+        if(st.pre){
+          t.split(/(\t| {2,})/).forEach(seg => { if(!seg) return; if(seg === '\t' || /^ {2,}$/.test(seg)){ out.push(new D.TextRun({ children:[new D.Tab()] })); ctx.rightTab = true; } else out.push(...trT(seg, st)); });
+        } else { t = t.replace(/[ \t\r\n]+/g, ' '); if(t) out.push(...trT(t, st)); }
+        return;
+      }
+      if(node.nodeType !== 1) return;
+      const tag = node.tagName, cl = node.classList;
+      if(tag === 'BR'){ out.push(new D.TextRun({ break:1 })); return; }
+      if(tag === 'IMG'){ out.push(imageRun(node, ctx, true)); return; }
+      if(cl.contains('frac') || cl.contains('sqrt')){ out.push(mathOf(node)); return; }
+      if(cl.contains('stk')){ out.push(new D.Math({ children: mFin([stkDesc(node, 'p')]) })); return; }
+      if(cl.contains('mk')){ out.push(new D.TextRun({ children:[new D.Tab()] })); out.push(tr(node.textContent.trim(), st, { bold:true })); ctx.rightTab = true; return; }
+      if(tag === 'SPAN'){
+        // A grid typed as inline-block cells (display:inline-block; min-width:4.6em), e.g. oxidation states set over a species line:
+        // each cell starts at a tab stop, so the columns line up in Word as they do on screen. 1 em = 11 pt = 220 twips.
+        const sty = node.getAttribute('style') || '', mw = /display:\s*inline-block/.test(sty) && /min-width:\s*([\d.]+)em/.exec(sty);
+        if(mw){
+          const wtw = Math.round(parseFloat(mw[1]) * 220), right = /text-align:\s*right/.test(sty), start = ctx.colX || 0;
+          ctx.stops = ctx.stops || [];
+          if(ctx.tabbedTo === undefined) ctx.tabbedTo = -1;
+          if((start > 0 && start > ctx.tabbedTo) || right){
+            const pos = right ? start + wtw : start;
+            out.push(new D.TextRun({ children:[new D.Tab()] }));
+            if(!ctx.stops.some(x => x.pos === pos && !!x.right === right)) ctx.stops.push({ pos, right });
+            ctx.tabbedTo = Math.max(ctx.tabbedTo, start);
+          }
+          ctx.colX = start;
+          node.childNodes.forEach(c => inl(c, st, out, ctx));
+          ctx.colX = start + wtw;
+          return;
+        }
+      }
+      let s = st;
+      if(tag === 'SUB') s = Object.assign({}, st, { sub:true, sup:false });
+      else if(tag === 'SUP') s = Object.assign({}, st, { sup:true, sub:false });
+      else if(tag === 'B' || tag === 'STRONG') s = Object.assign({}, st, { b:true });
+      else if(tag === 'I' || tag === 'EM'){ s = cl.contains('el') ? Object.assign({}, st, { font:'Times New Roman' }) : Object.assign({}, st, { i:true }); }
+      else if(tag === 'U') s = Object.assign({}, st, { u:true });
+      else if(tag === 'S' || tag === 'STRIKE' || tag === 'DEL') s = Object.assign({}, st, { s:true });
+      else if(cl.contains('sr')) s = Object.assign({}, st, { font:'Times New Roman' });
+      else if(cl.contains('note') || cl.contains('mark-note')) s = Object.assign({}, st, { color:'FF0000', b:false });
+      else if(cl.contains('figbroken')){ out.push(tr('[figure not available]', st, { color:'C00000' })); warn.add('a figure could not be loaded'); return; }
+      if(cl.contains('pl-sym')) s = Object.assign({}, s, { font:'Cambria Math' });
+      node.childNodes.forEach(c => inl(c, s, out, ctx));
+    }
+    function imageRun(img, ctx, inline){
+      const info = IMG.get(img);
+      if(!info){ warn.add('a figure could not be loaded'); return tr('[figure not available]', {}, { color:'C00000' }); }
+      let w = info.dw, h = info.dh;
+      const maxPx = Math.max(60, ctx.wPx - 6);
+      if(w > maxPx){ h = h * maxPx / w; w = maxPx; }
+      return new D.ImageRun({ type: info.type, data: info.data, transformation:{ width: Math.max(8, Math.round(w)), height: Math.max(8, Math.round(h)) },
+        altText:{ name:'figure', description: img.getAttribute('alt') || 'figure', title:'figure' } });
+    }
+
+    // ----- paragraph descriptors -----
+    // { t:'p', runs, align, style, numbering, indent, ctxW, rightTab, spacing } ; { t:'tbl', ... }
+    function paraFrom(nodes, st, ctx, el){
+      const runs = []; const c = { wPx: ctx.wPx, rightTab:false, colX:0, tabbedTo:-1, stops:[] };
+      nodes.forEach(n => inl(n, st, runs, c));
+      const p = { t:'p', runs, align: el ? alignOf(el) : (ctx.align || AL.LEFT), rightTab: c.rightTab, wTw: ctx.wTw, txt: nodes.map(n => n.textContent || '').join('').trim() };
+      if(c.stops.length){            // columns: left tab stops at each cell start (plus the usual right tab for a [n] mark)
+        p.tabs = c.stops.map(x => ({ type: x.right ? D.TabStopType.RIGHT : D.TabStopType.LEFT, position: x.pos }));
+        if(c.rightTab) p.tabs.push({ type: D.TabStopType.RIGHT, position: Math.max(600, (ctx.wTw || 8000) - 20) });
+      }
+      return p;
+    }
+    const hasContent = runs => runs.length > 0;
+    function blocksFromNodes(nodes, st, ctx){
+      const out = []; let buf = [];
+      const flush = () => {
+        if(!buf.length) return;
+        const onlyWs = buf.every(n => n.nodeType === 3 && !n.nodeValue.trim());
+        if(!onlyWs){ const p = paraFrom(trimNodes(buf), st, ctx, null); if(hasContent(p.runs)) out.push(p); }
+        buf = [];
+      };
+      nodes.forEach(n => {
+        if(n.nodeType === 1 && isBlockEl(n)){ flush(); blockEl(n, st, ctx, out); }
+        else buf.push(n);
+      });
+      flush();
+      return out;
+    }
+    function trimNodes(list){        // trim leading/trailing whitespace of an inline run list (text nodes only, copies)
+      const a = list.slice();
+      const first = a[0];
+      if(first && first.nodeType === 3){ const t = document.createTextNode(first.nodeValue.replace(/^[ \t\r\n]+/, '')); first._copy = t; a[0] = t; }
+      const l2 = a[a.length - 1];
+      if(l2 && l2.nodeType === 3){ const t2 = document.createTextNode(l2.nodeValue.replace(/[ \t\r\n]+$/, '')); l2._copy = t2; a[a.length - 1] = t2; }
+      return a.filter(n => !(n.nodeType === 3 && !n.nodeValue));
+    }
+    function blockEl(el, st, ctx, out){
+      const tag = el.tagName, cl = el.classList;
+      if(el.classList.contains('bt-fold') || getComputedStyle(el).display === 'none') return;
+      if(tag === 'TABLE'){ out.push(tableDesc(el, ctx)); return; }
+      if(tag === 'OL' || tag === 'UL'){ listDesc(el, st, ctx, out); return; }
+      if(tag === 'HR') return;
+      if(tag === 'P' || tag === 'PRE'){
+        let pst = cl.contains('eqn') ? Object.assign({}, st, { pre:true }) : st;
+        if(cl.contains('mark-note')) pst = Object.assign({}, pst, { color:'FF0000', b:false, i:true });
+        const nodes = trimNodes([...el.childNodes]);
+        const p = paraFrom(nodes, pst, ctx, el);
+        if(hasContent(p.runs)){ if(cl.contains('eqn')) p.eqn = true; out.push(p); }
+        return;
+      }
+      // DIV and friends: figure wrappers and anything containing block children
+      const hasBlock = [...el.childNodes].some(isBlockEl);
+      if(hasBlock){ out.push(...blocksFromNodes([...el.childNodes], st, ctx)); return; }
+      const p = paraFrom(trimNodes([...el.childNodes]), st, ctx, el);
+      if(hasContent(p.runs)){ if(el.querySelector('img') && !el.textContent.trim()) p.align = AL.CENTER; out.push(p); }
+    }
+    function listDesc(el, st, ctx, out){
+      const ref = 'ws-l' + (++nList), ordered = el.tagName === 'OL';
+      numbering.push({ reference: ref, levels:[{ level:0, format: ordered ? D.LevelFormat.DECIMAL : D.LevelFormat.BULLET, text: ordered ? '%1.' : '•',
+        alignment: AL.LEFT, style:{ paragraph:{ indent:{ left:560, hanging:360 } } } }] });
+      [...el.children].filter(li => li.tagName === 'LI').forEach(li => {
+        const inner = blocksFromNodes([...li.childNodes], st, Object.assign({}, ctx, { wTw: ctx.wTw - 560, wPx: ctx.wPx - 560 / TW_PER_PX }));
+        if(!inner.length) inner.push({ t:'p', runs:[], align: AL.LEFT, wTw: ctx.wTw });
+        inner.forEach((b, i) => { if(b.t === 'p'){ if(i === 0) b.numbering = { reference: ref, level:0 }; else b.indentLeft = 560; } });
+        out.push(...inner);
+      });
+    }
+    // ----- tables: widths come from the rendered layout -----
+    function rgbHex(c){ const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/.exec(c || ''); if(!m) return null; if(m[4] !== undefined && parseFloat(m[4]) === 0) return null;
+      const h = [m[1], m[2], m[3]].map(x => (+x).toString(16).padStart(2, '0')).join('').toUpperCase(); return h === 'FFFFFF' ? null : h; }
+    function tableDesc(t, ctx){
+      const tb = t.getBoundingClientRect();
+      const cells = [];
+      [...t.rows].forEach((r, ri) => [...r.cells].forEach(c => { const b = c.getBoundingClientRect(); cells.push({ c, ri, l: b.left - tb.left, r: b.right - tb.left }); }));
+      if(!cells.length) return { t:'p', runs:[], align: AL.LEFT, wTw: ctx.wTw };
+      const xs = [...new Set(cells.flatMap(c => [Math.round(c.l), Math.round(c.r)]))].sort((a, b) => a - b);
+      const bounds = []; xs.forEach(x => { if(!bounds.length || x - bounds[bounds.length - 1] > 2) bounds.push(x); });
+      const idx = x => { let best = 0, bd = 1e9; bounds.forEach((b, i) => { const d = Math.abs(b - x); if(d < bd){ bd = d; best = i; } }); return best; };
+      const colPx = []; for(let i = 0; i < bounds.length - 1; i++) colPx.push(bounds[i + 1] - bounds[i]);
+      const totalPx = bounds[bounds.length - 1] - bounds[0], k = totalPx > ctx.wPx ? ctx.wPx / totalPx : 1;
+      const colTw = colPx.map(w => Math.max(240, Math.round(w * k * TW_PER_PX)));
+      const cs0 = getComputedStyle(cells[0].c);
+      const bordered = cs0.borderTopStyle !== 'none' && parseFloat(cs0.borderTopWidth) > 0;
+      const rows = [];
+      cells.forEach(o => {
+        const a = idx(o.l), b = idx(o.r), span = Math.max(1, b - a);
+        const tw = colTw.slice(a, a + span).reduce((s, x) => s + x, 0);
+        const cs = getComputedStyle(o.c);
+        const st = { b: parseInt(cs.fontWeight, 10) >= 600 };
+        const inner = blocksFromNodes([...o.c.childNodes], st, { wTw: tw - 2 * WS_CELL_PAD, wPx: (tw - 2 * WS_CELL_PAD) / TW_PER_PX, align: alignOf(o.c) });
+        const va = cs.verticalAlign;
+        (rows[o.ri] = rows[o.ri] || { cells:[] }).cells.push({ blocks: inner, tw, span, rowSpan: o.c.rowSpan > 1 ? o.c.rowSpan : 1,
+          valign: va === 'middle' ? 'c' : va === 'bottom' ? 'b' : 't', fill: rgbHex(cs.backgroundColor) });
+      });
+      const sum = colTw.reduce((s, x) => s + x, 0);
+      return { t:'tbl', colTw, rows: rows.filter(Boolean), bordered, center: t.classList.contains('center'), sum };
+    }
+
+    // ----- materialise descriptors into docx objects -----
+    function matPara(d){
+      const o = { children: d.runs, alignment: d.align, style: d.style || 'WSBody' };
+      if(d.numbering) o.numbering = d.numbering;
+      if(d.indentLeft) o.indent = { left: d.indentLeft };
+      if(d.spacing) o.spacing = d.spacing;
+      if(d.tabs) o.tabStops = d.tabs;
+      else if(d.eqn || d.rightTab) o.tabStops = [{ type: D.TabStopType.RIGHT, position: Math.max(600, (d.wTw || 8000) - 20) }];
+      if(d.keepNext) o.keepNext = true;
+      return new D.Paragraph(o);
+    }
+    const NB = { style: D.BorderStyle.NONE, size:0, color:'auto' }, SB = { style: D.BorderStyle.SINGLE, size:4, color:'000000' };
+    function mat(blocks){
+      const out = blocks.map(b => b.t === 'tbl' ? matTable(b) : matPara(b));
+      if(!out.length || out[out.length - 1] instanceof D.Table) out.push(new D.Paragraph({ children:[], style:'WSBody' }));
+      return out;
+    }
+    function matTable(d){
+      const b = d.bordered ? SB : NB;
+      const rows = d.rows.map(r => new D.TableRow({ cantSplit: r.cantSplit || undefined, children: r.cells.map(c => new D.TableCell({
+        children: mat(c.blocks), width:{ size:c.tw, type: D.WidthType.DXA }, columnSpan: c.span > 1 ? c.span : undefined, rowSpan: c.rowSpan > 1 ? c.rowSpan : undefined,
+        verticalAlign: c.valign === 'c' ? D.VerticalAlign.CENTER : c.valign === 'b' ? D.VerticalAlign.BOTTOM : D.VerticalAlign.TOP,
+        shading: c.fill ? { type: D.ShadingType.CLEAR, fill: c.fill, color:'auto' } : undefined,
+        margins:{ top:40, bottom:40, left:WS_CELL_PAD, right:WS_CELL_PAD } })) }));
+      return new D.Table({ rows, columnWidths: d.colTw, width:{ size: d.sum, type: D.WidthType.DXA }, layout: D.TableLayoutType.FIXED,
+        alignment: d.center ? D.AlignmentType.CENTER : D.AlignmentType.LEFT,
+        borders:{ top:b, bottom:b, left:b, right:b, insideHorizontal:b, insideVertical:b } });
+    }
+
+    return { numbering, blocksFromNodes, mat, matPara, matTable, AL, warn, inl, tableDesc, trimNodes, setBase };
+  }
+
+  // ---------- teacher copy: the worked solution, built like the "Show answer" panel ----------
+  function wsSolutionEl(q){
+    const ans = (q.assets || []).filter(a => isAnswerSlot(a.slot));
+    if(!q.worked_solution && !ans.length) return null;
+    const d = document.createElement('div'); d.className = 'ws';
+    if(q.worked_solution){ d.innerHTML = q.worked_solution; resolveAssets(d, q.assets); }
+    const placed = new Set([...d.querySelectorAll('img')].map(i => i.getAttribute('src')));
+    ans.forEach(a => {
+      if(placed.has(a.url)) return;
+      const im = document.createElement('img'); im.className = 'ws-fig'; im.src = a.url; im.alt = '';
+      if(a.storage_path) im.dataset.fig = a.storage_path;
+      sizeFig(im, a); d.appendChild(im);
+    });
+    d.querySelectorAll('img').forEach(im => { im.loading = 'eager'; });
+    return d;
+  }
+  function wsSolPart(sol, label){        // the .body of the solution part whose label is exactly this part's
+    if(!sol) return null;
+    const hit = [...sol.querySelectorAll('.part')].find(p => [...p.children].some(l => l.classList.contains('lab') && l.textContent.trim() === label));
+    return hit ? [...hit.children].find(c => c.classList.contains('body')) || null : null;
+  }
+  const WS_BLUE = { b:true, color:'0000FF' };
+
+  // ---------- one question -> the 4-column grid ----------
+  function wsParseLabel(l){
+    const m = /^\(([A-Za-z]+)\)(?:\(([ivxlcdmIVXLCDM]+)\))?/.exec(l);
+    return m ? { letter:'(' + m[1] + ')', roman: m[2] ? '(' + m[2] + ')' : '' } : { letter:l, roman:'' };
+  }
+  const WS_DOTS_RX = /\.{8,}|…{3,}|_{6,}/;
+  // A stem is: intro blocks, then labelled parts (div.qpart holding span.pl), with other blocks BETWEEN and AFTER them. Those other
+  // blocks are either unlabelled div.qpart paragraphs (RI 2024 P2: the equation and the "Use relevant ... [1]" sentence of (a)(i), the
+  // shared passage before (b)(i)), p.c equations, figures and captions, or blocks written at question level (CJC 2026 P2 Q5).
+  // A gap is split at its LAST mark badge: up to and including that block it continues the part before it; the rest introduces the
+  // next part. After the last part everything continues it.
+  function wsSegments(stem){
+    const isPart = n => n.nodeType === 1 && n.classList.contains('qpart') && !!n.querySelector(':scope > .pl');
+    const hasMk = n => n.nodeType === 1 && (n.matches('.mk') || !!n.querySelector('.mk'));
+    const introNodes = [], parts = [], contOf = new Map(), preOf = new Map();
+    let cur = null, gap = [], nextPre = [];
+    const closeGap = isLast => {
+      if(!cur){ introNodes.push(...gap); gap = []; return; }
+      let k = -1; gap.forEach((n, i) => { if(hasMk(n)) k = i; });
+      const cut = isLast ? gap.length : k + 1;
+      contOf.set(cur, gap.slice(0, cut)); nextPre = gap.slice(cut); gap = [];
+    };
+    [...stem.childNodes].forEach(n => {
+      if(isPart(n)){ closeGap(false); if(cur){ preOf.set(n, nextPre); nextPre = []; } cur = n; parts.push(n); return; }
+      gap.push(n);
+    });
+    closeGap(true);
+    // Blocks written INSIDE a part's own div after its mark badge (ACJC 24 P3 Q3 (c)(i): the sentence and its [1], then the bomb
+    // calorimeter paragraph and Table 3.1 that really introduce (c)(ii)) belong to the next part. Move them there, so the answer
+    // space follows the mark. The last part keeps its trailing blocks (nothing follows to hand them to).
+    const tailSet = new Set();       // stays in the DOM (table widths are measured from the rendered layout), but is skipped by the part
+    parts.forEach((pt, i) => {
+      if(i === parts.length - 1) return;
+      const kids = [...pt.childNodes]; let k = -1; kids.forEach((n, j) => { if(hasMk(n)) k = j; });
+      if(k < 0) return;
+      const tail = kids.slice(k + 1);
+      if(!tail.some(n => (n.textContent || '').trim() || (n.querySelector && n.querySelector('img')))) return;
+      tail.forEach(n => tailSet.add(n));
+      const nx = parts[i + 1]; preOf.set(nx, tail.concat(preOf.get(nx) || []));
+    });
+    return { introNodes, parts, contOf, preOf, tailSet };
+  }
+  const wsMarkEls = (part, cont) => [...part.querySelectorAll('.mk'), ...cont.flatMap(n => n.nodeType !== 1 ? [] : n.matches('.mk') ? [n] : [...n.querySelectorAll('.mk')])];
+  function wsQuestionBlocks(C, D, q, it, stem, opts, warnList, sol){
+    const AL = C.AL;
+    if(opts.teacher && !sol) warn(warnList, wsQLabel(q) + ': no worked solution is stored, so the teacher copy shows the answer space instead');
+    const { introNodes, parts, contOf, preOf, tailSet } = wsSegments(stem);
+    const wantGroup = pl => it.whole || it.groups.includes(btFirstBracket(pl));
+    const GRID = [WS_COLS.num, WS_COLS.let, WS_COLS.rom, WS_TEXT_TW - WS_COLS.num - WS_COLS.let - WS_COLS.rom];
+    const spanTw = (a, b) => GRID.slice(a, b).reduce((s, x) => s + x, 0);
+    const ctxFor = tw => ({ wTw: tw - 2 * WS_CELL_PAD, wPx: (tw - 2 * WS_CELL_PAD) / TW_PER_PX });
+    const rows = [];
+    const numPara = () => ({ t:'p', runs:[], align: AL.LEFT, numbering:{ reference:'ws-q', level:0, instance: WS_INST }, style:'WSLabel', wTw: GRID[0] });
+    let firstRow = true, glue = false;
+    const gapPart = wsGap(opts, 299), gapQ = wsGap(opts, 367);
+    const pushRow = (row, together) => {            // a fixed-height blank row between parts, as in the school's exam template
+      if(rows.length && !together) rows.push({ cantSplit:true, cells:[ { blocks:[ { t:'p', runs:[], align: AL.LEFT, style:'WSBody', spacing:{ before:0, after:0, line: Math.max(20, gapPart - 80), lineRule: D.LineRuleType.EXACT }, wTw: 600 } ], tw: WS_TEXT_TW, span:4, valign:'t' } ] });
+      rows.push(row);
+    };
+    const intro = C.blocksFromNodes(introNodes, {}, ctxFor(spanTw(1, 4)));
+    if(intro.length){ pushRow({ cells:[ { blocks:[numPara()], tw:GRID[0], span:1, valign:'t' }, { blocks:intro, tw:spanTw(1, 4), span:3, valign:'t' } ] }); firstRow = false; }
+    let prevLetter = '', included = [], texts = [];
+    parts.forEach(part => {
+      const pl = part.querySelector(':scope > .pl'); if(!pl) return;
+      const label = pl.textContent.trim();
+      if(!wantGroup(label)) return;
+      included.push(label);
+      const pre = preOf.get(part) || [];       // blocks printed between the previous part and this one: they introduce this part
+      if(pre.some(n => (n.textContent || '').trim() || (n.querySelector && n.querySelector('img')))){
+        const under = !!wsParseLabel(label).roman;      // a passage before (b)(i) sits under the text of (b); before a lettered part it is flush
+        const c0 = under ? 2 : 1, pb = C.blocksFromNodes(pre, {}, ctxFor(spanTw(c0, 4)));
+        if(pb.length){
+          const blank = () => ({ t:'p', runs:[], align: AL.LEFT, style:'WSLabel', wTw: 600 });
+          const cells = [ { blocks: firstRow ? [numPara()] : [blank()], tw:GRID[0], span:1, valign:'t' } ];
+          if(under) cells.push({ blocks:[blank()], tw:GRID[1], span:1, valign:'t' });
+          cells.push({ blocks:pb, tw:spanTw(c0, 4), span: 4 - c0, valign:'t' });
+          pushRow({ cells }); firstRow = false; glue = true;
+        }
+      }
+      const pp = wsParseLabel(label);
+      const cont = contOf.get(part) || [];
+      const mks = wsMarkEls(part, cont);
+      let marksText = '';
+      if(mks.length === 1){ marksText = mks[0].textContent.trim(); mks[0].remove(); }
+      const nodes = [...part.childNodes].filter(n => n !== pl && !tailSet.has(n)).concat(cont);
+      const text = nodes.map(n => n.textContent || '').join(' '); texts.push({ label, text });
+      const roman = !!pp.roman;
+      const cTw = roman ? GRID[3] : spanTw(2, 4);
+      let blocks = C.blocksFromNodes(nodes, {}, ctxFor(cTw));
+      const marksN = marksText ? parseInt((marksText.match(/\d+/) || ['0'])[0], 10) : 0;
+      const hasDots = WS_DOTS_RX.test(text);
+      const space = hasDots ? null : wsSpaceFor(q, label, marksN, opts, it);
+      const inner = cTw - 2 * WS_CELL_PAD;
+      let solBlocks = [];
+      if(opts.teacher && sol){
+        const sb = wsSolPart(sol, label);
+        if(sb){ C.setBase(WS_BLUE); try{ solBlocks = C.blocksFromNodes([...sb.childNodes], {}, ctxFor(cTw)); } finally { C.setBase(null); } }
+        if(!solBlocks.length) warn(warnList, wsQLabel(q) + ' ' + label + ': no worked solution found for this part');
+      }
+      const useSol = solBlocks.length > 0;
+      const labelIdx = blocks.map((b, i) => b.t === 'p' && b.txt && /^[^\s:.]+(?:\s[^\s:.]+){0,2}:$/.test(b.txt) ? i : -1).filter(i => i >= 0);
+      const marksPara = () => ({ t:'p', runs:[ new D.TextRun({ text: marksText, bold:true }) ], align: AL.RIGHT, style:'WSMarks', wTw: inner });
+      if(useSol && !hasDots){ blocks.push(...solBlocks); if(marksText) blocks.push(marksPara()); }
+      else if(hasDots && marksText){
+        const last = blocks[blocks.length - 1];
+        if(last && last.t === 'p'){ last.runs.push(new D.TextRun({ children:[new D.Tab()] })); last.runs.push(new D.TextRun({ text: marksText, bold:true })); last.rightTab = true; last.wTw = inner; }
+        else blocks.push(marksPara());
+      } else if(space && space.kind === 'lines' && labelIdx.length >= 2){
+        // "Cathode:" / "Anode:" style parts: the lines belong to each label, running on from it, not in a block underneath
+        const L = labelIdx.length, per = Math.max(1, Math.floor(space.n / L)), out2 = [];
+        const R = D.TabStopType.RIGHT, DOT = D.LeaderType.DOT;
+        blocks.forEach((b, i) => {
+          const k = labelIdx.indexOf(i);
+          if(k < 0){ out2.push(b); return; }
+          const last = k === L - 1, withMk = !!(last && marksText), extra = per - 1;
+          b.runs.push(new D.TextRun({ children:[new D.Tab()] }));
+          b.tabs = withMk && !extra ? [{ type:R, position: inner - 620, leader:DOT }, { type:R, position: inner }] : [{ type:R, position: inner, leader:DOT }];
+          if(withMk && !extra){ b.runs.push(new D.TextRun({ children:[new D.Tab()] })); b.runs.push(new D.TextRun({ text: marksText, bold:true })); }
+          out2.push(b);
+          for(let j = 0; j < extra; j++){
+            const lastLine = withMk && j === extra - 1;
+            const tabs = lastLine ? [{ type:R, position: inner - 620, leader:DOT }, { type:R, position: inner }] : [{ type:R, position: inner, leader:DOT }];
+            const runs = [ new D.TextRun({ children:[new D.Tab()] }) ];
+            if(lastLine){ runs.push(new D.TextRun({ children:[new D.Tab()] })); runs.push(new D.TextRun({ text: marksText, bold:true })); }
+            out2.push({ t:'p', runs, align: AL.LEFT, style:'WSAnswerLine', tabs, wTw: inner });
+          }
+        });
+        blocks = out2;
+      } else if(space && space.kind === 'lines'){
+        for(let i = 0; i < space.n; i++){
+          const lastLine = i === space.n - 1 && marksText;
+          const tabs = lastLine ? [{ type: D.TabStopType.RIGHT, position: inner - 620, leader: D.LeaderType.DOT }, { type: D.TabStopType.RIGHT, position: inner }]
+                                : [{ type: D.TabStopType.RIGHT, position: inner, leader: D.LeaderType.DOT }];
+          const runs = [ new D.TextRun({ children:[new D.Tab()] }) ];
+          if(lastLine){ runs.push(new D.TextRun({ children:[new D.Tab()] })); runs.push(new D.TextRun({ text: marksText, bold:true })); }
+          blocks.push({ t:'p', runs, align: AL.LEFT, style:'WSAnswerLine', tabs, wTw: inner });
+        }
+      } else if(space && space.kind === 'blank'){
+        blocks.push({ t:'p', runs:[], align: AL.LEFT, style:'WSBody', spacing:{ before:0, after:0, line: space.tw, lineRule: D.LineRuleType.EXACT }, wTw: inner });
+        if(marksText) blocks.push(marksPara());
+      } else if(marksText && !hasDots) blocks.push(marksPara());
+      if(useSol && hasDots) blocks.push(...solBlocks);
+      if(!blocks.length) blocks.push({ t:'p', runs:[], align: AL.LEFT, wTw: inner });
+      const lab = txt => ({ t:'p', runs: txt ? [ new D.TextRun({ text: txt, bold:true }) ] : [], align: AL.LEFT, style:'WSLabel', wTw: 600 });
+      const showLetter = pp.letter !== prevLetter; prevLetter = pp.letter;
+      const cells = [ { blocks: firstRow ? [numPara()] : [lab('')], tw:GRID[0], span:1, valign:'t' }, { blocks:[lab(showLetter ? pp.letter : '')], tw:GRID[1], span:1, valign:'t' } ];
+      if(roman){ cells.push({ blocks:[lab(pp.roman)], tw:GRID[2], span:1, valign:'t' }); cells.push({ blocks, tw:GRID[3], span:1, valign:'t' }); }
+      else cells.push({ blocks, tw:spanTw(2, 4), span:2, valign:'t' });
+      pushRow({ cells }, glue); glue = false; firstRow = false;
+    });
+    if(!included.length) throw new Error(wsQLabel(q) + ': none of the chosen parts were found in this question');
+    // parts that mention a part that is not on the worksheet
+    if(!it.whole){
+      const have = new Set(included.map(l => wsParseLabel(l).letter));
+      texts.forEach(({ label, text }) => {
+        const own = wsParseLabel(label).letter, seen = new Set();
+        const rx = [/(?:^|[\s,;(])\(([a-f])\)\((?:i{1,3}|iv|v|vi{1,3}|ix|x)\)/g, /\b(?:in|from|using|part|parts)\s+\(([a-f])\)(?![\w(])/gi];
+        rx.forEach(r => { let m; while((m = r.exec(text))){ const L = '(' + m[1].toLowerCase() + ')'; if(L !== own && !have.has(L) && !seen.has(L)){ seen.add(L); warn(warnList, wsQLabel(q) + ' ' + label + ' may refer to part ' + L + ', which is not on the worksheet'); } } });
+      });
+    }
+    const tbl = { t:'tbl', colTw: GRID, rows, bordered:false, center:false, sum: WS_TEXT_TW };
+    const out = [tbl];
+    if(opts.sourceTag) out.push({ t:'p', runs:[ new D.TextRun({ text: wsTagText(q, it) }) ], align: AL.RIGHT, style:'WSSource', spacing:{ before:40, after: gapQ }, wTw: WS_TEXT_TW });
+    else out.push({ t:'p', runs:[], align: AL.LEFT, style:'WSBody', spacing:{ before:0, after:0, line: gapQ, lineRule: D.LineRuleType.EXACT }, wTw: WS_TEXT_TW });
+    return out;
+  }
+  const warn = (list, msg) => { if(!list.includes(msg)) list.push(msg); };
+
+  // ---------- one MCQ -> number column + one content cell ----------
+  // The stem is rendered by buildStem() like any other question. Its option block, whichever
+  // markup the paper was ingested with (div.opts, table.opts-table, div.optgrid), is pulled
+  // out and re-laid-out; everything else in the stem goes through the normal converter.
+  // Layouts: inline (A 4  B 5  C 6  D 7), stacked (letter | text), 2x2, or a bordered data table
+  // for "which row is correct" options (3+ columns). 'auto' picks inline only for short plain text.
+  const WS_OPT_SEL = '.opts, .opts-inline, table.opts-table, .optgrid';
+  const WS_OPT_LET = 440;
+  const WS_BRACKET_TW = 880;              // right-hand column that holds the answer bracket
+  function wsMcqOptions(C, D, el, pref, inner, ctxIn, warnList, label){
+    const AL = C.AL, items = [];
+    if(el.matches('table.opts-table')){
+      const rows = [...el.rows], ncol = Math.max(0, ...rows.map(r => r.cells.length));
+      const hasHeader = el.querySelector('th') || rows.some(r => { const l = r.querySelector(':scope > td.ol'); return l && !l.textContent.trim(); });
+      if(ncol > 2 || hasHeader) return [ C.tableDesc(el, ctxIn) ];
+      rows.forEach(r => {
+        const cs = [...r.cells], L = cs.find(c => c.classList.contains('ol')) || cs[0], body = cs.find(c => c !== L);
+        if(L && body) items.push({ letter: L.textContent.trim(), nodes: [...body.childNodes] });
+      });
+    } else if(el.matches('.optgrid')){
+      [...el.children].forEach(r => {
+        const b = r.querySelector(':scope > b'), body = r.querySelector(':scope > .optbody');
+        if(b && body) items.push({ letter: b.textContent.trim(), nodes: [...body.childNodes] });
+      });
+    } else {
+      [...el.children].forEach(o => {
+        const b = [...o.children].find(c => c.tagName === 'B' || c.classList.contains('k') || c.classList.contains('ol'));
+        if(b) items.push({ letter: b.textContent.trim(), nodes: [...o.childNodes].filter(n => n !== b) });
+      });
+    }
+    // A figure option can sit INSIDE its own .opt (HCI Q2 D: sentence + structure). The renderer then fills the
+    // .fig placeholder with an .optgrid holding a row "D" + the picture; flatten it so the picture follows the
+    // sentence with no second letter label, and drop a caption that repeats the option text.
+    items.forEach(i => {
+      const had = i.nodes.some(n => n.nodeType === 1 && n.matches('.optgrid'));
+      if(!had) return;
+      const own = i.nodes.filter(n => !(n.nodeType === 1 && n.matches('.optgrid'))).map(n => n.textContent || '').join('').trim();
+      const out = [];
+      i.nodes.forEach(n => {
+        if(!(n.nodeType === 1 && n.matches('.optgrid'))){ out.push(n); return; }
+        const rows = [...n.children], mine = rows.filter(r => { const b = r.querySelector(':scope > b'); return b && b.textContent.trim() === i.letter; });
+        (mine.length ? mine : rows).forEach(r => {
+          const body = r.querySelector(':scope > .optbody'); if(!body) return;
+          [...body.childNodes].forEach(c => { if(c.nodeType === 1 && c.matches('.optcap') && own.includes((c.textContent || '').trim())) return; out.push(c); });
+        });
+      });
+      i.nodes = out;
+    });
+    if(!items.length){
+      warn(warnList, label + ': the options were not recognised and are shown as plain text');
+      return C.blocksFromNodes([el], {}, ctxIn);
+    }
+    const textOf = i => i.nodes.map(n => n.textContent || '').join('').trim();
+    const inlineable = items.every(i => i.nodes.every(n => n.nodeType === 3 ||
+      (n.nodeType === 1 && !n.matches('img,table,div,p,ul,ol') && !n.querySelector('img,table,div,p'))));
+    const short = inlineable && items.length <= 5 && items.every(i => textOf(i).length <= 18) &&
+      items.reduce((s, i) => s + textOf(i).length, 0) <= 60;
+    // auto: one row for short options; 2 x 2 for medium-length ones (up to 30 characters) and for 2-4 figure options; otherwise stacked
+    const hasImg = i => i.nodes.some(n => n.nodeType === 1 && (n.matches('img') || !!n.querySelector('img')));
+    const figs = items.length >= 2 && items.length <= 4 && items.every(hasImg);
+    const medium = inlineable && items.length <= 6 && items.every(i => textOf(i).length <= 30);
+    let layout = pref === 'auto' ? (short ? 'inline' : (figs || medium) ? '2x2' : 'stacked') : pref;
+    if(layout === 'inline' && !inlineable){ warn(warnList, label + ': options contain figures or blocks, so they are stacked instead of on one line'); layout = 'stacked'; }
+
+    if(layout === 'inline'){
+      const n = items.length, step = Math.floor(inner / n), runs = [], c = { wPx: ctxIn.wPx, rightTab:false };
+      items.forEach((i, k) => {
+        if(k) runs.push(new D.TextRun({ children:[new D.Tab()] }));
+        runs.push(new D.TextRun({ text: i.letter + '   ', bold:true }));
+        C.trimNodes(i.nodes).forEach(nd => C.inl(nd, {}, runs, c));
+      });
+      return [{ t:'p', runs, align: AL.LEFT, wTw: inner, spacing:{ before:60, after:100 },
+        tabs: items.slice(1).map((_, k) => ({ type: D.TabStopType.LEFT, position: (k + 1) * step })) }];
+    }
+    const per = layout === '2x2' ? 2 : 1, colW = Math.floor(inner / per), cTw = colW - WS_OPT_LET;
+    const ctx2 = { wTw: cTw - 2 * WS_CELL_PAD, wPx: (cTw - 2 * WS_CELL_PAD) / TW_PER_PX };
+    const blank = () => ({ t:'p', runs:[], align: AL.LEFT, wTw: cTw });
+    const lab = t => ({ t:'p', runs:[ new D.TextRun({ text:t, bold:true }) ], align: AL.LEFT, style:'WSLabel', wTw: WS_OPT_LET });
+    const colTw = []; for(let k = 0; k < per; k++) colTw.push(WS_OPT_LET, cTw);
+    const rows = [];
+    for(let i = 0; i < items.length; i += per){
+      const cells = [];
+      for(let k = 0; k < per; k++){
+        const o = items[i + k];
+        if(o){
+          let b = C.blocksFromNodes(o.nodes, {}, ctx2); if(!b.length) b = [blank()];
+          cells.push({ blocks:[lab(o.letter)], tw: WS_OPT_LET, span:1, valign:'t' }, { blocks:b, tw: cTw, span:1, valign:'t' });
+        } else cells.push({ blocks:[blank()], tw: WS_OPT_LET, span:1, valign:'t' }, { blocks:[blank()], tw: cTw, span:1, valign:'t' });
+      }
+      rows.push({ cells, cantSplit:true });
+    }
+    return [{ t:'tbl', colTw, rows, bordered:false, center:false, sum: colTw.reduce((s, x) => s + x, 0) }];
+  }
+  function wsMcqBlocks(C, D, q, it, stem, opts, warnList, sol){
+    const AL = C.AL, NUM = WS_COLS.num, BR = opts.mcqBracket ? WS_BRACKET_TW : 0, CONT = WS_TEXT_TW - NUM - BR, inner = CONT - 2 * WS_CELL_PAD;
+    const ctxIn = { wTw: inner, wPx: inner / TW_PER_PX }, label = wsQLabel(q), pref = it.layout || 'auto';
+    const blocks = []; let buf = [], found = 0;
+    const hasGrid = !!stem.querySelector('.optgrid');
+    const flush = () => { if(buf.length){ blocks.push(...C.blocksFromNodes(buf, {}, ctxIn)); buf = []; } };
+    const walk = nodes => nodes.forEach(n => {
+      if(hasGrid && n.nodeType === 1 && n.matches('table.opts-table')){ flush(); }
+      else if(n.nodeType === 1 && n.matches(WS_OPT_SEL)){ flush(); found++; blocks.push(...wsMcqOptions(C, D, n, pref, inner, ctxIn, warnList, label)); }
+      else if(n.nodeType === 1 && n.tagName === 'DIV' && n.querySelector(WS_OPT_SEL)){ flush(); walk([...n.childNodes]); }
+      else buf.push(n);
+    });
+    walk([...stem.childNodes]); flush();
+    if(!found) warn(warnList, label + ': no option block was found in this question; check it in Word');
+    if(!blocks.length) blocks.push({ t:'p', runs:[], align: AL.LEFT, wTw: inner });
+    const numPara = { t:'p', runs:[], align: AL.LEFT, numbering:{ reference:'ws-q', level:0, instance: WS_INST }, style:'WSLabel', wTw: NUM };
+    // A cell must end in a paragraph. When the content ends in a table (stacked or data options) give it a
+    // hairline one, and set the bracket's own space-after to match, so "( )" lands level with the last option.
+    const letter = opts.teacher ? ((/[A-E]/i.exec(String(q.answer_key || '')) || [''])[0]).toUpperCase() : '';
+    if(opts.teacher && !letter) warn(warnList, label + ': no answer key is stored, so the bracket is left empty');
+    let exBlocks = [];
+    if(opts.teacher && sol){ C.setBase(WS_BLUE); try{ exBlocks = C.blocksFromNodes([...sol.childNodes], {}, { wTw: inner + BR, wPx: (inner + BR) / TW_PER_PX }); } finally { C.setBase(null); } }
+    if(opts.teacher && letter && !BR) blocks.push({ t:'p', runs:[ new D.TextRun({ text:'Answer: ' + letter, bold:true, color:'0000FF' }) ], align: AL.LEFT, style:'WSBody', wTw: inner });
+    const endsInTable = blocks[blocks.length - 1].t === 'tbl';
+    if(endsInTable) blocks.push({ t:'p', runs:[], align: AL.LEFT, style:'WSBody', wTw: inner, spacing:{ before:0, after:0, line:20, lineRule: D.LineRuleType.EXACT } });
+    const cells = [ { blocks:[numPara], tw:NUM, span:1, valign:'t' }, { blocks, tw:CONT, span:1, valign:'t' } ], colTw = [NUM, CONT];
+    if(BR){
+      const bw = BR - 2 * WS_CELL_PAD;       // 720 twips of text width: the bracket pair is 1.25 cm wide
+      const T = D.TabStopType, tabRun = () => new D.TextRun({ children:[new D.Tab()] });
+      const brk = { t:'p', align: AL.LEFT, style:'WSBody', wTw: bw, spacing:{ before:0, after: endsInTable ? 160 : 100 },
+        runs: letter ? [ new D.TextRun({ text:'(' }), tabRun(), new D.TextRun({ text: letter, bold:true, color:'0000FF' }), tabRun(), new D.TextRun({ text:')' }) ]
+                     : [ new D.TextRun({ text:'(' }), tabRun(), new D.TextRun({ text:')' }) ],
+        tabs: letter ? [{ type: T.CENTER, position: Math.round(bw / 2) }, { type: T.RIGHT, position: bw - 5 }] : [{ type: T.RIGHT, position: bw - 5 }] };
+      cells.push({ blocks:[brk], tw:BR, span:1, valign:'b' }); colTw.push(BR);
+    }
+    const trows = [{ cantSplit:true, cells }];
+    if(exBlocks.length) trows.push({ cells:[ { blocks:[{ t:'p', runs:[], align: AL.LEFT, wTw: NUM }], tw:NUM, span:1, valign:'t' }, { blocks: exBlocks, tw: CONT + BR, span: BR ? 2 : 1, valign:'t' } ] });
+    const tbl = { t:'tbl', colTw, bordered:false, center:false, sum: WS_TEXT_TW, rows: trows };
+    const out = [tbl];
+    const gapQ = wsGap(opts, 367);
+    if(opts.sourceTag) out.push({ t:'p', runs:[ new D.TextRun({ text: wsTagText(q, it) }) ], align: AL.RIGHT, style:'WSSource', spacing:{ before:40, after: gapQ }, wTw: WS_TEXT_TW });
+    else out.push({ t:'p', runs:[], align: AL.LEFT, style:'WSBody', spacing:{ before:0, after:0, line: gapQ, lineRule: D.LineRuleType.EXACT }, wTw: WS_TEXT_TW });
+    return out;
+  }
+
+  // ---------- images ----------
+  async function wsPrepareImages(imgs){
+    const info = new Map(), failed = [];
+    await Promise.all(imgs.map(async img => {
+      try{
+        const r = await fetch(img.currentSrc || img.src); if(!r.ok) throw new Error('HTTP ' + r.status);
+        const blob = await r.blob(); const bmp = await createImageBitmap(blob);
+        const rect = img.getBoundingClientRect();
+        let dw = rect.width, dh = rect.height;
+        if(!dw || !dh){ dw = bmp.width * 0.24; dh = bmp.height * 0.24; }     // 400-dpi crop at 96 css px/in
+        let type = /jpe?g/.test(blob.type) ? 'jpg' : /gif/.test(blob.type) ? 'gif' : /png/.test(blob.type) ? 'png' : null;
+        let data;
+        const target = Math.round(dw * 2.1);                                   // about 200 dpi at the shown size
+        if(!type || bmp.width > target * 1.3){
+          const sc = Math.min(1, target / bmp.width), cw = Math.max(1, Math.round(bmp.width * sc)), ch = Math.max(1, Math.round(bmp.height * sc));
+          const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+          const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cw, ch); cx.drawImage(bmp, 0, 0, cw, ch);
+          const out = await new Promise(res => cv.toBlob(res, 'image/png'));
+          data = new Uint8Array(await out.arrayBuffer()); type = 'png';
+        } else data = new Uint8Array(await blob.arrayBuffer());
+        info.set(img, { data, type, dw, dh });
+      }catch(e){ console.warn('figure failed', img.src, e); failed.push(img); }
+    }));
+    return { info, failed };
+  }
+
+  // ---------- export ----------
+  function wsStatus(msg, bad){ const u = wsEnsureUi(), s = u.$p('.ws-status'); s.textContent = msg; s.classList.toggle('bad', !!bad); }
+  async function wsDoExport(teacher){
+    const u = wsEnsureUi(); const goBtns = [...u.panel.querySelectorAll('.ws-go')]; const warnList = [];
+    const wbox = u.$p('.ws-warn'); wbox.classList.add('hidden'); wbox.innerHTML = '';
+    goBtns.forEach(b => b.disabled = true); wsStatus('Preparing…');
+    let host = null;
+    try{
+      const D = await wsLoadDocx();
+      const EO = Object.assign({}, WS_OPTS, { teacher: !!teacher });   // teacher copy is chosen per export, never remembered
+      const items = WS_BASKET.map(it => ({ it, q: BYID.get(it.qid) })).filter(x => x.q);
+      if(!items.length) throw new Error('The worksheet is empty.');
+      wsStatus('Loading questions…'); await hydrate(items.map(x => x.q));
+      host = document.createElement('div'); host.className = 'ws-measure'; document.body.appendChild(host);
+      const rendered = items.map(({ it, q }) => {
+        const card = document.createElement('article'); card.className = 'qcard';
+        const stem = buildStem(q, q.content_html);
+        stem.querySelectorAll('img').forEach(im => { im.loading = 'eager'; });
+        card.appendChild(stem);
+        const sol = EO.teacher ? wsSolutionEl(q) : null; if(sol) card.appendChild(sol);
+        host.appendChild(card); return { it, q, stem, sol };
+      });
+      wsStatus('Loading figures…');
+      const imgs = [...host.querySelectorAll('img')];
+      await Promise.all(imgs.map(im => im.complete ? 0 : new Promise(r => { im.addEventListener('load', r); im.addEventListener('error', r); })));
+      const { info, failed } = await wsPrepareImages(imgs);
+      if(failed.length) warn(warnList, failed.length + ' figure' + (failed.length === 1 ? '' : 's') + ' could not be loaded and show as “[figure not available]”');
+      wsStatus('Building the Word file…');
+      const warnSet = { add: m => warn(warnList, m) };
+      const C = wsConverter(D, info, warnSet);
+      const body = [];
+      // header
+      const AL = D.AlignmentType;
+      // up to three optional heading lines, each Arial 11 bold and centred (the school's own papers); the teacher copy tags the last one
+      const hd = [WS_OPTS.college.trim(), WS_OPTS.title.trim(), (WS_OPTS.line3 || '').trim()];
+      if(EO.teacher){ const k = hd.map(x => !!x).lastIndexOf(true); if(k < 0) hd[1] = 'Teacher copy'; else hd[k] += ' – Teacher copy'; }
+      const hdLines = hd.filter(Boolean);
+      hdLines.forEach((t, i) => body.push(new D.Paragraph({ children:[ new D.TextRun({ text: t }) ], style:'WSTitle', alignment: AL.CENTER, spacing:{ before:0, after: i === hdLines.length - 1 ? 160 : 0 } })));
+      if(WS_OPTS.nameLine && !EO.teacher){
+        const U = D.LeaderType.UNDERSCORE, R = D.TabStopType.RIGHT;
+        body.push(new D.Paragraph({ style:'WSHeaderLine', tabStops:[ { type:R, position:4700, leader:U }, { type:R, position:7000, leader:U }, { type:R, position:WS_TEXT_TW, leader:U } ],
+          children:[ new D.TextRun({ text:'Name: ', bold:true }), new D.TextRun({ children:[new D.Tab()] }), new D.TextRun({ text:'   Class: ', bold:true }),
+                     new D.TextRun({ children:[new D.Tab()] }), new D.TextRun({ text:'   Date: ', bold:true }), new D.TextRun({ children:[new D.Tab()] }) ] }));
+      }
+      let prevMcq = null; WS_INST = 0;
+      for(const r of rendered){
+        const isMcq = r.q.type === 'mcq';
+        if(prevMcq !== null && isMcq !== prevMcq){       // a new section begins
+          if(EO.restartNums) WS_INST++;
+          if(EO.sectionBreak) body.push(new D.Paragraph({ children:[], style:'WSBody', pageBreakBefore:true, spacing:{ before:0, after:0, line:20, lineRule: D.LineRuleType.EXACT } }));
+        }
+        prevMcq = isMcq;
+        const blocks = isMcq ? wsMcqBlocks(C, D, r.q, r.it, r.stem, EO, warnList, r.sol) : wsQuestionBlocks(C, D, r.q, r.it, r.stem, EO, warnList, r.sol);
+        C.mat(blocks).forEach(x => body.push(x));
+      }
+      WS_INST = 0;
+      const footLeft = [WS_OPTS.college.trim(), WS_OPTS.title.trim(), EO.teacher ? 'Teacher copy' : ''].filter(Boolean).join('  •  ');
+      const doc = new D.Document({
+        creator: 'H2 Chemistry Question Bank', title: WS_OPTS.title.trim() || 'Worksheet',
+        styles:{
+          default:{ document:{ run:{ font:'Arial', size:22 }, paragraph:{ spacing:{ after:60, line:240 } } } },
+          paragraphStyles:[
+            { id:'WSBody', name:'WS Body', basedOn:'Normal', quickFormat:true },
+            { id:'WSLabel', name:'WS Part label', basedOn:'WSBody', run:{ bold:true } },
+            { id:'WSMarks', name:'WS Marks', basedOn:'WSBody', paragraph:{ alignment: AL.RIGHT } },
+            { id:'WSAnswerLine', name:'WS Answer line', basedOn:'WSBody', paragraph:{ spacing:{ before:0, after:0, line:460, lineRule: D.LineRuleType.EXACT } } },
+            { id:'WSSource', name:'WS Source tag', basedOn:'WSBody', run:{ size:20, color:'595959' }, paragraph:{ alignment: AL.RIGHT, spacing:{ before:40, after:240 } } },
+            { id:'WSTitle', name:'WS Title', basedOn:'WSBody', run:{ bold:true, size:22 }, paragraph:{ alignment: AL.CENTER, spacing:{ after:0 } } },
+            { id:'WSCollege', name:'WS College name', basedOn:'WSBody', run:{ bold:true, size:22 }, paragraph:{ alignment: AL.CENTER, spacing:{ after:0 } } },
+            { id:'WSHeaderLine', name:'WS Name line', basedOn:'WSBody', paragraph:{ spacing:{ before:120, after:280 } } }
+          ] },
+        numbering:{ config:[ { reference:'ws-q', levels:[{ level:0, format: D.LevelFormat.DECIMAL, text:'%1', suffix: D.LevelSuffix.NOTHING, alignment: AL.LEFT,
+          style:{ run:{ bold:true }, paragraph:{ indent:{ left:0, hanging:0 } } } }] } ].concat(C.numbering) },
+        sections:[{ properties:{ page:{ size:{ width:WS_PAGE_TW, height:16838 }, margin:{ top:WS_MARGIN_TW, right:WS_MARGIN_TW, bottom:WS_MARGIN_TW, left:WS_MARGIN_TW, header:576, footer:432 } } },
+          footers:{ default: new D.Footer({ children:[ new D.Paragraph({ style:'WSBody', tabStops:[{ type: D.TabStopType.RIGHT, position: WS_TEXT_TW }],
+            children:[ new D.TextRun({ text: footLeft, size:16, color:'666666' }), new D.TextRun({ children:[ new D.Tab(), 'Page ', D.PageNumber.CURRENT ], size:16, color:'666666' }) ] }) ] }) },
+          children: body }]
+      });
+      const blob = await D.Packer.toBlob(doc);
+      const name = ((WS_OPTS.title.trim() || 'Worksheet').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '_') || 'Worksheet') + (EO.teacher ? '_teacher' : '') + '.docx';
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+      wsStatus('Done: ' + name + (EO.teacher ? ' [teacher copy]' : '') + ' (' + rendered.length + ' question' + (rendered.length === 1 ? '' : 's') + ')');
+      window.__wsLast = { name, size: blob.size, warnings: warnList.slice() };
+    }catch(err){
+      console.error('worksheet export failed', err); wsStatus('Could not export: ' + (err && err.message || err), true);
+    }finally{
+      if(host) host.remove();
+      goBtns.forEach(b => b.disabled = false);
+      if(warnList.length){ wbox.classList.remove('hidden'); wbox.innerHTML = '<b>Check in Word:</b><ul>' + warnList.map(w => '<li>' + esc(w) + '</li>').join('') + '</ul>'; }
+    }
+  }
+  wsLoad(); wsEnsureUi();
+  wsRefreshUi();
+  // ==== WS-EXPORT END ====
 
   boot();
 </script>

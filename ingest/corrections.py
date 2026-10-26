@@ -578,6 +578,17 @@ def mcq_fixups(school, level, paper, year, qnum) -> list:
 # object in EJC's own Word template rather than anything the paper intends
 # to show.
 DROPPED_PART_FIGURES = {
+    # CJC 2026 H2 P2 (2026-10-26). The Q4(c) reaction scheme prints ONCE (page
+    # 13) under (c), but Word anchors its later text boxes ("C8H12N2", "Stage II",
+    # ...) in the paragraph of (c)(i). Same picture; the snip of 4(c) covers it,
+    # so (c)(i) carries no figure of its own. ((c)(ii) DOES: the B/C/D boxes.)
+    ("CJC", "H2", "P2", 2026, 4, "(c)(ii)"):
+        "The three empty answer boxes (B, D, C) are shapes in a 2x2 table: "
+        "answer space, not content. Not snipped (user, 2026-10-26: answer boxes "
+        "are not usually snipped); the table is removed below.",
+    ("CJC", "H2", "P2", 2026, 4, "(c)(i)"):
+        "Text boxes of the page-13 reaction scheme (C8H12N2, Stage II) anchored "
+        "in this part's paragraph; part of the ONE scheme snipped under 4(c).",
     ("EJC", "H2", "P3", 2024, 2, "(a)(vi)"):
         "One native Word shape parses here with no target file and no "
         "printed counterpart -- the PDF's own artwork search for this "
@@ -717,6 +728,18 @@ COMBINED_FIGURES = {
         "The copper reaction scheme is one ChemDraw object plus two floating "
         "'step I' / 'step II' text boxes that print as ONE scheme; snipped as "
         "one image.",
+    # CJC 2026 H2 P2 (2026-10-26)
+    ("CJC", "H2", "P2", 2026, 1, "(a)(ii)"):
+        "Fig. 1.1 is ONE printed figure of two side-by-side boxes (Ca2+ and F-); "
+        "Word stores each box + its ion circle as separate drawings. Snipped as "
+        "one image covering both boxes.",
+    ("CJC", "H2", "P2", 2026, 2, "(b)(ii)"):
+        "The compressibility graph (axes, HCl curve, ideal-gas line, axis "
+        "labels) is a chart plus floating text boxes that print as ONE graph; "
+        "snipped as one image.",
+    ("CJC", "H2", "P2", 2026, 5, "(a)(i)"):
+        "The pH curve is one chart plus three floating equivalence-point "
+        "callouts that print as ONE graph; snipped as one image.",
 }
 
 
@@ -1518,6 +1541,97 @@ CORRECTIONS.extend([
      "\x00C\x00\x00FIG\x00",
      "Q4(b) Fig. 4.3: steps 3, 4 and 5 snipped as ONE image; the 'Fig. 4.3' caption stays typed.",
      "combined-snip convention; confirm"),
+])
+
+
+# ---- CJC 2026 H2 P2 (2026-10-26) ------------------------------------------
+_CJ2_26 = ("CJC", "H2", "P2", 2026)
+CORRECTIONS.extend([
+    (_CJ2_26,
+     r'(<span class="mk">\[1\]</span>)\n(<b>\t\t</b>During the canning process)',
+     "\\1\n\x00QL\x00\n\\2",
+     "Q5(a)(i): the 'During the canning process...' passage and the pH curve "
+     "introduce (a)(ii)-(v) and print flush with the question stem, not inside "
+     "(a)(i)'s block; rendered at question level (render_parts.QLEVEL). The "
+     "figure keeps its (a)(i) owner and ordinal.",
+     "user, 2026-10-26"),
+    # ---- symbol standardisation (user, 2026-10-26): minus = U+2212, range = en dash, times = U+00D7
+    (_CJ2_26, r"(\d) \u2012 ?(\d)", "\\1 \u2013 \\2",
+     "Q5(a)(ii) indicator table: pH RANGES typed with a figure dash; en dash.",
+     "user, 2026-10-26"),
+    (_CJ2_26, "\u2012", "\u2212",
+     "Minus / negative sign typed as U+2012 (exponents, charges, -44.9, -2653, "
+     "-1577); standardised to the true minus U+2212 (symbols.py F02D).",
+     "user, 2026-10-26"),
+    (_CJ2_26, r"(<sup>[^<]*)\u2013", "\\1\u2212",
+     "Minus typed as an en dash inside a superscript (10-13, dm-3, O-, 3-); U+2212.",
+     "user, 2026-10-26"),
+    (_CJ2_26, "\u2500", "\u2212",
+     "Q2 table: '-35.0' typed with a box-drawing dash U+2500; U+2212.",
+     "user, 2026-10-26"),
+    (_CJ2_26, r"(<sup>\d?)-(</sup>)", "\\1\u2212\\2",
+     "Q6(e)(i): charges typed with a hyphen (HCO3-, CO3 2-); U+2212.",
+     "user, 2026-10-26"),
+    (_CJ2_26, r"<span>2-</span>", "<span>2\u2212</span>",
+     "Q6 Omega fraction: the CO3 2- charge in the OMML stack typed with a hyphen.",
+     "user, 2026-10-26"),
+    (_CJ2_26, r"(\d) x (10)", "\\1 \u00d7 \\2",
+     "Q5: times typed as the letter x (5.13 x 10-13, 1.38 x 10-4); U+00D7, as Q6.",
+     "user, 2026-10-26"),
+    (_CJ2_26, r"<b><br></b>", "",
+     "Q4(c)(i): an empty bold run holding only a soft line break at the start "
+     "of the part.",
+     "housekeeping, 2026-10-26"),
+    (_CJ2_26, r"[ \t]*<br>[ \t]*", " ",
+     "Soft line breaks (w:br) typed to wrap a sentence at the printed margin: "
+     "Q5 intro 'is / 5.13 x 10-13', Q5(a)(iii) leading break, Q5(b) '... mol dm-3 / "
+     "lactic acid'. In the app the column is a different width, so each would "
+     "leave a ragged mid-sentence break. Must stay BEFORE the Q4(c)(iii) table "
+     "entry below, which adds genuine <br> inside cells.",
+     "housekeeping, same as ACJC 2024 P2 / ASRJC P3 (2026-10-26)"),
+    (_CJ2_26,
+     r"(?m)^(the arrangement of two water molecules around one Ca<sup>2\+</sup>\(aq\) ion)\n"
+     r"(the arrangement of two water molecules around one F<sup>\u2012</sup>\(aq\) ion\.)$",
+     '<ul class="stmts"><li>\\1</li><li>\\2</li></ul>',
+     "Q1(a)(ii): the two '\u2022' criteria are a NESTED (level-1) bullet list inside "
+     "the roman-numbered list; oxml.load_bullet_numids reads only level 0, so "
+     "they came out as plain paragraphs. House style is ul.stmts (style-guide "
+     "SS2).",
+     "housekeeping, 2026-10-26"),
+    (_CJ2_26, r"<b> {20,}(Fig\. 1\.1)</b>", "\x00C\x00<b>\\1</b>",
+     "Q1(a)(ii): the 'Fig. 1.1' caption is centred in the source with a run of "
+     "leading spaces, which HTML collapses; centred with the house sentinel "
+     "instead (every other Fig./Table caption in this paper is a centred paragraph).",
+     "housekeeping, 2026-10-26"),
+    (_CJ2_26, r"<i>G</i><sup>\ua74b</sup>",
+     '\u2206<i>G</i><sup class="pl-sym">\u29b5</sup>',
+     "Q1(b)(iii): the source writes Delta-G-standard as a Word SYMBOL field "
+     "(`symbol 68 \\f \"Symbol\"`, the Delta, which the extractor does not read) "
+     "followed by 'G' and U+A74B (small o with long stroke, typed for the "
+     "standard-state sign). Typed as Delta + the house plimsoll (pl-sym), "
+     "as in this paper's own Table 1.1 header.",
+     "housekeeping, 2026-10-26; confirm"),
+    (_CJ2_26, r"<sup>\s*o</sup>(?=(?:</b><b>)?C)", "\u00b0",
+     "Degree Celsius typed as a superscript letter 'o' (80oC, 30oC, 0oC, 25oC, "
+     "'boiling point / oC' in the Q2 table); typed as the degree sign.",
+     "housekeeping, 2026-10-26; confirm"),
+    (_CJ2_26, r"(\d) (\u00b0C)", "\\1&nbsp;\\2",
+     "Q1(b)(iii): keep '25' and '\u00b0C' on one line (same rule as ASRJC P2/P3).",
+     "housekeeping, 2026-10-26"),
+    (_CJ2_26,
+     r'(?s)(in the boxes provided below\.)\n<table class="qt">.*?</table>',
+     "\\1",
+     "Q4(c)(ii): the empty B/D/C answer-box table is removed (answer space, "
+     "not snipped); the instruction line stays.",
+     "user, 2026-10-26"),
+    (_CJ2_26,
+     r"<td>Stage I\n\(2 steps\)</td><td>1\.\n2\. </td>",
+     "<td>Stage I<br>(2 steps)</td><td>1.<br>2.</td>",
+     "Q4(c)(iii) table: the two-paragraph cells ('Stage I' / '(2 steps)' and "
+     "'1.' / '2.') carry a literal newline, which the renderer's line-by-line "
+     "wrapping turns into <p> and </p> in DIFFERENT cells (unbalanced markup); "
+     "rebuilt with a <br> inside each cell.",
+     "housekeeping, 2026-10-26"),
 ])
 
 

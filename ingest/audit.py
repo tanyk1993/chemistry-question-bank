@@ -121,6 +121,15 @@ SUBSTITUTED_CHARS = {
               "in a normal web font. oxml.py substitutes the real CIRCLE "
               "WITH HORIZONTAL BAR character (⦵), raised, wherever it "
               "occurs.",
+    "\u2500": "BOX DRAWINGS LIGHT HORIZONTAL -- CJC 2026 H2 P2's Q2 gas table "
+              "types the minus of -35.0 with U+2500 (also in the Word PDF's text "
+              "layer). Standardised to the true minus U+2212 by corrections.py "
+              "(user, 2026-10-26: standardise dashes).",
+    "\ua74b": "LATIN SMALL LETTER O WITH LONG STROKE OVERLAY -- CJC 2026 H2 P2 "
+              "Q1(b)(iii) types the standard-state sign this way (lower-case "
+              "sibling of U+A74A above, identical in the Word PDF's text layer). "
+              "corrections.py re-renders it as the real plimsoll (U+29B5), "
+              "together with the Word SYMBOL-field Delta the extractor does not read.",
     "\u0399": "GREEK CAPITAL IOTA -- ASRJC 2024 H2 P3 Q2(c)(iii) types the roman "
               "numeral I of \"stage I\" in the Symbol font (w:sym F049), whose "
               "glyph IS Greek capital iota and which the Word PDF's text layer "

@@ -22,6 +22,7 @@ not our own conversion. See audit.py for why that distinction matters.
 # Adobe Symbol encoding. Word offsets these into the F0xx private-use range,
 # so F0B7 here is Symbol character 0xB7.
 SYMBOL = {
+    "F057": "\u03a9",   # 0x57 capital Omega: CJC 2026 H2 P2 Q6 aragonite saturation state (Omega). U+03A9, not Adobe symbol.txt U+2126 (ohm sign): it is a Greek letter here, and users type/search U+03A9
     "F0A5": "\u221e",   # 0xA5 infinity: ACJC 2026 H2 P3 Table 2.2 "t = infinity" row (PDF text layer: U+221E)
     "F0BA": "\u2261",   # 0xBA equivalence: DHS 2024 H2 P1 answers Q26 "2H+ = CO3 2- = CO2" (5x)
     "F0AE": "→",   # 0xAE arrowright           -> ; verified p1 "B3+(g) --> B4+(g)"

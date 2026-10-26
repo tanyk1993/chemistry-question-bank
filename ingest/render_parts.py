@@ -52,6 +52,12 @@ from .oxml import CENTRE
 from .parts import CAPTION_RE, FIG_SENTINEL
 
 FIG_DIV = '<div class="fig">figure</div>'
+#: A line holding only this marks where a part's text stops belonging to the
+#: part: everything after it prints at QUESTION level (the stem's own indent),
+#: between this part's block and the next. Inserted by a corrections.py entry
+#: (CJC 2026 H2 P2 Q5: the passage and pH curve that introduce (a)(ii)-(v) sit
+#: in (a)(i)'s paragraphs in Word but print flush with the question stem).
+QLEVEL = "\x00QL\x00"
 
 #: A table whose every cell is empty. RI draws 5(d)'s energy-level diagram
 #: over a borderless Word table used purely as a positioning grid; the shapes
@@ -70,7 +76,7 @@ def _strip(s: str) -> str:
     # the same as a fraction (CJC 2024 H2 P1 Q9 did this by hand).
     s = _STK_RE.sub(r"(\1)/(\2)", s)
     return re.sub(r"<[^>]+>", "", s.replace(CENTRE, "")
-                  .replace(FIG_SENTINEL, "")).strip()
+                  .replace(FIG_SENTINEL, "").replace(QLEVEL, "")).strip()
 
 
 def reconcile(html: str) -> str:
@@ -135,7 +141,7 @@ def reconcile(html: str) -> str:
             if not has_fig:
                 content_since_last_fig = True
 
-        if not plain and not has_fig:
+        if not plain and not has_fig and QLEVEL not in body:
             continue
         out.append((CENTRE if centred else "") + body)
     return "\n".join(out)
@@ -294,9 +300,16 @@ def content_html(q) -> str:
         # carry the full "(b)(i)" label and read fine on their own.
         if not p.html.strip() and not p.figures:
             continue
-        inner = _render_owner(p.html, lead_inline=True) if p.html.strip() else ""
+        tail = ""
+        body = p.html
+        if QLEVEL in body:
+            body, tail = body.split(QLEVEL, 1)
+            body = body.rstrip("\n")
+        inner = _render_owner(body, lead_inline=True) if body.strip() else ""
         out.append('<div class="qpart"><span class="pl">%s</span> %s</div>'
                    % (p.label, inner))
+        if tail.strip():
+            out.append(_render_owner(tail.lstrip("\n"), lead_inline=False))
     return "\n".join(out)
 
 

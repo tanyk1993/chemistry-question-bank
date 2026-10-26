@@ -29,6 +29,7 @@ ADOBE_SYMBOL = {
     0x2D: "−",   # minus
     0x20: " ",   # space
     0x40: "\u2245",   # congruent (Adobe Symbol "congruent" = 0x40)
+    0x57: "\u03a9",   # Omega (U+03A9 deliberately, matching symbols.py; Adobe lists U+2126 ohm sign)
     0x44: "∆",   # Delta -> U+2206 increment (Adobe symbol.txt); see symbols.py
     0x49: "\u0399",   # Iota (Adobe Symbol "Iota" = 0x49)
     0x5C: "∴",   # therefore

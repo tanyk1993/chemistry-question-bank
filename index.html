@@ -412,6 +412,10 @@
      leaking it into whatever comes next -- needed however ingest happens to
      have placed the badge in the markup, not just the shapes above. */
   .stem .qpart { margin:.55em 0; overflow:hidden; }
+  /* Hanging indent for labelled question parts (2026-10-27): a wrapped line starts under the
+     sentence, not under the part marker. The label is pulled back into the padding. */
+  .stem .qpart:has(> .pl) { padding-left:3.8em; }
+  .stem .qpart:has(> .pl) > .pl { float:left; width:3.8em; margin-left:-3.8em; }
   .stem .mk { float:right; font-weight:600; color:var(--muted); margin-left:.5em; }
   /* centred figure captions (data carries the .figcap hook) */
   .stem .figcap { text-align:center; color:var(--muted); font-size:.9rem;
@@ -541,6 +545,8 @@
   .ws .part:has(> .body > :is(ul,ol,table):first-child) { align-items:flex-start; }
   .ws .part .lab { font-weight:700; min-width:3.6em; flex-shrink:0; }
   .ws .part .body { flex:1; }
+  /* bullets sit close to the part marker (2026-10-27): drop the list's own left margin */
+  .ws .part .body > ul.stmts, .ws .part .body > ol.stmts { margin-left:0; padding-left:1.2em; }
   .ws .part .body > :first-child { margin-top:0; }
   /* A part that OPENS with a figure: the flex-start rule above top-aligns the
      label with the body, but img.ws-fig carries a .7em top margin, so the label
@@ -548,8 +554,11 @@
      reported 2026-10-08). Drop that margin for the first figure only, leaving a
      hair of room so the label's text still lines up with the frame's top edge. */
   .ws .part .body > :first-child > img.ws-fig:first-child { margin-top:.2em; }
+  /* LO hint underline: text-decoration (not border-bottom) so the dotted line covers only the label text,
+     not the whole fixed-width label column */
   .ws .part .lab.has-lo,
-  .stem .qpart > .pl.has-lo { cursor:help; border-bottom:1px dotted var(--muted,#8a9099); }
+  .stem .qpart > .pl.has-lo { cursor:help; text-decoration:underline dotted var(--muted,#8a9099);
+    text-decoration-thickness:1px; text-underline-offset:3px; }
   img.q-fig, img.ws-fig { display:block; max-width:100%; height:auto;
     border:1px solid var(--line,#dfe3e8); border-radius:6px; margin:.7em 0;
     background:#fff; }

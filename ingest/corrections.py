@@ -885,6 +885,30 @@ EQUATION_OPTIONS_AS_TEXT.update({
 })
 
 
+# DHS 2026 H2 P1 (2026-10-28). Q24 option A is a drawn equation whose arrow
+# carries the label "SN1 mechanism" above it (a native shape, no text layer).
+# Typed as markup: a label stacked over a long ruled arrow (inline styles only,
+# so no index.html change is needed).
+_DH26 = ("DHS", "H2", "P1", 2026)
+_SN1_ARROW = (
+    '<span style="display:inline-flex;flex-direction:column;align-items:center;'
+    'vertical-align:middle;margin:0 .35em;min-width:8.5em">'
+    '<span style="font-size:.8em;line-height:1.2;white-space:nowrap">'
+    'S<sub>N</sub>1 mechanism</span>'
+    '<span style="display:flex;align-items:center;width:100%">'
+    '<span style="flex:1;border-top:1.3px solid currentColor"></span>'
+    '<span style="font-size:.75em;margin-left:-.3em;line-height:1">&#9654;</span>'
+    '</span></span>')
+EQUATION_OPTIONS_AS_TEXT.update({
+    _DH26 + (24,): {
+        "A": ('C<sub>6</sub>H<sub>5</sub>CH<sub>2</sub>C<i class="el">l</i> + OH<sup>\u2212</sup>'
+              + _SN1_ARROW +
+              'C<sub>6</sub>H<sub>5</sub>CH<sub>2</sub>OH + C<i class="el">l</i><sup>\u2212</sup>',
+              'C6H5CH2Cl + OH- SN1 mechanism -> C6H5CH2OH + Cl-'),
+    },
+})
+
+
 # GLYPH PICTURES (structured papers)
 # ----------------------------------
 # A reaction arrow the source sets as a tiny Word OBJECT picture between the two

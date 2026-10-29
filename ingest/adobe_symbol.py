@@ -60,6 +60,7 @@ ADOBE_SYMBOL = {
 
 # Wingdings. Only the codes this document family actually uses.
 ADOBE_WINGDINGS = {
+    0x81: "\u2460", 0x82: "\u2461", 0x83: "\u2462",   # circled 1-3 (DHS 2026 H2 P3 Q1(b)(ii))
     0xA1: "⦵",   # circle with horizontal bar -- standard-state symbol
 }
 

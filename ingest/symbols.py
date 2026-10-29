@@ -152,6 +152,10 @@ WINGDINGS_2 = {
 
 # Wingdings.
 WINGDINGS = {
+    "F081": "\u2460",   # CIRCLED DIGIT ONE -- DHS 2026 H2 P3 Q1(b)(ii): the three numbered linkage
+    "F082": "\u2461",   #   types "(1) amide-imide / (2) imide-imide / (3) amide-amide"; the Word PDF's
+    "F083": "\u2462",   #   own text layer shows the raw PUA codes F081-F083 in front of each line.
+                        #   (MT Extra's F083, the harpoon arrow, is a different font and table.)
     "F0F0": "\u21e8",   # RIGHTWARDS WHITE ARROW: DHS 2024 H2 P1 answers' "Concept: ... [arrow] ..." (11x)
     "F0A1": "⦵",   # CIRCLE WITH HORIZONTAL BAR -- the standard-state / plimsoll
                         #   symbol. Appears as E<sup>x</sup> and E<sup>x</sup>cell.

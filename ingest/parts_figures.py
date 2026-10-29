@@ -82,6 +82,10 @@ ROMAN_X = (80.0, 115.0)
 #: direct-measurement method, before trusting this module on a fourth school.
 LAYOUT_OVERRIDES = {
     "EJC": {"QNUM_X": 80.0, "LETTER_X": (80.0, 100.0), "ROMAN_X": (100.0, 130.0)},
+    # A "SCHOOL-YEAR" key beats the school-only key: DHS 2026 P2 prints the
+    # question number at x~58.6 (just past the default 55), the letters at
+    # ~76 and the romans at ~107-112 (measured on the Word PDF, 2026-10-28).
+    "DHS-2026": {"QNUM_X": 70.0, "LETTER_X": (70.0, 95.0), "ROMAN_X": (95.0, 125.0)},
 }
 
 
@@ -90,7 +94,9 @@ def _layout(scope):
     (the module's original, still-default constants) if no override is on
     file."""
     school = scope[0] if scope else None
-    ov = LAYOUT_OVERRIDES.get(school, {})
+    year = scope[3] if scope and len(scope) > 3 else None
+    ov = LAYOUT_OVERRIDES.get("%s-%s" % (school, year)) \
+        or LAYOUT_OVERRIDES.get(school, {})
     return (ov.get("QNUM_X", QNUM_X), ov.get("LETTER_X", LETTER_X),
             ov.get("ROMAN_X", ROMAN_X))
 #: The running header and page number sit above this; they are not content.

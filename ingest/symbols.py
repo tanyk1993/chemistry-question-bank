@@ -272,6 +272,11 @@ def sym_to_text(font: str, char: str) -> str:
     if table is None:
         raise UnknownSymbol(f"unmapped w:sym font {font!r} (char {char!r})")
     key = (char or "").strip().upper()
+    # Word also writes the Symbol-font code points directly (w:char="00AE",
+    # "002D") instead of the private-use F0xx form; same glyph (EJC 2026 P3
+    # 2NO2 + F2 -> 2NO2F, "mol dm-3" minus signs).
+    if key not in table and key.startswith("00") and ("F0" + key[2:]) in table:
+        key = "F0" + key[2:]
     if key not in table:
         raise UnknownSymbol(f"unmapped w:sym {font}:{key}")
     return table[key]

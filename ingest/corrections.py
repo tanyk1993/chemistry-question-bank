@@ -1784,3 +1784,31 @@ CORRECTIONS.extend([
      "Q2(c)(ii): the [2] sat on its own line after the hidden text box was dropped.",
      "housekeeping, 2026-10-30"),
 ])
+
+
+# EJC 2026 H2 P3 (2026-10-31). Passages printed between one part's [n] and the next
+# part's label. Q4's sulfur dioxide part is relabelled (c) by ejc26_p3_prep. The two
+# lead-ins that carry a figure (Q4(b)(iii) -> (b)(iv) and Q5(b)(v) -> (b)(vi)) are
+# moved by patch_ejc26_p3_questions.py, because this mechanism refuses a figure.
+LEADIN_MOVES.update({
+    ("EJC", "H2", "P3", 2026, 1, "(d)(ii)"):
+        "'A sample of ascorbic acid ... titrated against NaOH' introduces (d)(iii).",
+    ("EJC", "H2", "P3", 2026, 2, "(a)(i)"):
+        "'In a small-scale industrial reactor ...' introduces (a)(ii).",
+    ("EJC", "H2", "P3", 2026, 3, "(c)"):
+        "'Ocean acidification refers ...' and equations 1-4 introduce (d).",
+    ("EJC", "H2", "P3", 2026, 3, "(d)"):
+        "'The Antarctic Ocean currently has a surface pH ...' introduces (e).",
+    ("EJC", "H2", "P3", 2026, 4, "(a)(ii)"):
+        "'Under industrial conditions ... sulfuric acid' introduces (a)(iii).",
+    ("EJC", "H2", "P3", 2026, 4, "(b)(iv)"):
+        "'L (C11H7NO2) can be reduced to form Y and Z ...' introduces (b)(v).",
+    ("EJC", "H2", "P3", 2026, 4, "(c)(i)"):
+        "'Sulfur dioxide is a highly reactive ... A sample of air ...' introduces (c)(ii).",
+    ("EJC", "H2", "P3", 2026, 4, "(c)(ii)"):
+        "'Unlike gases like hydrogen ...' introduces (c)(iii).",
+    ("EJC", "H2", "P3", 2026, 5, "(a)(iii)"):
+        "'A pure aluminium plate ...' introduces (a)(iv).",
+    ("EJC", "H2", "P3", 2026, 5, "(b)(iii)"):
+        "'Step 4 is azo coupling ...' introduces (b)(iv).",
+})

@@ -109,6 +109,10 @@ FIGURE_BORNE = {
 #: substitution so the exemption cannot silently cover an unrelated future
 #: drop of the same source codepoint.
 SUBSTITUTED_CHARS = {
+    "\u03b4": "GREEK SMALL DELTA -- EJC 2026 H2 P2 Q2(a)(i)-(iii): the standard-state "
+              "sign of E-cell is a MathType object whose glyph the Word PDF's text "
+              "layer reports as U+03B4. corrections.py (EJC 2026 P2 GLYPH_PICTURES) "
+              "types it as the house E + stacked plimsoll (U+29B5) over 'cell'.",
     "\u203e": "OVERLINE -- CJC 2024 H2 P2 types the charge of the electron "
                "(Q4(e)(v)) and of [BH4]- (Q3(c)) with U+203E, which the page "
                "shows as a raised minus. corrections.py (the two CJC P2 "

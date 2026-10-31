@@ -222,7 +222,7 @@ def main(argv=None):
         extracted, a.pdf,
         ignore_re=[r"©\s*Raffles Institution\s*\d{4}",
                    r"9729/0\d/S/\d+",
-                   r"©\s*EJC", r"9729/0\d/J\dPE/\d+", r"\[Turn Over",
+                   r"©\s*EJC", r"9729/0\d/J\dPE/\d+", r"9476/0\d/J2PRELIM/\d+", r"\[Turn Over",
                    # ACJC's running footer ("© ACJC2024  9729/Preliminary
                    # Examination/2024  [Turn over]"): page furniture, never
                    # inside a question's own page range.

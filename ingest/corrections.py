@@ -1677,3 +1677,110 @@ def apply(html: str, scope: tuple | None = None) -> tuple[str, list[str]]:
                        % (n, pattern, replacement, reason, who))
             html = new
     return html, log
+
+
+# =============================================================================
+# EJC 2026 H2 P2 (2026-10-30)
+# Declared after reading the Word PDF page by page. The user snips every figure
+# by hand (Q5(e) Figure 5.2 was cropped from the vector PDF at the user's
+# request); this only says which pictures are NOT figures and where passages
+# belong. LOCAL until the user says the paper is finished.
+# =============================================================================
+_E26 = ("EJC", "H2", "P2", 2026)
+_E26_ECELL = '<i>E</i>' + _PLS % "cell"          # E with the standard sign over "cell"
+_E26_FRAC = ('<span class="frac"><span class="fnum">molar mass of desired product</span>'
+             '<span class="fden">total molar mass of all reactants</span></span>')
+
+DROPPED_PART_FIGURES.update({
+    ("EJC", "H2", "P2", 2026, 2, "(c)(ii)"):
+        "A hidden 404 x 32 pt text box anchored here prints nothing (no text in the "
+        "Word PDF, nothing on page 7/8): a leftover of EJC's template, same as "
+        "EJC 2024 H2 P3 2(a)(vi). Not a figure.",
+    ("EJC", "H2", "P2", 2026, 4, "(c)(i)"):
+        "The empty answer box labelled Q (a rectangle plus its label text box) is "
+        "answer space, not content: not snipped (user, 2026-10-30, following the "
+        "CJC 2026 H2 P2 4(c)(ii) ruling).",
+})
+
+LEADIN_MOVES.update({
+    ("EJC", "H2", "P2", 2026, 1, "(b)(i)"):
+        "'Borazine can be synthesised ... Table 1.1' introduces (b)(ii) and (c); "
+        "printed between (b)(i)'s [2] and (b)(ii).",
+    ("EJC", "H2", "P2", 2026, 2, "(c)(ii)"):
+        "'In the electrochemical cell ... either a platinum electrode or a graphite "
+        "electrode ...' and 'When graphite is used ...' introduce (c)(iii); printed "
+        "between (c)(ii)'s [2] and (c)(iii).",
+    ("EJC", "H2", "P2", 2026, 2, "(c)(iii)"):
+        "'The electrode surface also serves as a catalyst ...' introduces (c)(iv); "
+        "printed between (c)(iii)'s [1] and (c)(iv).",
+    ("EJC", "H2", "P2", 2026, 5, "(e)(ii)"):
+        "'The benzoate anion carries a negative charge ...' introduces (e)(iii); "
+        "printed between (e)(ii)'s [2] and (e)(iii).",
+    ("EJC", "H2", "P2", 2026, 5, "(e)(iii)"):
+        "'The Passerini reaction proceeds via a different mechanism in non-polar "
+        "solvents ...' introduces (e)(iv); printed between (e)(iii)'s [2] and (e)(iv).",
+})
+
+# Equations the source draws as MathType objects (no text layer): typed in house
+# markup instead of snipped (style-guide SS3). The two Q2(a)(ii) shapes: one is
+# the E-cell object, the other the hidden text box.
+GLYPH_PICTURES.extend([
+    (_E26, r"(standard cell potential</i>, )\x00FIG\x00(\.)", "\\1" + _E26_ECELL + "\\2",
+     "Q2(a)(i) E-cell with the standard sign (MathType object)"),
+    (_E26, r"(that could be used to measure the )\x00FIG\x00( for a cell)", "\\1" + _E26_ECELL + "\\2",
+     "Q2(a)(ii) E-cell with the standard sign (MathType object)"),
+    (_E26, r"(electron flow\.)\n\x00FIG\x00 (<span class=\"mk\">\[3\]</span>)", "\\1 \\2",
+     "Q2(a)(ii) hidden text box, prints nothing; the [3] joins the sentence"),
+    (_E26, r"(to calculate the )\x00FIG\x00( of the reaction)", "\\1" + _E26_ECELL + "\\2",
+     "Q2(a)(iii) E-cell with the standard sign (MathType object)"),
+    (_E26, r"(the cell potential, )\x00FIG\x00(, decreases)", "\\1<i>E</i><sub>cell</sub>\\2",
+     "Q2(b) E-cell (MathType object)"),
+    (_E26, r"(containing the) ?\x00FIG\x00(ion\.)", "\\1 O<sub>2</sub><sup>2\u2212</sup> \\2",
+     "Q3 intro: the peroxide ion O2 2- (MathType object, charge stacked over the subscript)"),
+    (_E26, r"(atom economy = )\x00FIG\x00(\u00d7 100 %)", "\\1" + _E26_FRAC + " \\2",
+     "Q5 intro: the atom-economy fraction (MathType object)"),
+])
+
+# Q4(c): the piperidine ring sits INSIDE the sentence -> inline image, planned
+# after every block figure of the question.
+INLINE_ASSETS[_E26] = [(4, "(c)", "c")]
+CORRECTIONS.extend([
+    (_E26, r"(reacted with piperidine,) \x00FIG\x00(, to form)",
+     '\\1 <img data-asset="EJC_H2_P2_Q4_c_2026.png" alt="piperidine" style="vertical-align:middle;margin:.35em .15em">\\2',
+     "4(c): the piperidine ring is a small drawing inside the sentence; INLINE image "
+     "(matched by filename, planned via corrections.INLINE_ASSETS), not a block figure.",
+     "user snip, 2026-10-30"),
+    (_E26, r"\n?(?:\x00C\x00)?<b>Question 5\(e\) continues on the next page\.</b>", "",
+     "page-turn note ('Question 5(e) continues on the next page.') is meaningless in "
+     "the app; dropped (precedent EJC 2024 H2 P2 / ASRJC 2024 P2 page-turn notes).",
+     "housekeeping, 2026-10-30"),
+])
+
+CORRECTIONS.extend([
+    (_E26, r"[ \t]*<br>[ \t]*", " ",
+     "Soft line breaks (w:br) typed to wrap a sentence at the printed margin (Q3 intro, "
+     "Q5(d)(i) 'draw the / skeletal structures'). No genuine break uses <br> here.",
+     "housekeeping, 2026-10-30"),
+    (_E26, r"(?:\n)?(?:\x00C\x00)?<b>BLANK PAGE</b>", "",
+     "the three 'BLANK PAGE' captions of the paper's blank pages ended up in Q5(e)(v); page furniture.",
+     "housekeeping, 2026-10-30"),
+    (_E26, r"<sup> </sup>", " ",
+     "empty superscript holding a space (100 <sup> </sup>C, Mg(OH)2<sup> </sup>and): a plain space.",
+     "housekeeping, 2026-10-30"),
+    (_E26, r"I<sup>\u2013 </sup>half", "I<sup>\u2212</sup> half",
+     "Q2(a)(ii): charge of I- typed as an en dash with a stray space inside the superscript.",
+     "housekeeping, 2026-10-30"),
+    (_E26, r"(<sup>)[\u2013\u2012-](\d|</sup>)", "\\1\u2212\\2",
+     "minus / negative sign typed as an en dash or hyphen in a superscript (10-4, 10-11, dm-3, I-); "
+     "the true minus U+2212 (user's symbol standardisation, 2026-10-26).",
+     "user ruling, 2026-10-26; applied 2026-10-30"),
+    (_E26, r"(<td>)\u2013(\d)", "\\1\u2212\\2",
+     "Table 1.1: boiling points -93 and -33 typed with an en dash; U+2212.",
+     "user ruling, 2026-10-26; applied 2026-10-30"),
+    (_E26, r"[ \t]{6,}(<span class=\"mk\">)", " \\1",
+     "Q5(a)(i), (b)(i), (e)(i): a run of spaces typed to push the mark to the right margin.",
+     "housekeeping, 2026-10-30"),
+    (_E26, r"(Include the units\.)\n (<span class=\"mk\">\[2\]</span>)", "\\1 \\2",
+     "Q2(c)(ii): the [2] sat on its own line after the hidden text box was dropped.",
+     "housekeeping, 2026-10-30"),
+])

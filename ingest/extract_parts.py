@@ -223,6 +223,8 @@ def main(argv=None):
         ignore_re=[r"©\s*Raffles Institution\s*\d{4}",
                    r"9729/0\d/S/\d+",
                    r"©\s*EJC", r"9729/0\d/J\dPE/\d+", r"9476/0\d/J2PRELIM/\d+", r"\[Turn Over",
+                   # HCI's running footer ("© Hwa Chong Institution 2026  9476/02/C2 Preliminary Examination  [Turn Over]")
+                   r"©\s*Hwa Chong Institution\s*\d{4}", r"9476/0\d/C2 Preliminary Examination",
                    # ACJC's running footer ("© ACJC2024  9729/Preliminary
                    # Examination/2024  [Turn over]"): page furniture, never
                    # inside a question's own page range.

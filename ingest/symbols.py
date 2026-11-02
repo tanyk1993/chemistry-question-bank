@@ -111,6 +111,7 @@ SYMBOL = {
                         #   every occurrence against the paragraph it sits in,
                         #   not by the Adobe encoding table (which this
                         #   document's font does not follow at this codepoint).
+    "F0B3": "\u2265",   # 0xB3 greater-than-or-equal ; HCI 2026 H2 P2 answers Q3(b)(iv) "KE >= Ea"
     "F0B8": "÷",   # 0xB8 divide               ; ACJC 2024 H2 P1 answers Q29:
                         #   "Amt of AgCl ppt = 2.87 [B8] 143.4" (mass / molar
                         #   mass = moles) and Q30: "Ratio of Cl : CrCl3.6H2O

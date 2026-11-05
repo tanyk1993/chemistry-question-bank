@@ -27,6 +27,9 @@ from __future__ import annotations
 # Word stores these offset into the F000 private-use block.
 ADOBE_SYMBOL = {
     0x2D: "−",   # minus
+    0x31: "1",   # digit one (Adobe Symbol "one" = 0x31) -- JPJC 2026 H2 P2 Q2(a)(iii) "min-1"
+    0x44: "\u2206",   # capital Delta -- JPJC 2026 H2 P2 answers
+    0x2C: ",",   # comma -- JPJC 2026 H2 P2 Q4(d)(i)
     0x20: " ",   # space
     0x40: "\u2245",   # congruent (Adobe Symbol "congruent" = 0x40)
     0x57: "\u03a9",   # Omega (U+03A9 deliberately, matching symbols.py; Adobe lists U+2126 ohm sign)

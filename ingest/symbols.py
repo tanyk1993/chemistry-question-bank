@@ -48,6 +48,10 @@ SYMBOL = {
     "F072": "\u03c1",   # 0x72 rho -- JPJC 2024 H2 P1 answers Q5: "p = \u03c1RT/Mr"
     "F020": " ",   # 0x20 space -- ASRJC 2024 H2 P3 answers Q5(b)(i): "t\u00bd is constant at" + [F020] + \u2248 440 min;
                         #   the Symbol-font space between the words and the \u2248 sign.
+    "F031": "1",   # 0x31 digit one -- JPJC 2026 H2 P2 Q2(a)(iii) table header "min" + Symbol-font "-1"
+                        #   ("initial rate / mol dm-3 min-1": the minus AND the 1 are Symbol runs).
+    "F044": "\u2206", "0044": "\u2206",   # 0x44 capital Delta (U+2206, as typed on the question side) -- JPJC 2026 H2 P2 answers
+    "F02C": ",",   # 0x2C comma -- JPJC 2026 H2 P2 Q4(d)(i): "SCN-, on the ratio" (Symbol-font ", ").
     "F064": "\u03b4",   # 0x64 delta (lowercase) -- ASRJC 2024 H2 P3 answers Q5(c)(iii): "do not have \u03b4+".
     "F040": "\u2245",   # 0x40 congruent (U+2245) -- ASRJC 2024 H2 P3 answers Q4(c): "W has C:H ratio
                         #   \u2245 1:1" (the school's \"approximately equal\" sign, typed as Symbol 0x40).

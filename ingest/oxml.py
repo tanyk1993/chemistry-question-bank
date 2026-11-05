@@ -121,7 +121,17 @@ def _tokens_from_run(r, *, in_math: bool = False):
     style = _run_style(r)
     font = _symbol_font(r)
     parts = []
-    for ch in r:
+
+    def _flat(el):
+        # a tracked insert can wrap the contents of a math run (m:r > w:ins > m:t);
+        # its children are the run's own content (JPJC 2026 P1 answers, Q4)
+        for c in el:
+            if etree.QName(c).localname == "ins":
+                yield from _flat(c)
+            else:
+                yield c
+
+    for ch in _flat(r):
         ln = etree.QName(ch).localname
         if ln in ("t",):
             txt = ch.text or ""
@@ -499,7 +509,7 @@ def paragraph_tokens(p):
         elif ln in ("oMath", "oMathPara"):
             yield from _flush_combine()
             yield from _omml_tokens(child)
-        elif ln in ("hyperlink", "smartTag", "sdt", "ins"):
+        elif ln in ("hyperlink", "smartTag", "sdt", "ins", "moveTo"):   # moveTo = tracked move, new place
             yield from _flush_combine()
             # An INLINE content control (<w:sdt>, e.g. the Google Docs
             # "goog_rdk_*" wrappers HCI 2024 H2 P2 carries around its
@@ -515,7 +525,9 @@ def paragraph_tokens(p):
                 if etree.QName(sub).localname == "r":
                     yield from _tokens_from_run(sub)
         elif ln in ("pPr", "bookmarkStart", "bookmarkEnd", "proofErr",
-                    "commentRangeStart", "commentRangeEnd", "del"):
+                    "commentRangeStart", "commentRangeEnd", "del",
+                    "moveFrom", "moveFromRangeStart", "moveFromRangeEnd",
+                    "moveToRangeStart", "moveToRangeEnd"):   # moveFrom = tracked move, old place
             continue
         elif ln in ("subDoc",):
             continue

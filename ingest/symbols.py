@@ -104,6 +104,7 @@ SYMBOL = {
                         #   tendency for X2 to be reduced" matches Group 17's
                         #   well-known decreasing oxidising power down the
                         #   group. 5 occurrences, all confirmed the same way.
+    "F0D0": "\u2220",   # 0xD0 angle            "angle of deflection \u2220 for 59Ni2+" (JPJC 2026 H2 P3 answers Q5)
     "F0DE": "✓",   # 0xDE (checkmark, not the Adobe-table "braceleftbt" the
                         #   raw codepoint might suggest -- this font substitutes
                         #   a tick glyph here). EJC 2024 H2 P1 answers: 31

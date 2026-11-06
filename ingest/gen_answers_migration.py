@@ -165,7 +165,12 @@ def main(ws_json: str, assets_json: str, dest: str, *, school: str = "RI",
         add("  FROM papers p")
         add(" WHERE p.id = q.paper_id AND %s" % WHERE)
         add("   AND q.type = '%s' AND q.question_number = %d" % (qtype, q))
-        add("   AND q.edited_at IS NULL  -- never overwrite an admin's hand edit")
+        # Guard on the VALUE, not on edited_at: a hand edit of the QUESTION text sets
+        # edited_at, and the old `edited_at IS NULL` guard then skipped worked_solution
+        # (JPJC 2026 P3 Q3, ASRJC 2026 P1 Q17: only the diagrams showed). Still never
+        # overwrites an existing solution, so an admin's edit of it is safe.
+        add("   AND (q.worked_solution IS NULL OR btrim(q.worked_solution) = '')"
+            "  -- never overwrite an existing/edited solution")
         add(" RETURNING q.question_number, length(q.worked_solution) AS html_chars,"
             " q.answer_key;")
         add("")
@@ -191,6 +196,17 @@ def main(ws_json: str, assets_json: str, dest: str, *, school: str = "RI",
         add("RETURNING question_id, slot, storage_path, ordinal;")
         add("-- Expect %d asset row(s) returned." % len(ASSETS))
         add("")
+    add("DO $post$")
+    add("BEGIN")
+    add("  IF EXISTS (SELECT 1 FROM questions q JOIN papers p ON p.id = q.paper_id")
+    add("              WHERE %s AND q.type = '%s' AND q.question_number IN (%s)"
+        % (WHERE, qtype, ", ".join(str(q) for q in QNUMS)))
+    add("                AND (q.worked_solution IS NULL OR btrim(q.worked_solution) = '')) THEN")
+    add("    RAISE EXCEPTION 'a worked_solution is still empty after the update';")
+    add("  END IF;")
+    add("END")
+    add("$post$;")
+    add("")
     add("-- Flip to COMMIT when the above looks right.")
     add("ROLLBACK;")
     add("")

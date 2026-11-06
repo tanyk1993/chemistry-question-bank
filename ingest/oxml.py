@@ -265,7 +265,7 @@ def _omml_tokens(el):
     # are plain containers, the function name itself is an ordinary m:r run.
     # First needed by ACJC 2024 H2 P2's solutions doc (3(b)(iii), "ln 2 / k'").
     if ln in ("oMath", "oMathPara", "num", "den", "e", "sup", "sub", "deg",
-              "func", "fName", "limLow", "lim"):
+              "func", "fName", "limLow", "lim", "bar"):   # bar: school underlines final answers (no content)
         for ch in el:
             if etree.QName(ch).localname.endswith("Pr"):
                 continue

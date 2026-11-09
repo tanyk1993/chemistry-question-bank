@@ -144,7 +144,7 @@ def _tokens_from_run(r, *, in_math: bool = False):
             parts.append(txt)
         elif ln == "sym":
             parts.append(sym_to_text(ch.get(Wq + "font"), ch.get(Wq + "char")))
-        elif ln == "tab":
+        elif ln in ("tab", "ptab"):
             # A literal TAB character, not a space: unlike a space, nobody
             # types a tab by accident, so its presence is always a deliberate
             # Word tab-stop -- EJC 2024 H2 P1's "reaction 1  <equation>"/
@@ -158,6 +158,7 @@ def _tokens_from_run(r, *, in_math: bool = False):
             # pattern that would miss Q29 (a bare equation, no "reaction N"
             # label at all). content_text/options collapse \s+ to one space
             # regardless, so search/the text gate see no difference.
+            # `ptab` (absolute-position tab, w:ptab) is treated identically.
             parts.append("\t")
         elif ln == "br":
             # SS7: a w:br mid-sentence is a layout line-wrap, not a paragraph

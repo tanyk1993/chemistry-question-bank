@@ -62,6 +62,12 @@ SYMBOL = {
                         #   the other "stage I" mentions. The Word PDF text layer DROPS this glyph
                         #   ("in stage . State the units"), so the evidence is the rendered page,
                         #   which shows a bold upright "I" there.
+    # NJC 2026 H2 P1: Unicode characters stored verbatim in Symbol-font runs.
+    # The characters are already the correct Unicode codepoints; F000|ord(c)
+    # gives the key but nothing maps it, so they are added here as pass-throughs.
+    "F192": "→",   # U+2192 → (rightwards arrow) in Symbol-font run; Q10/Q11 stems
+    "F212": "−",   # U+2212 − (minus sign) in Symbol-font run; Q12 mechanism / Q16 bond-angle line
+    "F394": "∆",   # U+2206 ∆ (INCREMENT, matches PDF text layer); Q16 "∆H > 0"
     "F073": "σ",   # 0x73 sigma; RI 2024 H2 P1 Q7 "There are 6 <s> and 2 <p>
                         #   bonds present." Question paper only -- the answers
                         #   family has no sigma.

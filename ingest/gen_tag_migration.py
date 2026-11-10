@@ -57,7 +57,8 @@ from pathlib import Path
 
 
 def main(tagfile: str, dest: str, *, school: str = "RI", year: int = 2024,
-        paper: int = 1, level: str = "H2", syllabus: str = "H2"):
+        paper: int = 1, level: str = "H2", syllabus: str = "H2",
+        total_questions: int | None = None):
     SCHOOL, YEAR, PAPER, LEVEL, SYLLABUS = school, year, paper, level, syllabus
     tags = json.loads(Path(tagfile).read_text(encoding="utf-8"))
     pairs = sorted(((int(q), c) for q, cs in tags.items() for c in cs))
@@ -82,8 +83,11 @@ def main(tagfile: str, dest: str, *, school: str = "RI", year: int = 2024,
     add("BEGIN")
     add("  SELECT count(*) INTO n FROM questions q JOIN papers p ON p.id = q.paper_id")
     add("   WHERE %s AND q.type = 'mcq';" % where)
-    add("  IF n <> %d THEN" % len(tags))
-    add("    RAISE EXCEPTION 'expected %d tagged questions, found %%', n;" % len(tags))
+    # NIS questions are deliberately untagged, so the paper can hold more MCQs
+    # than the tag file has keys; --total-questions states the real count.
+    _tq = total_questions if total_questions is not None else len(tags)
+    add("  IF n <> %d THEN" % _tq)
+    add("    RAISE EXCEPTION 'expected %d MCQ questions in the paper, found %%', n;" % _tq)
     add("  END IF;")
     add("")
     add("  -- already tagged? a re-run would add a second copy of every tag that")
@@ -207,6 +211,8 @@ if __name__ == "__main__":
     ap.add_argument("--paper", type=int, default=1)
     ap.add_argument("--level", default="H2")
     ap.add_argument("--syllabus", default="H2")
+    ap.add_argument("--total-questions", type=int, default=None)
     a = ap.parse_args()
     main(a.tagfile, a.dest, school=a.school, year=a.year, paper=a.paper,
-        level=a.level, syllabus=a.syllabus)
+        level=a.level, syllabus=a.syllabus,
+        total_questions=a.total_questions)

@@ -1784,3 +1784,25 @@ CORRECTIONS.extend([
      "Q2(c)(ii): the [2] sat on its own line after the hidden text box was dropped.",
      "housekeeping, 2026-10-30"),
 ])
+
+
+# NYJC 2026 H2 P1 (2026-11-13) ------------------------------------------------
+# Declared after reading the Word PDF page by page (school sent a .doc, converted
+# with LibreOffice; see nyjc26_p1_prep.py). The user snips every stem figure by
+# hand; Claude snips the all-diagram option sets (Q2, Q11).
+_NY26 = ("NYJC", "H2", "P1", 2026)
+# Q11: options A-D are four graphs, each carrying its letter inside the drawing.
+NO_OPTION_TEXT[_NY26] = {11}
+MCQ_FIXUPS.extend([
+    # Q24: the header row "greatest volume ------> least volume" is a text pair
+    # with a native arrow connector between them (the connector is not counted as
+    # a figure; its sentinel would reach the database as a NUL byte). Rebuild the
+    # row as one spanning cell with a drawn arrow (same CSS device as NJC Q24).
+    (_NY26 + (24,), "html",
+     r'<tr><td class="ol"></td><td></td><td></td><td></td><td>\x00FIG\x00greatest volume \tleast volume</td></tr>',
+     '<tr><td class="ol"></td><td colspan="4"><span style="display:flex;align-items:center">'
+     'greatest volume<span style="flex:1;border-top:1.3px solid currentColor;margin:0 0 0 .6em"></span>'
+     '<span style="font-size:.55em;margin:0 .6em 0 -.3em;line-height:1">►</span>'
+     'least volume</span></td></tr>', 1,
+     "native arrow connector between the two heading words, rebuilt as a CSS arrow."),
+])

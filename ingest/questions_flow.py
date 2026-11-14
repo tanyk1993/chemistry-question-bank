@@ -652,6 +652,14 @@ def parse(document_xml, rels_xml, no_option_text=frozenset(),
                     if h.strip():
                         q.stem_html = (q.stem_html + "\n" + h).strip() \
                             if q.stem_html else h
+                elif etree.QName(el).localname == "tbl":
+                    # A STEM data table ahead of the option table (NYJC 2026 H2
+                    # P1 Q1 ionisation energies, Q5 properties, Q24 reactions):
+                    # this branch used to keep paragraphs only and drop it.
+                    th = _table_html(el)
+                    if th:
+                        q.stem_html = (q.stem_html + "\n" + th).strip() \
+                            if q.stem_html else th
             first_opt = opt_rows[0][0]
             if first_opt > 0:
                 hdr_cells = rows[first_opt - 1].findall("w:tc", NS)

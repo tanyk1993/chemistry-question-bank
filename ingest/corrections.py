@@ -1806,3 +1806,22 @@ MCQ_FIXUPS.extend([
      'least volume</span></td></tr>', 1,
      "native arrow connector between the two heading words, rebuilt as a CSS arrow."),
 ])
+
+
+# RVHS 2026 H2 P1 (2026-11-19) ------------------------------------------------
+# Declared after reading the Word PDF page by page (school sent a .doc, converted
+# with LibreOffice; see rvhs26_p1_prep.py). The user snips every stem figure by
+# hand; Claude snips the all-diagram option sets.
+_RV26 = ("RVHS", "H2", "P1", 2026)
+MCQ_FIXUPS.extend([
+    # Q16: the option-table header "First to precipitate ------> Last to
+    # precipitate" has a drawn arrow in its middle cell; its sentinel would reach
+    # the database as a NUL byte. Rebuilt as a CSS arrow (same device as NYJC Q24).
+    (_RV26 + (16,), "html",
+     r'<td>\x00FIG\x00</td><td>Last to precipitate</td>',
+     '<td><span style="display:flex;align-items:center">'
+     '<span style="flex:1;border-top:1.3px solid currentColor"></span>'
+     '<span style="font-size:.55em;margin:0 0 0 -.3em;line-height:1">►</span>'
+     '</span></td><td>Last to precipitate</td>', 1,
+     "drawn arrow in the middle header cell of the options table, rebuilt as a CSS arrow."),
+])

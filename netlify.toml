@@ -4,4 +4,10 @@
   # burning a Netlify build/deploy each time even though nothing served changes.
   # `git diff --quiet` exits 0 (no diff) -> Netlify skips the build;
   # exits 1 (diff found) -> Netlify proceeds. See HANDOFF.md §F.
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- index.html"
+  #
+  # If CACHED_COMMIT_REF is empty (Netlify "Failed to fetch cache"), the old
+  # unquoted form collapsed to `git diff --quiet $COMMIT_REF -- index.html`, i.e.
+  # the commit vs its own checkout = no diff = exit 0 = build wrongly skipped
+  # (favicon deploy 21bfbc5, 2026-11-21). The [ -n ] guard makes a missing
+  # cached ref exit 1, so the build runs. Favicon files count as site content.
+  ignore = "[ -n \"$CACHED_COMMIT_REF\" ] && git diff --quiet \"$CACHED_COMMIT_REF\" \"$COMMIT_REF\" -- index.html favicon.svg favicon.ico apple-touch-icon.png"

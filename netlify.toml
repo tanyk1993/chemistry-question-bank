@@ -1,9 +1,13 @@
 [build]
-  # TEMPORARY (2026-11-21): the old "skip unless index.html changed" ignore rule
-  # cancelled the favicon deploys (21bfbc5, 83a7060, 4c30bb4) even though
-  # index.html had changed, because CACHED_COMMIT_REF was not what we assumed
-  # (every build logs "Failed to fetch cache"). This command never skips (exit 1
-  # = build) and just prints the refs so the deploy log shows their real values.
-  # Original rule, to restore once understood:
-  #   git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- index.html
-  ignore = "echo CACHED_COMMIT_REF=[$CACHED_COMMIT_REF] COMMIT_REF=[$COMMIT_REF]; exit 1"
+  # Skip the deploy unless the pushed commit touched something that is served:
+  # index.html, the favicon files, or this file. ingest/-only commits (extraction
+  # code, migrations, notes) then cost no Netlify build.
+  # `git diff --quiet` exits 0 (no diff) -> Netlify skips; exit 1 (diff) -> builds.
+  # Any git error (e.g. no parent commit) is non-zero too, so it fails safe: build.
+  #
+  # Compares HEAD~1 to HEAD rather than $CACHED_COMMIT_REF: on 2026-11-21 Netlify
+  # logged "Failed to fetch cache" and the $CACHED_COMMIT_REF rule wrongly skipped
+  # three commits that changed index.html. Trade-off: only the LAST commit of a
+  # push is inspected, so if one push holds several commits and an earlier one
+  # changed index.html, trigger a manual deploy (Deploys > Trigger deploy).
+  ignore = "git diff --quiet HEAD~1 HEAD -- index.html favicon.svg favicon.ico apple-touch-icon.png netlify.toml"

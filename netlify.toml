@@ -1,13 +1,9 @@
 [build]
-  # Skip a deploy unless index.html itself changed between the last built commit
-  # and this one. ingest/-only commits (extraction code, migrations, notes) were
-  # burning a Netlify build/deploy each time even though nothing served changes.
-  # `git diff --quiet` exits 0 (no diff) -> Netlify skips the build;
-  # exits 1 (diff found) -> Netlify proceeds. See HANDOFF.md §F.
-  #
-  # If CACHED_COMMIT_REF is empty (Netlify "Failed to fetch cache"), the old
-  # unquoted form collapsed to `git diff --quiet $COMMIT_REF -- index.html`, i.e.
-  # the commit vs its own checkout = no diff = exit 0 = build wrongly skipped
-  # (favicon deploy 21bfbc5, 2026-11-21). The [ -n ] guard makes a missing
-  # cached ref exit 1, so the build runs. Favicon files count as site content.
-  ignore = "[ -n \"$CACHED_COMMIT_REF\" ] && git diff --quiet \"$CACHED_COMMIT_REF\" \"$COMMIT_REF\" -- index.html favicon.svg favicon.ico apple-touch-icon.png"
+  # TEMPORARY (2026-11-21): the old "skip unless index.html changed" ignore rule
+  # cancelled the favicon deploys (21bfbc5, 83a7060, 4c30bb4) even though
+  # index.html had changed, because CACHED_COMMIT_REF was not what we assumed
+  # (every build logs "Failed to fetch cache"). This command never skips (exit 1
+  # = build) and just prints the refs so the deploy log shows their real values.
+  # Original rule, to restore once understood:
+  #   git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- index.html
+  ignore = "echo CACHED_COMMIT_REF=[$CACHED_COMMIT_REF] COMMIT_REF=[$COMMIT_REF]; exit 1"

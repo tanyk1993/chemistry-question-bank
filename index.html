@@ -2034,7 +2034,14 @@
     // back for the answer. Legacy papers mark figure positions with .fig nodes.
     if(q.assets && q.assets.length){
       const qAssets  = q.assets.filter(a => !isAnswerSlot(a.slot));
-      const stemImgs = qAssets.filter(a => !isOptSlot(a.slot));
+      // An image the markup already placed by filename (<img data-asset>, resolved
+      // above and stamped data-fig) is INLINE: it must not also be handed to a
+      // .fig placeholder. TMJC 2026 H2 P1 Q19 (inline substrate in the stem, option
+      // grid below) lost its grid because the inline asset took the placeholder.
+      const placedByName = new Set([...stem.querySelectorAll('img[data-fig]')]
+                                     .map(i => baseName(i.dataset.fig)));
+      const stemImgs = qAssets.filter(a => !isOptSlot(a.slot)
+                                        && !placedByName.has(baseName(a.storage_path)));
       const optImgs  = qAssets.filter(a =>  isOptSlot(a.slot))
                               .sort((a,b)=> (a.slot>b.slot?1:-1));
       const figImg = a => {

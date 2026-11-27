@@ -413,7 +413,7 @@ def figure_kinds(q, frac_letters=frozenset(), eqtext_map=None) -> list:
     out, nblock = [], 0
     for f in q.figures:
         if f.part.startswith("option"):
-            letter = f.part.split(":", 1)[1]
+            letter = f.part.partition(":")[2]
             if letter in eqtext_map:
                 out.append("eqtext")
             elif f.kind == "equation" and letter in frac_letters:
@@ -470,7 +470,7 @@ def asset_plan(q, school="RI", level="H2", paper="P1", year=2024) -> list:
     for i, kind in enumerate(kinds):
         if kind != "option":
             continue
-        letter = q.figures[i].part.split(":", 1)[1]
+        letter = q.figures[i].part.partition(":")[2]
         if letter in seen:
             continue
         seen.add(letter)
@@ -568,7 +568,7 @@ def _consume_option_fracs(q, kinds, subs_iter, from_start: bool = False) -> dict
             continue            # _subs() never emitted anything for these
         val = next(subs_iter, "")
         if is_opt_frac:
-            out[f.part.split(":", 1)[1]] = val
+            out[f.part.partition(":")[2]] = val
     return out
 
 
@@ -620,7 +620,7 @@ def content_html(q, plan=None, fractions=None, frac_letters=frozenset(),
     # through to the ordinary options table below instead, where the fraction
     # itself gets substituted in.
     letters = sorted(q.options)
-    fig_letters = {f.part.split(":", 1)[1] for i, f in enumerate(q.figures)
+    fig_letters = {f.part.partition(":")[2] for i, f in enumerate(q.figures)
                    if f.part.startswith("option:") and kinds[i] == "option"}
     captioned = bool(letters) and set(letters) <= fig_letters and all(
         len(_strip_tags("".join(q.options[L]))) <= 40 for L in letters)

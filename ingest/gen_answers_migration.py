@@ -98,6 +98,10 @@ def main(ws_json: str, assets_json: str, dest: str, *, school: str = "RI",
         if missing:
             raise SystemExit("--answer-key is missing question(s) %s"
                               % sorted(missing))
+    # questions that have an answer key but NO worked solution (the school printed the
+    # letter only, e.g. TMJC 2026 P1 Q18/19/21/25): they get an answer_key-only UPDATE
+    KEYONLY = sorted(set(ANSWER_KEY) - set(QNUMS))
+    ALLQ = sorted(set(QNUMS) | set(KEYONLY))
 
     WHERE = ("p.school = '%s' AND p.year = %d AND p.paper_number = %d "
              "AND p.level = '%s'" % (school, year, paper, level))
@@ -119,9 +123,9 @@ def main(ws_json: str, assets_json: str, dest: str, *, school: str = "RI",
     add("  -- exactly one %s question row per question number" % qtype)
     add("  SELECT count(*) INTO n FROM questions q JOIN papers p ON p.id = q.paper_id")
     add("   WHERE %s AND q.type = '%s'" % (WHERE, qtype))
-    add("     AND q.question_number IN (%s);" % ", ".join(str(q) for q in QNUMS))
-    add("  IF n <> %d THEN" % len(QNUMS))
-    add("    RAISE EXCEPTION 'expected %d question(s), matched %%', n;" % len(QNUMS))
+    add("     AND q.question_number IN (%s);" % ", ".join(str(q) for q in ALLQ))
+    add("  IF n <> %d THEN" % len(ALLQ))
+    add("    RAISE EXCEPTION 'expected %d question(s), matched %%', n;" % len(ALLQ))
     add("  END IF;")
     add("")
     if ANSWER_KEY:
@@ -130,11 +134,11 @@ def main(ws_json: str, assets_json: str, dest: str, *, school: str = "RI",
         add("  SELECT count(*) INTO n FROM questions q JOIN papers p ON p.id = q.paper_id")
         add("   WHERE %s AND q.type = '%s'" % (WHERE, qtype))
         add("     AND q.question_number IN (%s)"
-            % ", ".join(str(q) for q in QNUMS))
+            % ", ".join(str(q) for q in ALLQ))
         add("     AND q.answer_key IS NOT NULL;")
         add("  IF n <> 0 THEN")
         add("    RAISE EXCEPTION 'expected answer_key NULL on all %d question(s), %% already set', n;"
-            % len(QNUMS))
+            % len(ALLQ))
         add("  END IF;")
         add("")
     if ASSETS:
@@ -175,6 +179,16 @@ def main(ws_json: str, assets_json: str, dest: str, *, school: str = "RI",
             " q.answer_key;")
         add("")
 
+    for q in KEYONLY:
+        add("-- Q%d: the school gives the answer letter only, so only answer_key is set" % q)
+        add("UPDATE questions q SET answer_key = %s" % _lit(ANSWER_KEY[q]))
+        add("  FROM papers p")
+        add(" WHERE p.id = q.paper_id AND %s" % WHERE)
+        add("   AND q.type = '%s' AND q.question_number = %d" % (qtype, q))
+        add("   AND q.answer_key IS NULL")
+        add(" RETURNING q.question_number, q.answer_key;")
+        add("")
+
     if ASSETS:
         add("-- Additive insert: %d new answer-figure asset rows, ordinal placed" % len(ASSETS))
         add("-- AFTER whatever stem-figure assets already exist for each question")
@@ -204,6 +218,13 @@ def main(ws_json: str, assets_json: str, dest: str, *, school: str = "RI",
     add("                AND (q.worked_solution IS NULL OR btrim(q.worked_solution) = '')) THEN")
     add("    RAISE EXCEPTION 'a worked_solution is still empty after the update';")
     add("  END IF;")
+    if KEYONLY:
+        add("  IF EXISTS (SELECT 1 FROM questions q JOIN papers p ON p.id = q.paper_id")
+        add("              WHERE %s AND q.type = '%s' AND q.question_number IN (%s)"
+            % (WHERE, qtype, ", ".join(str(q) for q in KEYONLY)))
+        add("                AND q.answer_key IS NULL) THEN")
+        add("    RAISE EXCEPTION 'an answer_key is still NULL after the update';")
+        add("  END IF;")
     add("END")
     add("$post$;")
     add("")

@@ -939,13 +939,26 @@
   $('#signout').addEventListener('click', async ()=>{ await sb.auth.signOut(); ALL=[]; SEARCH_CACHE.clear(); BT_READY=false; showGate(); });
 
   // ---------------- data ----------------
+  // Run a query builder page by page (1000 rows at a time) until a short page comes back.
+  async function fetchAllPages(build){
+    const SIZE = 1000; let all = [];
+    for(let from = 0; ; from += SIZE){
+      const { data, error } = await build().range(from, from + SIZE - 1);
+      if(error) return { data:null, error };
+      all = all.concat(data || []);
+      if(!data || data.length < SIZE) return { data:all, error:null };
+    }
+  }
   async function loadQuestions(){
     const results = $('#results');
     results.innerHTML = '<div class="loading">Loading questions…</div>';
     // LIGHT list: only what filtering and the card header need. The heavy fields
     // (question HTML, worked solution, options, images) are fetched per page by
     // hydrate() when cards are about to be drawn.
-    const { data, error } = await sb
+    // The API returns at most 1000 rows per request (Supabase "Max rows"), so page through with
+    // .range(). The order must be total (question_number alone has ties across papers), else rows
+    // can be skipped or repeated at a page boundary: tie-break on id.
+    const { data, error } = await fetchAllPages(() => sb
       .from('questions')
       .select(`id, type, section_label, question_number, status,
                papers ( school, year, level, paper_number, paper_name, assessment_type, source_path ),
@@ -953,7 +966,8 @@
                question_los ( part_label, learning_objectives ( id, section_code, text, syllabus, topic_id ) ),
                question_question_types ( part_label, question_types ( id, code, name, area ) )`)
       .eq('status','approved')
-      .order('question_number');
+      .order('question_number')
+      .order('id'));
     if(error){
       results.innerHTML = '<div class="empty"><b>Couldn\'t load questions.</b><br>'+
         'Check your connection and that you\'re signed in, then reload.</div>';
@@ -1020,7 +1034,7 @@
   async function searchIds(kw){
     const k = kw.toLowerCase();
     if(SEARCH_CACHE.has(k)) return SEARCH_CACHE.get(k);
-    const { data, error } = await sb.rpc('search_questions', { kw });
+    const { data, error } = await fetchAllPages(() => sb.rpc('search_questions', { kw }));
     if(error) throw error;
     const ids = new Set(data||[]);
     SEARCH_CACHE.set(k, ids);
